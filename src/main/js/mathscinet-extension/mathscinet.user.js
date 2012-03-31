@@ -7,13 +7,14 @@
 // @updateURL     https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet-extension/mathscinet.user.js
 // ==/UserScript==
 
+var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
 
-if (typeof GM_setValue == "function") {
+if (!is_chrome && typeof GM_setValue == "function") {
 	// if we're running under Greasemonkey, we have to tell jQuery how to make requests.
 	initXHR();
 } else {
 	if(typeof chrome.extension == "undefined") {
-		// looks like we're running as a Chrome userscript
+		// looks like we're running as a chrome userscript
 		// we'll inject jQuery and a callback to our function into the page
 		// this trick comes from http://erikvold.com/blog/index.cfm/2010/6/14/using-jquery-with-a-user-script
 		addJQueryThen(main);
