@@ -3,7 +3,7 @@
 // @version	  0.1.1
 // @match	  http://www.ams.org/mathscinet*
 // @require       http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js
-// @updateURL     
+// @updateURL     https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet-extension/mathscinet.user.js
 // ==/UserScript==
 
 var titleElement = $(".headline .title").clone()
