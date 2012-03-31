@@ -1,5 +1,6 @@
 package net.tqft.arxiv
 import java.net.URL
+import net.tqft.util.Throttle
 
 trait Author {
   def name: String
@@ -14,6 +15,7 @@ trait Author {
     import scala.collection.JavaConverters._
 
     val feedUrl = new URL(apiEndpoint + "query?search_query=" + name + "&max_results=10000")
+    Throttle("arxiv.org")
 
     val feed = new SyndFeedInput().build(new XmlReader(feedUrl))
     for(entry: SyndEntry <- feed.getEntries().asScala.toList.asInstanceOf[List[SyndEntry]]) yield {

@@ -1,6 +1,7 @@
 package net.tqft.arxiv
 import java.util.Date
 import java.net.URL
+import net.tqft.util.Throttle
 
 trait arXiv {
   val apiEndpoint: String = "http://export.arxiv.org/api/"
@@ -13,7 +14,8 @@ trait arXiv {
     import scala.collection.JavaConverters._
     
     val feedUrl = new URL(apiEndpoint + "query?id_list=" + identifiers.mkString(",") + "&max_results=10000")
-
+    Throttle("arxiv.org")
+    
     val feed = new SyndFeedInput().build(new XmlReader(feedUrl))
     
     (for(entry: SyndEntry <- feed.getEntries().asScala.toList.asInstanceOf[List[SyndEntry]]) yield {
@@ -22,21 +24,6 @@ trait arXiv {
     }).toMap
   }
   def lookup(identifier: String): Option[Article] = lookup(List(identifier)).get(identifier)
-}
-
-trait arXivThrottler extends arXiv {
-  protected def interval: Int // milliseconds
-
-  private def now = new Date().getTime
-
-  private var lastLookup = now - interval
-  override def lookup(identifiers: List[String]): Map[String, Article] = {
-    while (now < lastLookup + interval) {
-      Thread.sleep(interval)
-    }
-    lastLookup = now
-    super.lookup(identifiers)
-  }
 }
 
 trait arXivCache extends arXiv {
@@ -59,6 +46,4 @@ trait arXivCache extends arXiv {
   }
 }
 
-object arXiv extends arXiv with arXivThrottler with arXivCache {
-  val interval = 3000 // default 3 second delay interval, per request at http://arxiv.org/help/api/user-manual
-}
+object arXiv extends arXiv with arXivCache

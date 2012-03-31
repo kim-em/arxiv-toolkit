@@ -1,5 +1,7 @@
 package net.tqft.arxiv
 import scala.io.Source
+import net.tqft.util.Slurp
+import java.util.Date
 
 trait Article {
   def identifier: String
@@ -26,16 +28,18 @@ trait Article {
   def currentVersion: Version = versions.last
 
   def trackbacks: List[Trackback] = {
-    val content = Source.fromURL("http://arxiv.org/tb/" + identifier).toString
+    val content = Slurp("http://arxiv.org/tb/" + identifier).mkString("\n")
     ???
   }
 
   trait Version {
+    lazy val absHTMLLines = Slurp("http://arxiv.org/abs/" + identifier) 
+    
     def title: String = ???
     def authors: List[Author] = ???
     def `abstract`: String = ???
     def journalReference: Option[String] = ???
-    def submittedOn: String = ??? // TODO this should be a date
+    def submittedOn: Date = ???
     def primaryMSC: MSC = ???
     def secondaryMSCs: List[MSC] = ???
     def DOI: Option[String] = ???
@@ -68,6 +72,7 @@ object Article {
         import scala.collection.JavaConverters._
         override val title = entry.getTitle()
         override val authors = entry.getAuthors.asScala.toList.asInstanceOf[List[SyndPerson]].flatMap(sp => Author.lookup(sp.getName))
+        override val submittedOn = entry.getUpdatedDate()
         override val journalReference = None
         override val DOI = (for (
           link <- entry.getLinks.asScala.toList.asInstanceOf[List[SyndLink]];

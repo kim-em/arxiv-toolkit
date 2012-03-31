@@ -1,0 +1,17 @@
+{
+  "name": "Add arXiv links to mathscinet",
+  "version": "0.1",
+  "manifest_version": 2,
+  "description": "If you're looking at an article review on mathscinet, this extension attempts to find a corresponding preprint on the arVix, and inserts a link.",
+  "content_scripts": [
+    {
+      "matches": ["http://www.ams.org/mathscinet*"],
+      "js": ["jquery-1.6.4.min.js", "mathscinet.js"]
+    }
+  ],
+  "permissions": [
+    "http://arxiv.org/",
+    "http://export.arxiv.org/*",
+    "http://ams.org/*"
+  ]
+}

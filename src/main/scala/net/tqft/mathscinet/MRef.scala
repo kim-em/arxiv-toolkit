@@ -1,11 +1,12 @@
 package net.tqft.mathscinet
-import scala.io.Source
+import net.tqft.util.Slurp
+import net.tqft.util.URLEncode
 
 object MRef {
 	def lookup(reference: String): List[Article] = {
 	  val re = """<tr><td align="left"><pre>&lt;a href="http://www.ams.org/mathscinet-getitem\?mr=([0-9]*)"&gt;[0-9]*&lt;/a&gt;</pre></td></tr>""".r
 	  
-	  Source.fromURL("http://ams.org/mathscinet-mref?dataType=link&ref=" + net.liftweb.util.Helpers.urlEncode(reference)).getLines().flatMap {
+	  Slurp("http://ams.org/mathscinet-mref?dataType=link&ref=" + URLEncode(reference)).flatMap {
 	    line => line match { case re(mr) => Some(Article(mr.toInt)); case _ => None }
 	  }.toList
 	  
