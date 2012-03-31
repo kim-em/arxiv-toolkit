@@ -1,10 +1,14 @@
 // ==UserScript==
 // @name	  Add arXiv links to mathscinet
 // @version	  0.1.1
+// @namespace	  http://tqft.net/
 // @match	  http://www.ams.org/mathscinet*
 // @require       http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js
 // @updateURL     https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet-extension/mathscinet.user.js
 // ==/UserScript==
+
+// if we're running under Greasemonkey, we have to tell jQuery how to make requests.
+initXHR();
 
 var titleElement = $(".headline .title").clone()
 // throw out all LaTeX components of the title
@@ -52,4 +56,74 @@ function tentative(url) {
 			}
 		})
 	})
+}
+
+function initXHR() {
+	// taken from http://ryangreenberg.com/archives/2010/03/greasemonkey_jquery.php
+	if (typeof GM_setValue == "function") { // greasemonkey 
+		// Wrapper for GM_xmlhttpRequest
+		function GM_XHR() {
+		    this.type = null;
+		    this.url = null;
+		    this.async = null;
+		    this.username = null;
+		    this.password = null;
+		    this.status = null;
+		    this.headers = {};
+		    this.readyState = null;
+		
+		    this.open = function(type, url, async, username, password) {
+		        this.type = type ? type : null;
+		        this.url = url ? url : null;
+		        this.async = async ? async : null;
+		        this.username = username ? username : null;
+		        this.password = password ? password : null;
+		        this.readyState = 1;
+		    };
+
+		    this.setRequestHeader = function(name, value) {
+		        this.headers[name] = value;
+		    };
+
+		    this.abort = function() {
+		        this.readyState = 0;
+		    };
+
+		    this.getResponseHeader = function(name) {
+		        return this.headers[name];
+		    };
+
+		    this.send = function(data) {
+		        this.data = data;
+		        var that = this;
+		        GM_xmlhttpRequest({
+		            method: this.type,
+		            url: this.url,
+		            headers: this.headers,
+		            data: this.data,
+		            onload: function(rsp) {
+		                // Populate wrapper object with returned data
+		                for (k in rsp) {
+		                    that[k] = rsp[k];
+		                }
+		            },
+		            onerror: function(rsp) {
+		                for (k in rsp) {
+		                    that[k] = rsp[k];
+		                }
+		            },
+		            onreadystatechange: function(rsp) {
+		                for (k in rsp) {
+		                    that[k] = rsp[k];
+		                }
+		            }
+		        });
+		    };
+		};
+		// Once we have this wrapper object, we need to tell jQuery to use it instead of the standard browser XHR:
+
+		$.ajaxSetup({
+		    xhr: function(){return new GM_XHR;}
+		});
+	}
 }
