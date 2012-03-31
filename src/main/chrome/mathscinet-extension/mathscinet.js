@@ -1,16 +1,24 @@
+// ==UserScript==
+// @name	  Add arXiv links to mathscinet
+// @version	  0.1.1
+// @match	  http://www.ams.org/mathscinet*
+// @require       http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js
+// @updateURL     
+// ==/UserScript==
+
 var titleElement = $(".headline .title").clone()
 // throw out all LaTeX components of the title
 // (these may appear twice, due to MathJax processing)
 titleElement.find(".MathTeX").remove()
 titleElement.find("script").remove()
-var title = titleElement.text().replace(/ -/, " ");
+var title = titleElement.text().replace(/ -/, " ").replace(/\n/, "");
 var authors = $(".headline :first-child").nextUntil(".title", 'a[href^="/mathscinet/search/publications"]').map(function() { return $(this).text() })
 var MRNumber = $('div.headline strong').first().text();
 
 var authorTerm = authors.map(function() { return 'au:' + this }).get().join(' AND ')
 var titleTerm = 'ti:' + title;
 var search = 'http://export.arxiv.org/api/query?search_query=' + encodeURIComponent(authorTerm) + ' AND ' + encodeURIComponent(titleTerm);
-// alert(search);
+//alert(search);
 $.ajax(search).done(function ( data ) {
 	tentative($(data).find("entry id").first().text());
 })
