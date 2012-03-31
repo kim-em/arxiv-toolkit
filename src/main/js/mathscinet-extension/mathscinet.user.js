@@ -7,9 +7,23 @@
 // @updateURL     https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet-extension/mathscinet.user.js
 // ==/UserScript==
 
-// if we're running under Greasemonkey, we have to tell jQuery how to make requests.
-initXHR();
 
+if (typeof GM_setValue == "function") {
+	// if we're running under Greasemonkey, we have to tell jQuery how to make requests.
+	initXHR();
+} else {
+	if(typeof chrome.extension == "undefined") {
+		// looks like we're running as a Chrome userscript
+		// we'll inject jQuery and a callback to our function into the page
+		// this trick comes from http://erikvold.com/blog/index.cfm/2010/6/14/using-jquery-with-a-user-script
+		addJQueryThen(main);
+	} else {
+		// running as a chrome extension
+		main();
+	}
+}
+
+function main() {
 var titleElement = $(".headline .title").clone()
 // throw out all LaTeX components of the title
 // (these may appear twice, due to MathJax processing)
@@ -56,6 +70,7 @@ function tentative(url) {
 			}
 		})
 	})
+}
 }
 
 function initXHR() {
@@ -127,3 +142,15 @@ function initXHR() {
 		});
 	}
 }
+
+function addJQueryThen(callback) {
+  var script = document.createElement("script");
+  script.setAttribute("src", "http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js");
+  script.addEventListener('load', function() {
+    var script = document.createElement("script");
+    script.textContent = "(" + callback.toString() + ")();";
+    document.body.appendChild(script);
+  }, false);
+  document.body.appendChild(script);
+}
+
