@@ -1,24 +1,43 @@
 // ==UserScript==
 // @name	  Add arXiv links to mathscinet
 // @version	  0.1.4
-// @namespace	  http://tqft.net/
-// @match	  http://www.ams.org/mathscinet*
-// @updateURL     https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet-extension/mathscinet.user.js
+// @namespace http://tqft.net/
+// @include	  http://www.ams.org/mathscinet*
+// @match     http://www.ams.org/*
+// @match     http://export.arxiv.org/api/*
+// @updateURL https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet-extension/mathscinet.user.js
 // ==/UserScript==
+
+console.log("starting")
 
 // We've actually got jQuery 1.6.4 included below, because chrome doesn't support @require on user scripts.
 loadJQuery();
 
 var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
 
-if (!is_chrome && typeof GM_setValue == "function") {
-    // if we're running under Greasemonkey, we have to tell jQuery how to make requests.
-    // FIXME this still doesn't work, and the ajax requests silently fail.
-    initXHR();
-    main();
-} else {
-    main();
+main()
+
+function loadAsync(url, callback) {
+  if(typeof GM_xmlhttpRequest === "undefined") {
+    console.log("GM_xmlhttpRequest unavailable")
+    // hope for the best (i.e. that we're running as a Chrome extension)
+    $.get(url, callback)  
+  } else { 
+    console.log("GM_xmlhttpRequest available")
+    // load via GM
+    GM_xmlhttpRequest({
+      method: "GET",
+      url: url,
+      onload: function(response) {
+          //if (!response.responseXML) {
+          //  response.responseXML = new DOMParser().parseFromString(response.responseText, "text/html");
+          //}
+          callback(response.responseText);
+      }
+    });
+  }
 }
+
 
 function main() {
 var titleElement = $(".headline .title").clone()
@@ -35,21 +54,20 @@ var titleTerm = 'ti:' + title;
 var search = 'http://export.arxiv.org/api/query?search_query=' + encodeURIComponent(authorTerm) + ' AND ' + encodeURIComponent(titleTerm);
 console.log("Looking up " + search);
 // alert(search);
-$.ajax({
-    url: search,
-    success: function (data) {
+loadAsync(search, function (data) {
+        console.log(data);
         tentative($(data).find("entry id").first().text());
-    }
-})
+    })
 
 function tentative(url) {
-	console.log("Found arXiv URL " + url);
+	console.log("Found arXiv URL: " + url);
 	$("a:contains('Make Link')").before($('<a>',{
 	    text: 'arXiv?',
 	    class: 'tentative',
 	    href: url
-	}).hide())
-	$.get(url, function (abs) {
+	}).hide());
+    $('a.tentative').after(' ');
+	loadAsync(url, function (abs) {
 		var doc = $(abs);
 		var titleElement = doc.find('h1.title').clone();
 		titleElement.find('.descriptor').remove();
@@ -59,92 +77,23 @@ function tentative(url) {
 		var arXivJournalRef = doc.find('td.jref').text();
 		var mref = (arXivJournalRef == '') ?
 			('http://www.ams.org/mrlookup?ti=' + encodeURIComponent(arXivTitle) + '&au=' + encodeURIComponent(lastNames.get().join(' and '))) :
-			('http://ams.org/mathscinet-mref?ref=' + encodeURIComponent(arXivTitle + '\n' + arXivAuthors.get().join(', ') + '\n' + arXivJournalRef));
+			('http://www.ams.org/mathscinet-mref?ref=' + encodeURIComponent(arXivTitle + '\n' + arXivAuthors.get().join(', ') + '\n' + arXivJournalRef));
 		console.log("Verifying via " + mref);
 //		alert(mref);
-		$.get(mref, function(mrefResult) {
+		loadAsync(mref, function(mrefResult) {
+            console.log(mrefResult);
 			var MRLink = $(mrefResult).find('a[href^="http://www.ams.org/mathscinet-getitem"]').first().attr('href');
 			var mrefMRNumber = MRLink ? 'MR' + MRLink.match(/[\d]+$/) : '';
 			console.log("Found " + mrefMRNumber);
 //			alert(mrefMRNumber);
 			if(MRNumber == mrefMRNumber) {
-				$('a.tentative').removeClass('tentative').text('arXiv').show();
+				$('a.tentative').removeClass('tentative').text('arXiv').show().css('display', 'inline');
 			} else {
 				$('a.tentative').remove();
 			}
 		})
 	})
 }
-}
-
-function initXHR() {
-	// taken from http://ryangreenberg.com/archives/2010/03/greasemonkey_jquery.php
-	if (typeof GM_setValue == "function") { // greasemonkey 
-		// Wrapper for GM_xmlhttpRequest
-		function GM_XHR() {
-		    this.type = null;
-		    this.url = null;
-		    this.async = null;
-		    this.username = null;
-		    this.password = null;
-		    this.status = null;
-		    this.headers = {};
-		    this.readyState = null;
-		
-		    this.open = function(type, url, async, username, password) {
-		        this.type = type ? type : null;
-		        this.url = url ? url : null;
-		        this.async = async ? async : null;
-		        this.username = username ? username : null;
-		        this.password = password ? password : null;
-		        this.readyState = 1;
-		    };
-
-		    this.setRequestHeader = function(name, value) {
-		        this.headers[name] = value;
-		    };
-
-		    this.abort = function() {
-		        this.readyState = 0;
-		    };
-
-		    this.getResponseHeader = function(name) {
-		        return this.headers[name];
-		    };
-
-		    this.send = function(data) {
-		        this.data = data;
-		        var that = this;
-		        GM_xmlhttpRequest({
-		            method: this.type,
-		            url: this.url,
-		            headers: this.headers,
-		            data: this.data,
-		            onload: function(rsp) {
-		                // Populate wrapper object with returned data
-		                for (k in rsp) {
-		                    that[k] = rsp[k];
-		                }
-		            },
-		            onerror: function(rsp) {
-		                for (k in rsp) {
-		                    that[k] = rsp[k];
-		                }
-		            },
-		            onreadystatechange: function(rsp) {
-		                for (k in rsp) {
-		                    that[k] = rsp[k];
-		                }
-		            }
-		        });
-		    };
-		};
-		// Once we have this wrapper object, we need to tell jQuery to use it instead of the standard browser XHR:
-
-		$.ajaxSetup({
-		    xhr: function(){return new GM_XHR;}
-		});
-	}
 }
 
 function loadJQuery() {
