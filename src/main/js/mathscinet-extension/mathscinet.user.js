@@ -5,25 +5,22 @@
 // @include	  http://www.ams.org/mathscinet*
 // @match     http://www.ams.org/*
 // @match     http://export.arxiv.org/api/*
+// @match     http://arxiv.org/*
 // @updateURL https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet-extension/mathscinet.user.js
 // ==/UserScript==
 
-console.log("starting")
-
 // We've actually got jQuery 1.6.4 included below, because chrome doesn't support @require on user scripts.
 loadJQuery();
-
-var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
 
 main()
 
 function loadAsync(url, callback) {
   if(typeof GM_xmlhttpRequest === "undefined") {
-    console.log("GM_xmlhttpRequest unavailable")
+    // console.log("GM_xmlhttpRequest unavailable")
     // hope for the best (i.e. that we're running as a Chrome extension)
     $.get(url, callback)  
   } else { 
-    console.log("GM_xmlhttpRequest available")
+    // console.log("GM_xmlhttpRequest available")
     // load via GM
     GM_xmlhttpRequest({
       method: "GET",
@@ -46,10 +43,18 @@ var titleElement = $(".headline .title").clone()
 titleElement.find(".MathTeX").remove()
 titleElement.find("script").remove()
 var title = titleElement.text().replace(/ -/, " ").replace(/\n/, "");
+if(title == "") {
+    console.log("There's no item title on this page. Giving up.");
+    return;
+}
 var authors = $(".headline :first-child").nextUntil(".title", 'a[href^="/mathscinet/search/publications"]').map(function() { return $(this).text() })
 var MRNumber = $('div.headline strong').first().text();
 
 var authorTerm = authors.map(function() { return 'au:' + this }).get().join(' AND ')
+if(authorTerm == "") {
+    console.log("There don't appear to be any authors. Giving up.");
+    return;
+}
 var titleTerm = 'ti:' + title;
 var search = 'http://export.arxiv.org/api/query?search_query=' + encodeURIComponent(authorTerm) + ' AND ' + encodeURIComponent(titleTerm);
 console.log("Looking up " + search);
@@ -60,6 +65,10 @@ loadAsync(search, function (data) {
     })
 
 function tentative(url) {
+    if(url == "") {
+        console.log("No arXiv URL found.");
+        return;
+    }
 	console.log("Found arXiv URL: " + url);
 	$("a:contains('Make Link')").before($('<a>',{
 	    text: 'arXiv?',
