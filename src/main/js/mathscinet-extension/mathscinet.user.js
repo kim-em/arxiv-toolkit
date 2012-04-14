@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name	  Add arXiv links to mathscinet
-// @version	  0.1.5
+// @version	  0.1.6
 // @namespace http://tqft.net/
 // @include	  http://www.ams.org/mathscinet-getitem*
 // @include	  http://www.ams.org/mathscinet/search/publdoc.html*
@@ -14,6 +14,8 @@
 // @include   http://ams.mpim-bonn.mpg.de/mathscinet/search/publdoc.html*
 // @include   http://ams.u-strasbg.fr/mathscinet-getitem*
 // @include   http://ams.u-strasbg.fr/mathscinet/search/publdoc.html*
+// @include   http://www.ams.org.proxy.library.emory.edu/mathscinet-getitem*
+// @include   http://www.ams.org.proxy.library.emory.edu/mathscinet/search/publdoc.html*
 // @match     http://www.ams.org/*
 // @match     http://export.arxiv.org/api/*
 // @match     http://arxiv.org/*
@@ -22,6 +24,7 @@
 // @match   http://ams.math.uni-bielefeld.de/*
 // @match   http://ams.mpim-bonn.mpg.de/*
 // @match   http://ams.u-strasbg.fr/*
+// @match   http://www.ams.org.proxy.library.emory.edu/*
 // @updateURL https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet-extension/mathscinet.user.js
 // ==/UserScript==
 
