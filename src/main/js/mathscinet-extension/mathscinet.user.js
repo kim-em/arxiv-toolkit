@@ -1,11 +1,27 @@
 // ==UserScript==
 // @name	  Add arXiv links to mathscinet
-// @version	  0.1.4
+// @version	  0.1.5
 // @namespace http://tqft.net/
-// @include	  http://www.ams.org/mathscinet*
+// @include	  http://www.ams.org/mathscinet-getitem*
+// @include	  http://www.ams.org/mathscinet/search/publdoc.html*
+// @include   http://ams.rice.edu/mathscinet-getitem*
+// @include   http://ams.rice.edu/mathscinet/search/publdoc.html*
+// @include   http://ams.impa.br/mathscinet-getitem*
+// @include   http://ams.impa.br/mathscinet/search/publdoc.html*
+// @include   http://ams.math.uni-bielefeld.de/mathscinet-getitem*
+// @include   http://ams.math.uni-bielefeld.de/mathscinet/search/publdoc.html*
+// @include   http://ams.mpim-bonn.mpg.de/mathscinet-getitem*
+// @include   http://ams.mpim-bonn.mpg.de/mathscinet/search/publdoc.html*
+// @include   http://ams.u-strasbg.fr/mathscinet-getitem*
+// @include   http://ams.u-strasbg.fr/mathscinet/search/publdoc.html*
 // @match     http://www.ams.org/*
 // @match     http://export.arxiv.org/api/*
 // @match     http://arxiv.org/*
+// @match     http://ams.rice.edu/*
+// @match     http://ams.impa.br/*
+// @match   http://ams.math.uni-bielefeld.de/*
+// @match   http://ams.mpim-bonn.mpg.de/*
+// @match   http://ams.u-strasbg.fr/*
 // @updateURL https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet-extension/mathscinet.user.js
 // ==/UserScript==
 
@@ -35,36 +51,65 @@ function loadAsync(url, callback) {
   }
 }
 
-
-function main() {
-var titleElement = $(".headline .title").clone()
-// throw out all LaTeX components of the title
-// (these may appear twice, due to MathJax processing)
-titleElement.find(".MathTeX").remove()
-titleElement.find("script").remove()
-var title = titleElement.text().replace(/ -/, " ").replace(/\n/, "");
-if(title == "") {
-    console.log("There's no item title on this page. Giving up.");
-    return;
+function main() {     
+    insertArXivLink();
+    processReferences();
 }
-var authors = $(".headline :first-child").nextUntil(".title", 'a[href^="/mathscinet/search/publications"]').map(function() { return $(this).text() })
-var MRNumber = $('div.headline strong').first().text();
 
-var authorTerm = authors.map(function() { return 'au:' + this }).get().join(' AND ')
-if(authorTerm == "") {
-    console.log("There don't appear to be any authors. Giving up.");
-    return;
+function insertArXivLink() {
+    var titleElement = $(".headline .title").clone()
+    // it's best to throw out all LaTeX components of the title
+    // (these may appear twice, due to MathJax processing)
+    titleElement.find(".MathTeX").remove()
+    titleElement.find("script").remove()
+    var title = titleElement.text().replace(/ -/, " ").replace(/\n/, "");
+    if(title == "") {
+        console.log("There's no item title on this page. Giving up.");
+        return;
+    }
+    var authors = $(".headline :first-child").nextUntil(".title", 'a[href^="/mathscinet/search/publications"]').map(function() { return $(this).text() })
+
+    var authorTerm = authors.map(function() { return 'au:' + this }).get().join(' AND ')
+    if(authorTerm == "") {
+        console.log("There don't appear to be any authors. Giving up.");
+        return;
+    }
+    var titleTerm = 'ti:' + title;
+    var search = 'http://export.arxiv.org/api/query?search_query=' + encodeURIComponent(authorTerm) + ' AND ' + encodeURIComponent(titleTerm);
+    console.log("Looking up " + search);
+    // alert(search);
+    loadAsync(search, function (data) {
+            console.log(data);
+            proposeArXivURL($(data).find("entry id").first().text());
+        });
 }
-var titleTerm = 'ti:' + title;
-var search = 'http://export.arxiv.org/api/query?search_query=' + encodeURIComponent(authorTerm) + ' AND ' + encodeURIComponent(titleTerm);
-console.log("Looking up " + search);
-// alert(search);
-loadAsync(search, function (data) {
-        console.log(data);
-        tentative($(data).find("entry id").first().text());
+
+function processReferences() {
+    $('li').html(function (i, oldContents) {
+        var result = oldContents.replace('http://arxiv.org/abs/', 'arXiv:').replace(/arXiv:([A-Za-z\.\-\/]*[0-9]{4}\.?[0-9]*)/, '<a href="http://arxiv.org/abs/$1">arXiv:$1</a>');
+        // TODO if there's both an arxiv identifier and a mathscinet identifier, record the pair.
+        return result;
     })
+}
 
-function tentative(url) {
+function reportCorrespondence(mathscinet, arXiv) {
+    var correspondences = {};
+    correspondences[mathscinet] = arXiv;
+    reportCorrespondences(correspondences)
+}
+
+function reportCorrespondences(correspondences) {
+    // ???
+}
+
+function lookupCorrespondences(mathscinetIdentifiers, callback) {
+    // ???
+    var result = {};
+    callback(result)
+    return result;
+}
+
+function proposeArXivURL(url) {
     if(url == "") {
         console.log("No arXiv URL found.");
         return;
@@ -84,13 +129,14 @@ function tentative(url) {
 		var arXivAuthors = doc.find('div.authors a').map(function() { return $(this).text() });
 		var lastNames = arXivAuthors.map(function() { return this.split(" ").pop() });
 		var arXivJournalRef = doc.find('td.jref').text();
-		var mref = (arXivJournalRef == '') ?
-			('http://www.ams.org/mrlookup?ti=' + encodeURIComponent(arXivTitle) + '&au=' + encodeURIComponent(lastNames.get().join(' and '))) :
-			('http://www.ams.org/mathscinet-mref?ref=' + encodeURIComponent(arXivTitle + '\n' + arXivAuthors.get().join(', ') + '\n' + arXivJournalRef));
+		var mref = // (arXivJournalRef == '') ?
+			('http://www.ams.org/mrlookup?ti=' + encodeURIComponent(arXivTitle) + '&au=' + encodeURIComponent(lastNames.get().join(' and '))) // :
+			// ('http://www.ams.org/mathscinet-mref?ref=' + encodeURIComponent(arXivTitle + '\n' + arXivAuthors.get().join(', ') + '\n' + arXivJournalRef));
 		console.log("Verifying via " + mref);
 //		alert(mref);
 		loadAsync(mref, function(mrefResult) {
             console.log(mrefResult);
+            var MRNumber = $('div.headline strong').first().text();
 			var MRLink = $(mrefResult).find('a[href^="http://www.ams.org/mathscinet-getitem"]').first().attr('href');
 			var mrefMRNumber = MRLink ? 'MR' + MRLink.match(/[\d]+$/) : '';
 			console.log("Found " + mrefMRNumber);
@@ -103,7 +149,7 @@ function tentative(url) {
 		})
 	})
 }
-}
+
 
 function loadJQuery() {
 /*! jQuery v1.6.4 http://jquery.com/ | http://jquery.org/license */
