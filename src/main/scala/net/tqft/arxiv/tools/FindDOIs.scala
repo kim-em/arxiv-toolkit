@@ -5,13 +5,13 @@ import net.tqft.mathscinet.MRef
 
 object FindDOIs {
   // returns a mapping, arxiv identifiers to DOIs
-  def forAuthor(name: String): Map[String, String] = {
-    (for (
-      author <- Author.lookup(name).toList;
-      article <- author.articles;
+  def forAuthor(name: String): Iterator[(String, String)] = {
+    for (
+      author <- Author.lookup(name).iterator;
+      article <- author.articles.iterator;
       doi <- article.currentVersion.DOI.orElse(MRef.lookupArXivArticle(article).flatMap(_.DOI))
     ) yield {
       article.identifier -> doi
-    }).toMap
+    }
   }
 }
