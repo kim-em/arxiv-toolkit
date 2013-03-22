@@ -3,9 +3,36 @@ import scala.io.Source
 import java.util.Date
 import net.tqft.toolkit.Logging
 import java.net.URL
+import org.apache.commons.io.IOUtils
+import net.tqft.toolkit.amazon.S3
 
 trait Slurp {
   def apply(url: String) = Source.fromURL(url).getLines
+  def attempt(url: String): Either[Iterator[String], Throwable] = {
+    try {
+      Left(apply(url))
+    } catch {
+      case e: Throwable => Right(e)
+    }
+  }
+}
+
+trait CachingSlurp extends Slurp {
+  def cache: scala.collection.mutable.Map[String, Array[Byte]]
+  override def apply(url: String) = {
+    Source.fromBytes(cache.getOrElseUpdate(url, {
+      Throttle(new URL(url).getHost.split("\\.").takeRight(2).mkString("."))
+      Logging.info("Loading " + url)
+      IOUtils.toByteArray(new URL(url).openStream())
+    })).getLines
+  }
+}
+
+trait S3CachingSlurp extends CachingSlurp {
+  def s3: S3
+  def bucket: String
+
+  override lazy val cache = s3.bytes(bucket)
 }
 
 trait ThrottledSlurp extends Slurp {
@@ -32,5 +59,8 @@ object Throttle extends Logging {
   }
 }
 
-object Slurp extends ThrottledSlurp
+object Slurp extends S3CachingSlurp {
+  override val s3 = S3
+  override val bucket = "LoM-page-cache"
+}
 
