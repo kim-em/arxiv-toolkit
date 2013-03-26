@@ -19,6 +19,7 @@
 // @match     http://www.ams.org/*
 // @match     http://export.arxiv.org/api/*
 // @match     http://arxiv.org/*
+// @match     http://sharp-sword-6687.herokuapp.com/*
 // @match     http://ams.rice.edu/*
 // @match     http://ams.impa.br/*
 // @match   http://ams.math.uni-bielefeld.de/*
@@ -34,6 +35,7 @@ loadJQuery();
 main()
 
 function loadAsync(url, callback) {
+  if(typeof callback === "undefined") callback = function() {}
   if(typeof GM_xmlhttpRequest === "undefined") {
     // console.log("GM_xmlhttpRequest unavailable")
     // hope for the best (i.e. that we're running as a Chrome extension)
@@ -45,9 +47,24 @@ function loadAsync(url, callback) {
       method: "GET",
       url: url,
       onload: function(response) {
-          //if (!response.responseXML) {
-          //  response.responseXML = new DOMParser().parseFromString(response.responseText, "text/html");
-          //}
+          callback(response.responseText);
+      }
+    });
+  }
+}
+function putAsync(url, callback) {
+  if(typeof callback === "undefined") callback = function() {}
+  if(typeof GM_xmlhttpRequest === "undefined") {
+    // console.log("GM_xmlhttpRequest unavailable")
+    // hope for the best (i.e. that we're running as a Chrome extension)
+    $.put(url, callback)  
+  } else { 
+    // console.log("GM_xmlhttpRequest available")
+    // load via GM
+    GM_xmlhttpRequest({
+      method: "PUT",
+      url: url,
+      onload: function(response) {
           callback(response.responseText);
       }
     });
@@ -70,6 +87,7 @@ function insertArXivLink() {
         console.log("There's no item title on this page. Giving up.");
         return;
     }
+    // FIXME in theses, e.g. http://www.ams.org/mathscinet-getitem?mr=2801651 the author may not be hyperlinked, so this misses it.
     var authors = $(".headline :first-child").nextUntil(".title", 'a[href^="/mathscinet/search/publications"]').map(function() { return $(this).text() })
 
     var authorTerm = authors.map(function() { return 'au:' + this }).get().join(' AND ')
@@ -88,28 +106,44 @@ function insertArXivLink() {
 }
 
 function processReferences() {
+    var correspondences = {};
     $('li').html(function (i, oldContents) {
         var result = oldContents.replace('http://arxiv.org/abs/', 'arXiv:').replace(/arXiv:([A-Za-z\.\-\/]*[0-9]{4}\.?[0-9]*)/, '<a href="http://arxiv.org/abs/$1">arXiv:$1</a>');
         // TODO if there's both an arxiv identifier and a mathscinet identifier, record the pair.
         return result;
-    })
+    });
+    $('li').map(function() {
+        var arXivURL = $(this).find('a[href^="http://arxiv.org/abs/"]').attr('href')
+        var arXivIdentifier = (typeof arXivURL === 'undefined') ? "" : arXivURL.replace("http://arxiv.org/abs/", "");
+        var mathscinetIdentifier = $(this).find('a[href^="/mathscinet/search/publdoc.html"]').text().replace(/ .*/, "");
+        if(arXivIdentifier != "" && mathscinetIdentifier != "") {
+            correspondences[mathscinetIdentifier] = arXivIdentifier;
+        }
+    });
+    reportCorrespondences(correspondences);
 }
 
-function reportCorrespondence(mathscinet, arXiv) {
+function reportCorrespondence(mathscinetIdentifier, arXivIdentifier) {
     var correspondences = {};
-    correspondences[mathscinet] = arXiv;
+    correspondences[mathscinetIdentifier] = arXivIdentifier;
     reportCorrespondences(correspondences)
 }
 
 function reportCorrespondences(correspondences) {
-    // ???
+    alert(JSON.stringify(correspondences));
+    var urnCorrespondences = {}
+    for(var mathscinet in correspondences) {
+        urnCorrespondences["urn:mathscinet:" + mathscinet] = "urn:arxiv:" + correspondences[mathscinet];
+    }
+    putAsync("http://sharp-sword-6687.herokuapp.com/uri-res/N2Ns?" + $.param(urnCorrespondences));
 }
 
 function lookupCorrespondences(mathscinetIdentifiers, callback) {
-    // ???
-    var result = {};
-    callback(result)
-    return result;
+    getAsync("http://sharp-sword-6687.herokuapp.com/uri-res/N2Ns?" + mathscinetIdentifiers.join('&'), function(data) {
+        var result = {};
+        alert(data)
+        callback(result);
+    });
 }
 
 function proposeArXivURL(url) {
@@ -146,6 +180,7 @@ function proposeArXivURL(url) {
 //			alert(mrefMRNumber);
 			if(MRNumber == mrefMRNumber) {
 				$('a.tentative').removeClass('tentative').text('arXiv').show().css('display', 'inline');
+                reportCorrespondence(MRNumber, url.replace("http://arxiv.org/abs/", ""));
 			} else {
 				$('a.tentative').remove();
 			}
