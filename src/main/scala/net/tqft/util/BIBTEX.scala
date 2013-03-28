@@ -1,6 +1,6 @@
 package net.tqft.util
 
-import net.tqft.toolkit.amazon.S3
+import net.tqft.toolkit.amazon.AnonymousS3
 import net.tqft.toolkit.Logging
 
 case class BIBTEX(documentType: String, identifier: String, data: List[(String, String)]) {
@@ -16,13 +16,13 @@ case class BIBTEX(documentType: String, identifier: String, data: List[(String, 
 }
 
 object BIBTEX extends Logging {
-  val cache = S3("LoM-bibtex")
-  private lazy val cacheKeys = {
+  lazy val cache = AnonymousS3("LoM-bibtex")
+  private lazy val cachedKeys = {
     info("Fetching key set for LoM-bibtex")
     cache.keySet
   }
   private def save(item: BIBTEX) = {
-    if (!cacheKeys.contains(item.identifier)) {
+    if (!cachedKeys.contains(item.identifier)) {
       info("Storing BIBTEX for " + item.identifier + " to S3")
       cache.putIfAbsent(item.identifier, item.toBIBTEXString)
     } else {
