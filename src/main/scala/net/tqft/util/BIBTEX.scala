@@ -17,9 +17,11 @@ case class BIBTEX(documentType: String, identifier: String, data: List[(String, 
 
 object BIBTEX extends Logging {
   lazy val cache = AnonymousS3("LoM-bibtex")
-  private lazy val cachedKeys = {
+  lazy val cachedKeys = {
     info("Fetching key set for LoM-bibtex")
-    cache.keySet
+    val result = cache.keySet
+    info("   ... finished")
+    result
   }
   private def save(item: BIBTEX) = {
     if (!cachedKeys.contains(item.identifier)) {
