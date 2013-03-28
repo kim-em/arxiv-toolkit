@@ -1,17 +1,36 @@
 package net.tqft.util
 
+import net.tqft.toolkit.amazon.S3
+import net.tqft.toolkit.Logging
+
 case class BIBTEX(documentType: String, identifier: String, data: List[(String, String)]) {
   val map = data.map(p => (p._1.toUpperCase, p._2)).toMap
   def get(key: String) = map.get(key.toUpperCase)
-  
+
   def toBIBTEXString = {
     "@" + documentType + " {" + identifier + ",\n" +
-    data.map(p => ("          " + p._1).takeRight(10) + " = {" + p._2 + "},\n").mkString + "}\n"
+      data.map(p => ("          " + p._1).takeRight(10) + " = {" + p._2 + "},\n").mkString + "}\n"
   }
+  
+  def save = BIBTEX.save(this)
 }
 
+object BIBTEX extends Logging {
+  val cache = S3("LoM-bibtex")
+  private lazy val cacheKeys = {
+    info("Fetching key set for LoM-bibtex")
+    cache.keySet
+  }
+  private def save(item: BIBTEX) = {
+    if (!cacheKeys.contains(item.identifier)) {
+      info("Storing BIBTEX for " + item.identifier + " to S3")
+      cache.putIfAbsent(item.identifier, item.toBIBTEXString)
+    } else {
+      false
+    }
+  }
+
 // this is just parses mathscinet BIBTEX, which is particularly easy.
-object BIBTEX {
   def parse(bibtexString: String): Option[BIBTEX] = {
     if (bibtexString.startsWith("@preamble")) {
       None

@@ -6,6 +6,7 @@ import net.tqft.util.BIBTEX
 
 trait Article {
   def identifier: Int
+  def identifierString = "MR" + ("0000000" + identifier.toString).takeRight(7)
 
   def URL = "http://www.ams.org/mathscinet-getitem?mr=" + identifier
   def bibtexURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=bibtex&pg1=MR&s1=" + identifier
@@ -17,7 +18,7 @@ trait Article {
   var bibtexData: Option[BIBTEX] = None
 
   def endnote = {
-    while (endnoteData.isEmpty) {
+    if (endnoteData.isEmpty) {
       val lines = Slurp(endnoteURL).toList
       val start = lines.indexWhere(_.trim == "<pre>")
       val finish = lines.indexWhere(_.trim == "</pre>")
@@ -27,33 +28,44 @@ trait Article {
   }
   def bibtex = {
     if (bibtexData.isEmpty) {
-      val lines = Slurp(bibtexURL).toList
-      val start = lines.indexWhere(_.trim == "<pre>")
-      val finish = lines.indexWhere(_.trim == "</pre>")
-      bibtexData = BIBTEX.parse(lines.slice(start + 1, finish).mkString("\n"))
+      val text = BIBTEX.cache.getOrElseUpdate(identifierString, {
+        val lines = Slurp(bibtexURL).toList
+        val start = lines.indexWhere(_.trim == "<pre>")
+        val finish = lines.indexWhere(_.trim == "</pre>")
+        lines.slice(start + 1, finish).mkString("\n")
+      })
+      bibtexData = BIBTEX.parse(text)
     }
     bibtexData.get
   }
 
+  def title: String = {
+    if (endnoteData.nonEmpty) {
+      endnote("%T").head
+    } else {
+      bibtex.get("TITLE").get
+    }
+  }
   // FIXME load from endnote or bibtex
-  def title: String = endnote("%T").head
   def authors: List[Author] = endnote("%A").map(Author(_))
   def journalReference: String = endnote("%J").head + " " + endnote("%V").head + " (" + endnote("%D").head + "), no. " + endnote("%N").head + ", " + endnote("%P").head
 
   def DOI: Option[String] = {
-    bibtexData match {
-      case Some(data) => data.get("DOI")
-      case None => {
-        val re = """<a .* href="/leavingmsn\?url=http://dx.doi.org/([^"]*)">Article</a>""".r
-
-        (slurp.flatMap { line =>
-          line.trim match {
-            case re(doi) => Some(doi)
-            case _ => None
-          }
-        }).headOption
-      }
-    }
+    bibtex.get("DOI")
+    
+//    bibtexData match {
+//      case Some(data) => data.get("DOI")
+//      case None => {
+//        val re = """<a .* href="/leavingmsn\?url=http://dx.doi.org/([^"]*)">Article</a>""".r
+//
+//        (slurp.flatMap { line =>
+//          line.trim match {
+//            case re(doi) => Some(doi)
+//            case _ => None
+//          }
+//        }).headOption
+//      }
+//    }
   }
 
 }
@@ -72,13 +84,29 @@ object Article {
 
   def fromBibtex(bibtexString: String): Option[Article] = {
     BIBTEX.parse(bibtexString).map({
-      case b @ BIBTEX(_, identifierString, data) =>
-        val identifier_ = identifierString.stripPrefix("MR").toInt
+      case b @ BIBTEX(_, identifierString @ MRIdentifier(id), data) =>
+        b.save
         val result = new Article {
-          override val identifier = identifier_
+          override val identifier = id
         }
         result.bibtexData = Some(b)
         result
     })
+  }
+}
+
+object MRIdentifier {
+  def unapply(s: String): Option[Int] = {
+    import net.tqft.toolkit.Extractors.Int
+    s.stripPrefix("MR") match {
+      case Int(id) => Some(id)
+      case _ => None
+    }
+  }
+}
+
+object Articles {
+  def withCachedBIBTEX: Iterator[Article] = {
+    BIBTEX.cache.keysIterator.collect({ case MRIdentifier(id) => Article(id) })
   }
 }
