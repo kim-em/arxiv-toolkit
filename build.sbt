@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "toolkit-base" % "0.1.16-SNAPSHOT",
 	"net.tqft" %% "toolkit-collections" % "0.1.16-SNAPSHOT",
 	"net.tqft" %% "toolkit-amazon" % "0.1.16-SNAPSHOT",
-	"rome" % "rome" % "1.0" withJavadoc(),
+	"rome" % "rome" % "1.0",
 	"org.apache.httpcomponents" % "httpclient" % "4.1.1",
 	"commons-io" % "commons-io" % "2.4",
 	"org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.31.0",
@@ -39,7 +39,7 @@ libraryDependencies ++= {
 // Test dependencies
 libraryDependencies ++= Seq(
 	"junit" % "junit" % "4.8" % "test",
-	"org.scalatest" % "scalatest_2.9.0" % "1.6.1" % "compile,test"
+	"org.scalatest" %% "scalatest" % "1.9.1" % "compile,test"
 )
 
 // Sometimes it's useful to see debugging out from the typer (e.g. to resolve slow compiles)
