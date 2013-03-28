@@ -33,7 +33,7 @@ trait Article {
   }
 
   trait Version {
-    lazy val absHTMLLines = Slurp("http://arxiv.org/abs/" + identifier) 
+    lazy val absHTMLLines = Slurp("http://arxiv.org/abs/" + identifier + "v" + number) 
     
     def title: String = ???
     def authors: List[Author] = ???
