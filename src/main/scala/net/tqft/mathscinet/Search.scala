@@ -55,7 +55,7 @@ object Search {
   
   def inJournalsJumbled(strings: Seq[String]) = {
     // TODO use year ranges, instead of individual years, for the earlier stuff
-    val yearMaps = for(k <- allYears) yield Map("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
+    val yearMaps = for(k <- (currentYear to 1980 by -1)) yield Map("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
     Random.shuffle(for(y <- yearMaps; s <- strings) yield query(y ++ Map("pg4" -> "JOUR", "s4" -> s))).iterator.flatten
   }
   def inTopJournalsJumbled(number: Int = 20) = {
