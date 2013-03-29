@@ -10,9 +10,19 @@ import net.tqft.eigenfactor.Eigenfactor
 object Search {
   def query(q: String): Iterator[Article] = {
     def queryString(k: Int) = "http://www.ams.org/mathscinet/search/publications.html?" + q + "&r=" + (1 + 100 * k).toString + "&extend=1&fmt=bibtex"
-    def queries = Iterator.from(0).map(queryString).map(Slurp.attempt).takeWhile(_.isLeft).map(_.left.get).flatten.takeWhile(_ != "<title>500 Internal Server Error</title>").takeWhile(!_.startsWith("No publications results")).takeWhile(_ != """<span class="disabled">Next</span>""")
+    def queries = Iterator.from(0).map(queryString).map(Slurp.attempt).takeWhile(_.isLeft).map(_.left.get).flatten
 
-    def bibtexChunks = queries.splitBefore(line => line.contains("<pre>")).filter(lines => lines.head.contains("<pre>")).map(lines => lines.iterator.takeToFirst(line => line.contains("</pre>")).mkString("\n").trim.stripPrefix("<pre>").stripSuffix("</pre>").trim)
+    def truncatedQueries = {
+      val smallMatches = """<strong>Matches:</strong> [0-9]{1,2}$""".r
+
+      queries
+        .takeWhile(_ != "<title>500 Internal Server Error</title>")
+        .takeWhile(!_.startsWith("No publications results"))
+        .takeWhile(_ != """<span class="disabled">Next</span>""")
+        .takeWhile(smallMatches.findAllIn(_).isEmpty)
+    }
+
+    def bibtexChunks = truncatedQueries.splitBefore(line => line.contains("<pre>")).filter(lines => lines.head.contains("<pre>")).map(lines => lines.iterator.takeToFirst(line => line.contains("</pre>")).mkString("\n").trim.stripPrefix("<pre>").stripSuffix("</pre>").trim)
 
     bibtexChunks.grouped(99).flatMap(group => group.par.flatMap(Article.fromBibtex))
   }
