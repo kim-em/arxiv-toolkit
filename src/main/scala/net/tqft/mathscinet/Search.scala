@@ -20,7 +20,7 @@ object Search {
         .takeWhile(!_.startsWith("No publications results"))
         .takeWhile(_ != """<span class="disabled">Next</span>""")
         .takeWhile(smallMatches.findAllIn(_).isEmpty)
-        .takeWhile(line => { println(line); true })
+//        .takeWhile(line => { println(line); true })
     }
 
     def bibtexChunks = truncatedQueries.splitBefore(line => line.contains("<pre>")).filter(lines => lines.head.contains("<pre>")).map(lines => lines.iterator.takeToFirst(line => line.contains("</pre>")).mkString("\n").trim.stripPrefix("<pre>").stripSuffix("</pre>").trim)
