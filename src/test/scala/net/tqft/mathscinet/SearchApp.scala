@@ -11,16 +11,20 @@ object SearchApp extends App {
     Eigenfactor.topJournals.take(20).iterator.map(Search.inJournal).flexibleTranspose.flatMap({ x => x })
   }
 
-  for (article <- Search.by("Izumi")) {
-    println(article.bibtex.toBIBTEXString)
-  }
-  
-//    for (article <- Search.everything) {
-//      println(article.identifierString + " ---> " + article.DOI)
-//    }
-
-//  for (article <- inTopJournals) {
+//  for (article <- Search.by("Izumi")) {
 //    println(article.bibtex.toBIBTEXString)
 //  }
+
+  //    for (article <- Search.everything) {
+  //      println(article.identifierString + " ---> " + article.DOI)
+  //    }
+
+  //  for (article <- inTopJournals) {
+  //    println(article.bibtex.toBIBTEXString)
+  //  }
+
+  for (article <- Search.inTopJournalsJumbled(20)) {
+    println(article.bibtex.toBIBTEXString)
+  }
 }
 
