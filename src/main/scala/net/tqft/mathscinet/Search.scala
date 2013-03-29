@@ -4,6 +4,8 @@ import net.tqft.util.Slurp
 import net.tqft.toolkit.collections.Split._
 import net.tqft.toolkit.collections.TakeToFirst._
 import java.util.Calendar
+import scala.util.Random
+import net.tqft.eigenfactor.Eigenfactor
 
 object Search {
   def query(q: String): Iterator[Article] = {
@@ -44,10 +46,22 @@ object Search {
     query((for(p <- compositeParameters) yield p + "=" + compositeQuery(p)).mkString("&"))
   } 
   
-  def by(author: String) = Search.query("pg4" -> "AUCN", "s4" -> author)
+  def by(author: String) = query("pg4" -> "AUCN", "s4" -> author)
   def inJournal(text: String) = query("pg4" -> "JOUR", "s4" -> text)
   def during(k: Int) = query("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
 
-  def everything = ((Calendar.getInstance().get(Calendar.YEAR)) to 1810 by -1).iterator.flatMap(during)
+  private def currentYear = Calendar.getInstance().get(Calendar.YEAR)
+  private def allYears = (currentYear to 1810 by -1)
+  
+  def inJournalsJumbled(strings: Seq[String]) = {
+    // TODO use year ranges, instead of individual years, for the earlier stuff
+    val yearMaps = for(k <- allYears) yield Map("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
+    Random.shuffle(for(y <- yearMaps; s <- strings) yield query(y ++ Map("pg4" -> "JOUR", "s4" -> s))).iterator.flatten
+  }
+  def inTopJournalsJumbled(number: Int = 20) = {
+    inJournalsJumbled(Eigenfactor.topJournals.take(number))
+  }
+ 
+  def everything = allYears.iterator.flatMap(during)
 
 }
