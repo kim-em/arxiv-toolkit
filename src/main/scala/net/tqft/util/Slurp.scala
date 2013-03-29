@@ -15,6 +15,7 @@ import org.apache.http.params.HttpProtocolParams
 import org.apache.http.impl.client.DecompressingHttpClient
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver
+import scala.util.Random
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -63,6 +64,20 @@ trait SeleniumSlurp extends Slurp {
     new ByteArrayInputStream(driver.getPageSource.getBytes())
   }
 
+}
+
+trait MathSciNetMirrorSlurp extends Slurp {
+  val mirrorList = Random.shuffle(List("www.ams.org", "ams.rice.edu", "ams.impa.br", "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
+  def mirror = mirrorList(((new Date().getTime() / (10 * 60 * 1000)) % mirrorList.size).toInt)
+
+  override def getStream(url: String) = {
+    val newURL = if (url.startsWith("http://www.ams.org/mathscinet")) {
+      "http://" + mirror + "/mathscinet" + url.stripPrefix("http://www.ams.org/mathscinet")
+    } else {
+      url
+    }
+    super.getStream(url)
+  }
 }
 
 trait CachingSlurp extends Slurp {
@@ -126,7 +141,7 @@ object Throttle extends Logging {
   }
 }
 
-object Slurp extends SeleniumSlurp with S3CachingSlurp {
+object Slurp extends SeleniumSlurp with MathSciNetMirrorSlurp with S3CachingSlurp {
   override val s3 = AnonymousS3
   override val bucketSuffix = ".cache"
 }
