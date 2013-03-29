@@ -67,8 +67,9 @@ trait SeleniumSlurp extends Slurp {
 }
 
 trait MathSciNetMirrorSlurp extends Slurp {
+  val offset = Random.nextInt(10 * 60 * 1000)
   val mirrorList = Random.shuffle(List("www.ams.org", "ams.rice.edu", "ams.impa.br", "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
-  def mirror = mirrorList(((new Date().getTime() / (10 * 60 * 1000)) % mirrorList.size).toInt)
+  def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {
     val newURL = if (url.startsWith("http://www.ams.org/mathscinet")) {
@@ -76,7 +77,7 @@ trait MathSciNetMirrorSlurp extends Slurp {
     } else {
       url
     }
-    super.getStream(url)
+    super.getStream(newURL)
   }
 }
 
