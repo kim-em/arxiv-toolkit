@@ -1,2 +1,2 @@
-./sbt "set logLevel := Level.Error" "test:run-main net.tqft.mathscinet.BIBTEXApp" 2> dump.err | tail +5
+./sbt "set logLevel := Level.Error" "test:run-main net.tqft.mathscinet.BIBTEXApp" 2> dump.err | tail -n +5
 
