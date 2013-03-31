@@ -25,6 +25,7 @@ object Process extends Logging {
       }
       case _ => ???
     }
+    println(driver.getPageSource)
     if(driver.getPageSource.startsWith("%PDF")) {
       // oh, goody!
       info("found PDF for DOI:" + doi)
