@@ -21,7 +21,7 @@ object Process extends Logging {
     val url = driver.getCurrentUrl
     new URL(url).getHost match {
       case "link.springer.com" => {
-        driver.findElement(By.id("action-bar-download-pdf-link")).click()
+        driver.findElement(By.cssSelector("#abstract-actions #action-bar-download-pdf-link")).click()
       }
       case _ => ???
     }
