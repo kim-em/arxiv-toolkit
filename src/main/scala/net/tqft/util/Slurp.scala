@@ -16,6 +16,8 @@ import org.apache.http.impl.client.DecompressingHttpClient
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver
 import scala.util.Random
+import java.io.IOException
+import org.apache.http.HttpException
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -26,7 +28,7 @@ trait Slurp {
     try {
       Left(apply(url))
     } catch {
-      case e: Throwable => {
+      case e @ (_: IOException | _: HttpException) => {
         Right(e)
       }
     }
@@ -58,13 +60,12 @@ trait SeleniumSlurp extends Slurp {
   }
 
   override def getStream(url: String) = {
-    if(SeleniumSlurp.enabled_?) {
-    
-    // TODO see if the url is available as a link, and if so follow it?
-    driver.get(url)
-    // TODO some validation we really arrived?
-    new ByteArrayInputStream(driver.getPageSource.getBytes())
-    } else  {
+    if (SeleniumSlurp.enabled_?) {
+      // TODO see if the url is available as a link, and if so follow it?
+      driver.get(url)
+      // TODO some validation we really arrived?
+      new ByteArrayInputStream(driver.getPageSource.getBytes())
+    } else {
       throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
     }
   }
