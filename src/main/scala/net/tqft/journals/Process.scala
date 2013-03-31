@@ -7,11 +7,14 @@ import java.net.URL
 import org.apache.commons.io.FileUtils
 import java.io.File
 import org.openqa.selenium.By
+import org.openqa.selenium.firefox.FirefoxProfile
 
 object Process extends Logging {
   lazy val driver: WebDriver = {
     Logging.info("Starting Firefox/webdriver")
-    val result = new FirefoxDriver()
+    val profile = new FirefoxProfile();
+    profile.setPreference("pdfjs.disabled", false);
+    val result = new FirefoxDriver(profile)
     Logging.info("   ... finished starting Firefox")
     result
   }
@@ -26,7 +29,7 @@ object Process extends Logging {
       case _ => ???
     }
     println(driver.getPageSource)
-    if(driver.getPageSource.startsWith("%PDF")) {
+    if (driver.getPageSource.startsWith("%PDF")) {
       // oh, goody!
       info("found PDF for DOI:" + doi)
       saveCurrentPage(doi)
