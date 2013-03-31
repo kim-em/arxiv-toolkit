@@ -7,6 +7,7 @@ import net.tqft.util.BIBTEX
 trait Article {
   def identifier: Int
   def identifierString = "MR" + ("0000000" + identifier.toString).takeRight(7)
+  def shortIdentifierString = "MR" + identifier.toString
 
   def URL = "http://www.ams.org/mathscinet-getitem?mr=" + identifier
   def bibtexURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=bibtex&pg1=MR&s1=" + identifier
@@ -28,12 +29,12 @@ trait Article {
   }
   def bibtex = {
     if (bibtexData.isEmpty) {
-      val text = BIBTEX.cache.getOrElseUpdate(identifierString, {
+      val text = BIBTEX.cache.get(shortIdentifierString).getOrElse(BIBTEX.cache.getOrElseUpdate(identifierString, {
         val lines = Slurp(bibtexURL).toList
         val start = lines.indexWhere(_.trim == "<pre>")
         val finish = lines.indexWhere(_.trim == "</pre>")
         lines.slice(start + 1, finish).mkString("\n")
-      })
+      }))
       bibtexData = BIBTEX.parse(text)
     }
     bibtexData.get
