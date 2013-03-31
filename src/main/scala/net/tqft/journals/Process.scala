@@ -13,7 +13,7 @@ object Process extends Logging {
   lazy val driver: WebDriver = {
     Logging.info("Starting Firefox/webdriver")
     val profile = new FirefoxProfile();
-    profile.setPreference("pdfjs.disabled", false);
+    profile.setPreference("pdfjs.disabled", true);
     val result = new FirefoxDriver(profile)
     Logging.info("   ... finished starting Firefox")
     result
