@@ -58,12 +58,23 @@ trait SeleniumSlurp extends Slurp {
   }
 
   override def getStream(url: String) = {
+    if(SeleniumSlurp.enabled_?) {
+    
     // TODO see if the url is available as a link, and if so follow it?
     driver.get(url)
     // TODO some validation we really arrived?
     new ByteArrayInputStream(driver.getPageSource.getBytes())
+    } else  {
+      throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
+    }
   }
 
+}
+
+object SeleniumSlurp extends Slurp {
+  private var enabled = true
+  def disable = enabled = false
+  def enabled_? = enabled
 }
 
 trait MathSciNetMirrorSlurp extends Slurp {
