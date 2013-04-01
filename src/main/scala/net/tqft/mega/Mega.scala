@@ -28,11 +28,10 @@ object Mega extends Logging {
     info("waiting for #pageholder to appear")
     val wait = new WebDriverWait(driver, 600)
     wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("#pageholder div.nstart-mega")))
-    info("sleeping")
-    Thread.sleep(2000)
     executor.executeScript("if ($('#seleniumUpload').length == 0) { seleniumUpload = window.$('<input/>').attr({id: 'seleniumUpload', type:'file'}).appendTo('body'); }")
     val uploadElement = driver.findElement(By.id("seleniumUpload"))
     uploadElement.sendKeys("~/foo")
-    executor.executeScript("fileList = [ seleniumUpload.get(0).files[0] ]; e = $.Event('drop'); e.originalEvent = { dataTransfer : { files : fileList } }; $('#pageholder').trigger(e);")
+    executor.executeScript("fileList = [ seleniumUpload.get(0).files[0] ]; e = $.Event('drop'); e.target = $('#pageholder'); e.dataTransfer = {files:fileList}; start_FileSelectHandler(e); ")
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.terms-main a.quota-button"))).click()
   }
 }
