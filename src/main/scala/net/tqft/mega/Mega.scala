@@ -33,5 +33,9 @@ object Mega extends Logging {
     uploadElement.sendKeys("~/foo")
     executor.executeScript("fileList = [ seleniumUpload.get(0).files[0] ]; e = $.Event('drop'); e.target = $('#pageholder'); e.dataTransfer = {files:fileList}; start_FileSelectHandler(e); ")
     wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.terms-main a.quota-button"))).click()
+    
+    // TODO dismiss the firefox extension dialog whenever it appears?
+    // TODO wait until the file actually appears in the "Cloud Drive" section
+    // TODO add a contact, transfer the file there?
   }
 }
