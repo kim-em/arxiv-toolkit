@@ -27,7 +27,7 @@ object Mega extends Logging {
     driver.get("https://mega.co.nz/")
     info("waiting for #pageholder to appear")
     val wait = new WebDriverWait(driver, 600)
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.id("pageholder")))
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("#pageholder div.nstart-mega")))
     info("sleeping")
     Thread.sleep(2000)
     executor.executeScript("if ($('#seleniumUpload').length == 0) { seleniumUpload = window.$('<input/>').attr({id: 'seleniumUpload', type:'file'}).appendTo('body'); }")
