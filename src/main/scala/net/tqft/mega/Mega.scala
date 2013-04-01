@@ -6,6 +6,8 @@ import org.openqa.selenium.firefox.FirefoxProfile
 import org.openqa.selenium.firefox.FirefoxDriver
 import org.openqa.selenium.JavascriptExecutor
 import org.openqa.selenium.By
+import org.openqa.selenium.support.ui.WebDriverWait
+import org.openqa.selenium.support.ui.ExpectedConditions
 
 object Mega extends Logging {
 
@@ -22,8 +24,8 @@ object Mega extends Logging {
 
   def test {
     driver.get("https://mega.co.nz/")
-
-//  ExpectedConditions.presenceOfElementLocated(By.id("myDynamicElement"))
+    val wait = new WebDriverWait(driver, 600)
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.id("pageholder")))
     executor.executeScript("if ($('#seleniumUpload').length == 0) { seleniumUpload = window.$('<input/>').attr({id: 'seleniumUpload', type:'file'}).appendTo('body'); }")
     val uploadElement = driver.findElement(By.id("seleniumUpload"))
     uploadElement.sendKeys("~/foo")
