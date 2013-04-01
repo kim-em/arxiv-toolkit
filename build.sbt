@@ -22,6 +22,7 @@ libraryDependencies ++= Seq(
 	"rome" % "rome" % "1.0",
 	"org.apache.httpcomponents" % "httpclient" % "4.1.1",
 	"commons-io" % "commons-io" % "2.4",
+	"com.google.code.findbugs" % "jsr305" % "2.0.1",
 	"org.seleniumhq.selenium" % "selenium-support" % "2.31.0",
 	"org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.31.0",
 	"org.seleniumhq.selenium" % "selenium-chrome-driver" % "2.31.0"
