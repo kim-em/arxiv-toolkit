@@ -23,9 +23,13 @@ object Mega extends Logging {
   def executor = driver.asInstanceOf[JavascriptExecutor]
 
   def test {
+    info("loading mega.co.nz")
     driver.get("https://mega.co.nz/")
+    info("waiting for #pageholder to appear")
     val wait = new WebDriverWait(driver, 600)
     wait.until(ExpectedConditions.presenceOfElementLocated(By.id("pageholder")))
+    info("sleeping")
+    Thread.sleep(2000)
     executor.executeScript("if ($('#seleniumUpload').length == 0) { seleniumUpload = window.$('<input/>').attr({id: 'seleniumUpload', type:'file'}).appendTo('body'); }")
     val uploadElement = driver.findElement(By.id("seleniumUpload"))
     uploadElement.sendKeys("~/foo")
