@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "toolkit-collections" % "0.1.16-SNAPSHOT",
 	"net.tqft" %% "toolkit-amazon" % "0.1.16-SNAPSHOT",
 	"rome" % "rome" % "1.0",
-	"org.apache.httpcomponents" % "httpclient" % "4.1.1",
+	"org.apache.httpcomponents" % "httpclient" % "4.1.2",
 	"commons-io" % "commons-io" % "2.4",
 	"com.google.code.findbugs" % "jsr305" % "2.0.1",
 	"org.seleniumhq.selenium" % "selenium-support" % "2.31.0",
@@ -48,3 +48,5 @@ libraryDependencies ++= Seq(
 // scalacOptions += "-Ytyper-debug"
 
 publishTo := Some(Resolver.sftp("tqft.net", "tqft.net", "tqft.net/releases") as ("scottmorrison", new java.io.File("/Users/scott/.ssh/id_rsa")))
+
+net.virtualvoid.sbt.graph.Plugin.graphSettings
