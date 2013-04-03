@@ -20,7 +20,6 @@ object Search {
         .takeWhile(!_.startsWith("No publications results"))
         .takeWhile(_ != """<span class="disabled">Next</span>""")
         .takeWhile(smallMatches.findAllIn(_).isEmpty)
-//        .takeWhile(line => { println(line); true })
     }
 
     def bibtexChunks = truncatedQueries.splitBefore(line => line.contains("<pre>")).filter(lines => lines.head.contains("<pre>")).map(lines => lines.iterator.takeToFirst(line => line.contains("</pre>")).mkString("\n").trim.stripPrefix("<pre>").stripSuffix("</pre>").trim)
@@ -67,7 +66,7 @@ object Search {
 
   def inJournalsJumbled(strings: Seq[String]) = {
     val yearMaps1 = for (k <- (currentYear to 1980 by -1)) yield Map("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
-    val yearMaps2 = for (k <- (1940 to 1970 by -1)) yield Map("yearRangeFirst" -> k.toString, "yearRangeSecond" -> (k + 9).toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
+    val yearMaps2 = for (k <- (1970 to 1940 by -10)) yield Map("yearRangeFirst" -> k.toString, "yearRangeSecond" -> (k + 9).toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
     val yearMaps3 = Seq(Map("yearRangeFirst" -> "1810", "yearRangeSecond" -> "1939", "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq"))
     Random.shuffle(for (y <- yearMaps1 ++ yearMaps2 ++ yearMaps3; s <- strings) yield query(y ++ Map("pg4" -> "JOUR", "s4" -> s))).iterator.flatten
   }
