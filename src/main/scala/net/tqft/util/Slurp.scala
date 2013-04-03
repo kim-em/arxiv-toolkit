@@ -18,6 +18,7 @@ import org.openqa.selenium.firefox.FirefoxDriver
 import scala.util.Random
 import java.io.IOException
 import org.apache.http.HttpException
+import org.openqa.selenium.By
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -52,17 +53,23 @@ trait HttpClientSlurp extends Slurp {
 }
 
 trait SeleniumSlurp extends Slurp {
+  private def driver = SeleniumSlurp.driver
 
   override def getStream(url: String) = {
+    import scala.collection.JavaConverters._
+
     if (SeleniumSlurp.enabled_?) {
-      // TODO see if the url is available as a link, and if so follow it?
-      SeleniumSlurp.driver.get(url)
+      driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
+        case Some(element) => element.click()
+        case None => driver.get(url)
+      }
+
       // TODO more validation we really arrived?
-      SeleniumSlurp.driver.getTitle match {
+      driver.getTitle match {
         case e @ ("502 Bad Gateway" | "500 Internal Server Error") => throw new HttpException(e)
         case _ =>
       }
-      new ByteArrayInputStream(SeleniumSlurp.driver.getPageSource.getBytes())
+      new ByteArrayInputStream(driver.getPageSource.getBytes())
     } else {
       throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
     }
@@ -86,7 +93,7 @@ object SeleniumSlurp extends Slurp {
     driverOption.map(_.quit)
     driverOption = None
   }
-  
+
   private var enabled = true
   def disable = enabled = false
   def enabled_? = enabled
