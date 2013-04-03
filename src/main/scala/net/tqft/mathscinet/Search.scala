@@ -6,8 +6,10 @@ import net.tqft.toolkit.collections.TakeToFirst._
 import java.util.Calendar
 import scala.util.Random
 import net.tqft.eigenfactor.Eigenfactor
+import java.util.Date
+import net.tqft.toolkit.Logging
 
-object Search {
+object Search extends Logging {
   def query(q: String): Iterator[Article] = {
     def queryString(k: Int) = "http://www.ams.org/mathscinet/search/publications.html?" + q + "&r=" + (1 + 100 * k).toString + "&extend=1&fmt=bibtex"
     def queries = Iterator.from(0).map(queryString).map(Slurp.attempt).takeWhile(_.isLeft).map(_.left.get).flatten
@@ -68,9 +70,22 @@ object Search {
     val yearMaps1 = for (k <- (currentYear to 1980 by -1)) yield Map("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
     val yearMaps2 = for (k <- (1970 to 1940 by -10)) yield Map("yearRangeFirst" -> k.toString, "yearRangeSecond" -> (k + 9).toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
     val yearMaps3 = Seq(Map("yearRangeFirst" -> "1810", "yearRangeSecond" -> "1939", "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq"))
-    Random.shuffle(for (y <- yearMaps1 ++ yearMaps2 ++ yearMaps3; s <- strings) yield query(y ++ Map("pg4" -> "JOUR", "s4" -> s))).iterator.flatten
+    val searches = Random.shuffle(for (y <- yearMaps1 ++ yearMaps2 ++ yearMaps3; s <- strings) yield query(y ++ Map("pg4" -> "JOUR", "s4" -> s)))
+    
+    val totalSearches = searches.size
+    val beginTime = new Date().getTime
+    var completedSearches = 0
+    def recordProgress(i: Iterator[Article]) = {
+      completedSearches += 1
+      info("Beginning search " + completedSearches + " of " + totalSearches + (if(completedSearches > 1) (", estimated time remaining = " + (totalSearches - completedSearches - 1 + 0.0)/(completedSearches - 1) * (new Date().getTime - beginTime) / 1000) else ""))
+      i
+    }
+    
+    searches.iterator.map(recordProgress).flatten
   }
   def inTopJournalsJumbled(number: Int = 20) = {
+    info("Beginning search over the top " + number + " journals according to 'article influence' at Eigenfactor.")
+    
     inJournalsJumbled(Eigenfactor.topJournals.take(number))
   }
 
