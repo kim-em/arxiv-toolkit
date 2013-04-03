@@ -2,6 +2,7 @@ package net.tqft.mathscinet
 
 import net.tqft.util.Throttle
 import net.tqft.eigenfactor.Eigenfactor
+import net.tqft.util.SeleniumSlurp
 
 object SearchApp extends App {
   // everything in Annals
@@ -26,5 +27,7 @@ object SearchApp extends App {
   for (article <- Search.inTopJournalsJumbled(20)) {
     println(article.bibtex.toBIBTEXString)
   }
+  
+  SeleniumSlurp.quit
 }
 
