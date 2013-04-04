@@ -18,6 +18,7 @@ import org.openqa.selenium.firefox.FirefoxDriver
 import scala.util.Random
 import java.io.IOException
 import org.apache.http.HttpException
+import org.openqa.selenium.By
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -52,18 +53,22 @@ trait HttpClientSlurp extends Slurp {
 }
 
 trait SeleniumSlurp extends Slurp {
-  lazy val driver: WebDriver = {
-    Logging.info("Starting Firefox/webdriver")
-    val result = new FirefoxDriver()
-    Logging.info("   ... finished starting Firefox")
-    result
-  }
+  private def driver = SeleniumSlurp.driver
 
   override def getStream(url: String) = {
+    import scala.collection.JavaConverters._
+
     if (SeleniumSlurp.enabled_?) {
-      // TODO see if the url is available as a link, and if so follow it?
-      driver.get(url)
-      // TODO some validation we really arrived?
+      driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
+        case Some(element) => element.click()
+        case None => driver.get(url)
+      }
+
+      // TODO more validation we really arrived?
+      driver.getTitle match {
+        case e @ ("502 Bad Gateway" | "500 Internal Server Error") => throw new HttpException(e)
+        case _ =>
+      }
       new ByteArrayInputStream(driver.getPageSource.getBytes())
     } else {
       throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
@@ -73,6 +78,22 @@ trait SeleniumSlurp extends Slurp {
 }
 
 object SeleniumSlurp extends Slurp {
+  private var driverOption: Option[WebDriver] = None
+
+  def driver = {
+    if (driverOption.isEmpty) {
+      Logging.info("Starting Firefox/webdriver")
+      driverOption = Some(new FirefoxDriver())
+      Logging.info("   ... finished starting Firefox")
+    }
+    driverOption.get
+  }
+
+  def quit = {
+    driverOption.map(_.quit)
+    driverOption = None
+  }
+
   private var enabled = true
   def disable = enabled = false
   def enabled_? = enabled
@@ -137,17 +158,34 @@ trait ThrottledSlurp extends Slurp {
 
 object Throttle extends Logging {
   val defaultInterval = 1000
-  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 10000, "arxiv.org" -> 5000, "google.com" -> 500)
+  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 120000, "arxiv.org" -> 5000, "google.com" -> 500)
   val lastThrottle = scala.collection.mutable.Map[String, Long]().withDefaultValue(0)
+
+  // poisson distributed gaps
+  private def exponentialDistribution(mean: Int) = {
+    (-mean * (Math.log(1.0 - scala.util.Random.nextDouble())))
+  }
+  private def normalDistribution = {
+    import scala.math._
+    import scala.util.Random.nextDouble
+    sqrt(-2 * log(nextDouble)) * cos(2 * Pi * nextDouble)
+  }
+  private def logNormalDistribution(mean: Double, shape: Double = 1) = {
+    import scala.math._
+    val sigma = sqrt(shape)
+    val mu = log(mean) - shape / 2
+    exp(mu + sigma * normalDistribution)
+  }
 
   def apply(host: String) {
     val domain = new URL(host).getHost.split("\\.").takeRight(2).mkString(".")
 
     val interval = hostIntervals.get(domain).getOrElse(defaultInterval)
     def now = new Date().getTime
-    while (lastThrottle(domain) + interval > now) {
-      info("Throttling access to " + host)
-      Thread.sleep(interval)
+    if (lastThrottle(domain) + interval > now) {
+      val delay = logNormalDistribution(interval).toLong
+      info("Throttling access to " + host + " for " + delay / 1000.0 + " seconds")
+      Thread.sleep(delay)
     }
     info("Allowing access to " + host)
     lastThrottle += ((domain, now))
