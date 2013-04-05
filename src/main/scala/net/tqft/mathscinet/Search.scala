@@ -66,11 +66,14 @@ object Search extends Logging {
   private def currentYear = Calendar.getInstance().get(Calendar.YEAR)
   private def allYears = (currentYear to 1810 by -1)
 
+  def inJournalYear(text: String, year: Int) = query("pg4" -> "JOUR", "s4" -> text, "arg3" -> year.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
+  def inJournalBetween(text: String, start: Int, end: Int) = query("pg4" -> "JOUR", "s4" -> text, "yearRangeFirst" -> start.toString, "yearRangeSecond" -> end.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
+  
   def inJournalsJumbled(strings: Seq[String]) = {
-    val yearMaps1 = for (k <- (currentYear to 1980 by -1)) yield Map("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
-    val yearMaps2 = for (k <- (1970 to 1940 by -10)) yield Map("yearRangeFirst" -> k.toString, "yearRangeSecond" -> (k + 9).toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
-    val yearMaps3 = Seq(Map("yearRangeFirst" -> "1810", "yearRangeSecond" -> "1939", "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq"))
-    val searches = Random.shuffle(for (y <- yearMaps1 ++ yearMaps2 ++ yearMaps3; s <- strings) yield query(y ++ Map("pg4" -> "JOUR", "s4" -> s)))
+    val years = currentYear to 1980 by -1
+    val ranges = (1810,1939) +: (1970 to 1940 by -10).map(y => (y, y+9)) 
+        
+    val searches = Random.shuffle((for(year <- years; s <- strings) yield inJournalYear(s, year)) ++ (for((start, end) <- ranges; s <- strings) yield inJournalBetween(s, start, end)))
     
     val totalSearches = searches.size
     val beginTime = new Date().getTime

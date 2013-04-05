@@ -19,7 +19,6 @@
 // @match     http://www.ams.org/*
 // @match     http://export.arxiv.org/api/*
 // @match     http://arxiv.org/*
-// @match     http://sharp-sword-6687.herokuapp.com/*
 // @match     http://ams.rice.edu/*
 // @match     http://ams.impa.br/*
 // @match   http://ams.math.uni-bielefeld.de/*
@@ -130,21 +129,21 @@ function reportCorrespondence(mathscinetIdentifier, arXivIdentifier) {
 }
 
 function reportCorrespondences(correspondences) {
-    alert(JSON.stringify(correspondences));
-    var urnCorrespondences = {}
-    for(var mathscinet in correspondences) {
-        urnCorrespondences["urn:mathscinet:" + mathscinet] = "urn:arxiv:" + correspondences[mathscinet];
-    }
-    putAsync("http://sharp-sword-6687.herokuapp.com/uri-res/N2Ns?" + $.param(urnCorrespondences));
+//    alert(JSON.stringify(correspondences));
+//    var urnCorrespondences = {}
+//    for(var mathscinet in correspondences) {
+//        urnCorrespondences["urn:mathscinet:" + mathscinet] = "urn:arxiv:" + correspondences[mathscinet];
+//    }
+//    putAsync("http://sharp-sword-6687.herokuapp.com/uri-res/N2Ns?" + $.param(urnCorrespondences));
 }
 
-function lookupCorrespondences(mathscinetIdentifiers, callback) {
-    getAsync("http://sharp-sword-6687.herokuapp.com/uri-res/N2Ns?" + mathscinetIdentifiers.join('&'), function(data) {
-        var result = {};
-        alert(data)
-        callback(result);
-    });
-}
+// function lookupCorrespondences(mathscinetIdentifiers, callback) {
+//    getAsync("http://sharp-sword-6687.herokuapp.com/uri-res/N2Ns?" + mathscinetIdentifiers.join('&'), function(data) {
+//        var result = {};
+//        alert(data)
+//        callback(result);
+//    });
+// }
 
 function proposeArXivURL(url) {
     if(url == "") {

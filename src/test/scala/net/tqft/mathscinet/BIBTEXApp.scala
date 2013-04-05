@@ -6,9 +6,9 @@ import net.tqft.util.SeleniumSlurp
 object BIBTEXApp extends App {
   SeleniumSlurp.disable
 
-  val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(20))
+  val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
-  for (group <- Articles.withCachedBIBTEX.grouped(1000); groupPar = { val p = group.par; p.tasksupport = pool; p }; article <- groupPar) {
+  for (group <- Articles.withCachedBIBTEX.grouped(10000); groupPar = { val p = group.par; p.tasksupport = pool; p }; article <- groupPar) {
     println(article.bibtex.toBIBTEXString)
   }
 }

@@ -24,7 +24,14 @@ object SearchApp extends App {
   //    println(article.bibtex.toBIBTEXString)
   //  }
 
-  for (article <- Search.inTopJournalsJumbled(20)) {
+//  for(article <- Search.inJournalYear("0003-486X", 1999)) {
+//     println(article.bibtex.toBIBTEXString)   
+//  }
+//  for(article <- Search.inJournal("0003-486X")) {
+//     println(article.bibtex.toBIBTEXString)   
+//  }
+  
+  for (article <- Search.inTopJournalsJumbled(50)) {
     println(article.bibtex.toBIBTEXString)
   }
   
