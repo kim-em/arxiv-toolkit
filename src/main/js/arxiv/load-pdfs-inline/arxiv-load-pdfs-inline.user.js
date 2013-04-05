@@ -1,5 +1,17 @@
+// ==UserScript==
+// @name	  Load arXiv PDFs inline
+// @version	  0.1.6
+// @namespace http://tqft.net/
+// @include	  http://arxiv.org/abs/*
+// @match   http://arxiv.org/*
+// @updateURL https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/arxiv/load-pdfs-inline/arxiv-load-pdfs-inline.user.js
+// ==/UserScript==
+
 // We've actually got jQuery 1.6.4 included below, because chrome doesn't support @require on user scripts.
 loadJQuery();
+
+var pdf = window.location.href.replace('abs','pdf')
+$('<iframe/>').attr({id: 'pdf-iframe', src:pdf, width:'100%', height: $(window).height(), border:'none', onmouseover:'window.location.href = "' + pdf + '"'}).appendTo('body')
 
 function loadJQuery() {
 /*! jQuery v1.6.4 http://jquery.com/ | http://jquery.org/license */

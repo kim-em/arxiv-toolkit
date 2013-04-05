@@ -19,12 +19,29 @@ import scala.util.Random
 import java.io.IOException
 import org.apache.http.HttpException
 import org.openqa.selenium.By
+import java.io.BufferedInputStream
+import com.ibm.icu.text.CharsetDetector
+import java.nio.charset.UnsupportedCharsetException
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
   final def getBytes(url: String) = IOUtils.toByteArray(getStream(url))
 
-  final def apply(url: String) = Source.fromInputStream(getStream(url)).getLines
+  final def apply(url: String) = {
+    val bis = new BufferedInputStream(getStream(url));
+    val cd = new CharsetDetector();
+    cd.setText(bis);
+    val cm = cd.detect();
+
+    if (cm != null) {
+      val reader = cm.getReader();
+      val charset = cm.getName();
+//      Logging.info("reading stream in charset " + charset)
+      Source.fromInputStream(bis, charset).getLines
+    } else {
+      throw new UnsupportedCharsetException("")
+    }
+  }
   final def attempt(url: String): Either[Iterator[String], Throwable] = {
     try {
       Left(apply(url))
@@ -59,17 +76,30 @@ trait SeleniumSlurp extends Slurp {
     import scala.collection.JavaConverters._
 
     if (SeleniumSlurp.enabled_?) {
-      driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
-        case Some(element) => element.click()
-        case None => driver.get(url)
-      }
+      try {
+        driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
+          case Some(element) => {
+            Logging.info("webdriver: clicking an available link")
+            element.click()
+          }
+          case None => driver.get(url)
+        }
 
-      // TODO more validation we really arrived?
-      driver.getTitle match {
-        case e @ ("502 Bad Gateway" | "500 Internal Server Error") => throw new HttpException(e)
-        case _ =>
+        // TODO more validation we really arrived?
+        driver.getTitle match {
+          case e @ ("502 Bad Gateway" | "500 Internal Server Error") => throw new HttpException(e)
+          case e @ ("MathSciNet Access Error") => throw new HttpException("403 " + e)
+          case _ =>
+        }
+        new ByteArrayInputStream(driver.getPageSource.getBytes("UTF-8"))
+      } catch {
+        case e: org.openqa.selenium.NoSuchWindowException => {
+          Logging.warn("Browser window closed, trying to restart Firefox/webdriver")
+          SeleniumSlurp.quit
+          Logging.info("retrying ...")
+          getStream(url)
+        }
       }
-      new ByteArrayInputStream(driver.getPageSource.getBytes())
     } else {
       throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
     }
@@ -101,7 +131,7 @@ object SeleniumSlurp extends Slurp {
 
 trait MathSciNetMirrorSlurp extends Slurp {
   val offset = Random.nextInt(10 * 60 * 1000)
-  val mirrorList = Random.shuffle(List(/*"www.ams.org", */"ams.rice.edu", "ams.impa.br", "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
+  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ "ams.rice.edu", "ams.impa.br", "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {
@@ -118,6 +148,7 @@ trait CachingSlurp extends Slurp {
   protected def cache(hostName: String): scala.collection.mutable.Map[String, Array[Byte]]
 
   override def getStream(url: String) = {
+    Logging.info("Looking in cache for " + url)
     val bytes = cache(url).getOrElseUpdate(url, {
       Throttle(url)
       Logging.info("Loading " + url)
@@ -158,7 +189,7 @@ trait ThrottledSlurp extends Slurp {
 
 object Throttle extends Logging {
   val defaultInterval = 1000
-  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 120000, "arxiv.org" -> 5000, "google.com" -> 500)
+  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 150000, "arxiv.org" -> 5000, "google.com" -> 500)
   val lastThrottle = scala.collection.mutable.Map[String, Long]().withDefaultValue(0)
 
   // poisson distributed gaps
