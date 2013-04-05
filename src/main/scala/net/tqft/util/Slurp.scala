@@ -93,7 +93,7 @@ trait SeleniumSlurp extends Slurp {
         }
         new ByteArrayInputStream(driver.getPageSource.getBytes("UTF-8"))
       } catch {
-        case e: org.openqa.selenium.NoSuchWindowException => {
+        case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException) => {
           Logging.warn("Browser window closed, trying to restart Firefox/webdriver")
           SeleniumSlurp.quit
           Logging.info("retrying ...")
