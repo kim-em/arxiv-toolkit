@@ -16,6 +16,8 @@
 // @include   http://ams.u-strasbg.fr/mathscinet/search/*
 // @include   http://www.ams.org.proxy.library.emory.edu/mathscinet-getitem*
 // @include   http://www.ams.org.proxy.library.emory.edu/mathscinet/search/*
+// @include   http://*.herokuapp.com/*
+// @include   http://link.springer.com/*
 // @match     http://www.ams.org/*
 // @match     http://ams.rice.edu/*
 // @match     http://ams.impa.br/*
@@ -23,97 +25,84 @@
 // @match   http://ams.mpim-bonn.mpg.de/*
 // @match   http://ams.u-strasbg.fr/*
 // @match   http://www.ams.org.proxy.library.emory.edu/*
+// @match   http://evening-headland-2959.herokuapp.com/*
+// @match   http://link.springer.com/*
 // @updateURL https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet/direct-article-link/direct-article-link.user.js
 // ==/UserScript==
 
 // We've actually got jQuery 1.6.4 included below, because chrome doesn't support @require on user scripts.
 loadJQuery();
 
-function loadAsync(url, callback) {
-  if(typeof callback === "undefined") callback = function() {}
-  if(typeof GM_xmlhttpRequest === "undefined") {
-    // console.log("GM_xmlhttpRequest unavailable")
-    // hope for the best (i.e. that we're running as a Chrome extension)
-    $.get(url, callback)  
-  } else { 
-    // console.log("GM_xmlhttpRequest available")
-    // load via GM
-    GM_xmlhttpRequest({
-      method: "GET",
-      url: url,
-      onload: function(response) {
-          callback(response.responseText);
-      }
-    });
-  }
-}
-function putAsync(url, callback) {
-  if(typeof callback === "undefined") callback = function() {}
-  if(typeof GM_xmlhttpRequest === "undefined") {
-    // console.log("GM_xmlhttpRequest unavailable")
-    // hope for the best (i.e. that we're running as a Chrome extension)
-    $.put(url, callback)  
-  } else { 
-    // console.log("GM_xmlhttpRequest available")
-    // load via GM
-    GM_xmlhttpRequest({
-      method: "PUT",
-      url: url,
-      onload: function(response) {
-          callback(response.responseText);
-      }
-    });
-  }
-}
-
-
-function findRedirect(url, callback) {
-    if(typeof callback === "undefined") callback = function() {}
-        if(typeof GM_xmlhttpRequest === "undefined") {
-            // console.log("GM_xmlhttpRequest unavailable")
-            // hope for the best (i.e. that we're running as a Chrome extension)
-            alert("attempting to resolve " + url)
-            $.head(url).done(function(data, status, xhr) { callback(xhr.getResponseHeader("Location")) });
-        } else {
-            // console.log("GM_xmlhttpRequest available")
-            // load via GM
-            alert("attempting to resolve " + url)
-            // FIXME this isn't working
-            GM_xmlhttpRequest({
-                              method: "HEAD",
-                              url: url,
-                              onload: function(response) {
-                              callback(response.getResponseHeader("Location"));
-                              }
-                              });
-        }
-}
-
-
 function main() {
-    rewriteArticleLink();
+    rewriteArticleLinks();
 }
 
-function rewriteArticleLink() {
-    $("a:contains('Article')").attr('href', function() { return this.href.replace("http://www.ams.org/leavingmsn?url=",""); });
-    $("a:contains('Article')").attr('href', function() {
-        if(this.href.startsWith("http://dx.doi.org/")) {
-            return this.href.replace("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/");
+function rewriteArticleLinks() {
+    var elements = $("a:contains('Article'), a:contains('Chapter'), a:contains('Thesis'), a:contains('Book')");
+    elements.attr('href', function() { return this.href.replace(/http:\/\/[^\/]*\/leavingmsn\?url=/,""); });
+    var eventually = function(link) { };
+    if(elements.length == 1) {
+        eventually = function(link) {
+            if(link.href.indexOf("pdf") !== -1) {
+                $('<iframe/>').attr({id: 'pdf-iframe', src:link.href, width:'100%', height: $(window).height(), border:'none', onmouseover:'window.location.href = "' + link.href + '"'}).appendTo('div#content');
+            }
         }
-    });
-    $("a:contains('Article')").each(function() {
-        if(this.href.startsWith("http://evening-headland-2959.herokuapp.com/")) {
-            // FIXME this isn't working
-            findRedirect(this.href, function (location) { this.href = location; });
-        }
-    });
-    // TODO then load the PDF in an iframe?
+    }
+    elements.each(function() {
+            if(this.href.startsWith("http://dx.doi.org/")) {
+                var link = this
+                loadJSON(
+                    this.href.replace("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/"),
+                         function (data) { if(data.redirect) link.href = data.redirect; eventually(link); }
+                );
+            }
+        });
+    
+
 }
 
 if (typeof String.prototype.startsWith != 'function') {
     String.prototype.startsWith = function (str){
         return this.slice(0, str.length) == str;
     };
+}
+
+function loadAsync(url, callback) {
+    if(typeof callback === "undefined") callback = function() {}
+        if(typeof GM_xmlhttpRequest === "undefined") {
+            // console.log("GM_xmlhttpRequest unavailable")
+            // hope for the best (i.e. that we're running as a Chrome extension)
+            $.get(url, callback)
+        } else {
+            // console.log("GM_xmlhttpRequest available")
+            // load via GM
+            GM_xmlhttpRequest({
+                              method: "GET",
+                              url: url,
+                              onload: function(response) {
+                              callback(response.responseText);
+                              }
+                              });
+        }
+}
+
+function loadJSON(url, callback) {
+    if(typeof callback === "undefined") callback = function() {}
+        var request = {
+        method: "GET",
+        url: url,
+        dataType: "json",
+        success: callback
+        }
+    if(typeof GM_xmlhttpRequest === "undefined") {
+        // console.log("GM_xmlhttpRequest unavailable")
+        // hope for the best (i.e. that we're running as a Chrome extension)
+        $.ajax(request)
+    } else {
+        // console.log("GM_xmlhttpRequest available")
+        // load via GM
+        GM_xmlhttpRequest(request);
+    }
 }
 
 main()
