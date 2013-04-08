@@ -21,7 +21,7 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "toolkit-amazon" % "0.1.16-SNAPSHOT",
 	"com.ibm.icu" % "icu4j" % "51.1",
 	"rome" % "rome" % "1.0",
-	"org.apache.httpcomponents" % "httpclient" % "4.1.2",
+	"org.apache.httpcomponents" % "httpclient" % "4.2.1",
 	"commons-io" % "commons-io" % "2.4",
 	"com.google.code.findbugs" % "jsr305" % "2.0.1",
 	"org.seleniumhq.selenium" % "selenium-support" % "2.31.0",

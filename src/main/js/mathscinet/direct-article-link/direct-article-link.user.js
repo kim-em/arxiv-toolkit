@@ -26,7 +26,6 @@
 // @match   http://ams.u-strasbg.fr/*
 // @match   http://www.ams.org.proxy.library.emory.edu/*
 // @match   http://evening-headland-2959.herokuapp.com/*
-// @match   http://link.springer.com/*
 // @updateURL https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet/direct-article-link/direct-article-link.user.js
 // ==/UserScript==
 
@@ -57,9 +56,22 @@ function rewriteArticleLinks() {
                 );
             }
         });
-    
 
+// This is not such a good idea, it turns out. Often there are multiple PDF links, etc, moreover using jQuery to instantiate a DOM for html loaded from another server is a bit scary.
+//    elements.each(function() {
+//                  var link = this
+//                  loadAsync(this.href, function(responseText) {
+//                            alert(responseText);
+//                            var PDFLinks = $(responseText).find("a:contains('PDF')");
+//                            if(PDFLinks.length == 1) {
+//                                link.href = PDFLinks.first().attr('href');
+//                            }
+//                            eventually(link);
+//                            })
+//                  });
 }
+
+
 
 if (typeof String.prototype.startsWith != 'function') {
     String.prototype.startsWith = function (str){
