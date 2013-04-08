@@ -1,11 +1,14 @@
 // ==UserScript==
 // @name	  Load arXiv PDFs inline
-// @version	  0.1.6
+// @version	  0.1.7
 // @namespace http://tqft.net/
 // @include	  http://arxiv.org/abs/*
-// @match   http://arxiv.org/*
+// @match   http://arxiv.org/abs/*
 // @updateURL https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/arxiv/load-pdfs-inline/arxiv-load-pdfs-inline.user.js
 // ==/UserScript==
+
+// CHANGELOG
+// 0.1.7 fixes the match statement so we only load on abstract pages.
 
 // We've actually got jQuery 1.6.4 included below, because chrome doesn't support @require on user scripts.
 loadJQuery();
