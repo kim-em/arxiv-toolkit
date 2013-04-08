@@ -135,8 +135,8 @@ trait MathSciNetMirrorSlurp extends Slurp {
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {
-    val newURL = if (url.startsWith("http://www.ams.org/mathscinet")) {
-      "http://" + mirror + "/mathscinet" + url.stripPrefix("http://www.ams.org/mathscinet")
+    val newURL = if (url.startsWith("http://www.ams.org/mathscinet/")) {
+      "http://" + mirror + "/mathscinet/" + url.stripPrefix("http://www.ams.org/mathscinet/")
     } else {
       url
     }
@@ -208,17 +208,17 @@ object Throttle extends Logging {
     exp(mu + sigma * normalDistribution)
   }
 
-  def apply(host: String) {
-    val domain = new URL(host).getHost.split("\\.").takeRight(2).mkString(".")
+  def apply(url: String) {
+    val domain = new URL(url).getHost.split("\\.").takeRight(2).mkString(".")
 
     val interval = hostIntervals.get(domain).getOrElse(defaultInterval)
     def now = new Date().getTime
     if (lastThrottle(domain) + interval > now) {
       val delay = logNormalDistribution(interval).toLong
-      info("Throttling access to " + host + " for " + delay / 1000.0 + " seconds")
+      info("Throttling access to " + domain + " for " + delay / 1000.0 + " seconds")
       Thread.sleep(delay)
     }
-    info("Allowing access to " + host)
+    info("Allowing access to " + domain)
     lastThrottle += ((domain, now))
   }
 }

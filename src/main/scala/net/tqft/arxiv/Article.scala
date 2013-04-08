@@ -2,6 +2,9 @@ package net.tqft.arxiv
 import scala.io.Source
 import net.tqft.util.Slurp
 import java.util.Date
+import java.io.InputStream
+import net.tqft.citation.Citation
+import net.tqft.util.HTML
 
 trait Article {
   def identifier: String
@@ -33,18 +36,44 @@ trait Article {
   }
 
   trait Version {
-    lazy val absHTMLLines = Slurp("http://arxiv.org/abs/" + identifier + "v" + number) 
+    private lazy val abs = HTML.jQuery("http://arxiv.org/abs/" + identifier + "v" + number)
     
     def title: String = ???
     def authors: List[Author] = ???
     def `abstract`: String = ???
-    def journalReference: Option[String] = ???
+    def journalReference: Option[String] = {
+      //<td class="tablecell label">
+      //Journal&nbsp;reference:
+      //</td>
+      //<td class="tablecell jref">Proceedings of the National Academy of Sciences, May 17, 2011,
+      //  vol. 108 no. 20, pp. 8139-8145</td>
+      //</tr>
+      
+      val element = abs.get("td.jref")
+      
+      if(element.size == 0) {
+        None
+      } else if(element.size == 1){
+        Some(element.first.trimmedText)
+      } else {
+        ???
+      }
+    }
     def submittedOn: Date = ???
     def primaryMSC: MSC = ???
     def secondaryMSCs: List[MSC] = ???
     def DOI: Option[String] = ???
 
     def number: Int
+
+    def source: Map[String, InputStream] = ???
+    def pdf: InputStream = ???
+
+    def references: Iterator[Citation] = {
+      for (file <- source.keysIterator; if file.endsWith(".tex") || file.endsWith(".bbl")) yield {
+        ???
+      }
+    }
   }
 }
 
@@ -53,8 +82,8 @@ object Article {
   import com.sun.syndication.io.SyndFeedInput
 
   def fromAtomEntry(entry: SyndEntry, currentVersion_? : Boolean): Article = {
-    val url = "http://arxiv.org/abs/(.*)".r
-    val url(returnedIdentifier) = entry.getUri
+    val urlRegex = "http://arxiv.org/abs/(.*)".r
+    val urlRegex(returnedIdentifier) = entry.getUri
 
     val versionNumber = Identifiers.extractVersionNumber(returnedIdentifier).get
 
@@ -73,7 +102,6 @@ object Article {
         override val title = entry.getTitle()
         override val authors = entry.getAuthors.asScala.toList.asInstanceOf[List[SyndPerson]].flatMap(sp => Author.lookup(sp.getName))
         override val submittedOn = entry.getUpdatedDate()
-        override val journalReference = None
         override val DOI = (for (
           link <- entry.getLinks.asScala.toList.asInstanceOf[List[SyndLink]];
           if (link.getTitle == "doi")

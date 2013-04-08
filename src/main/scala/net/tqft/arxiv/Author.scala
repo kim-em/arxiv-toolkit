@@ -14,10 +14,10 @@ trait Author {
 
     import scala.collection.JavaConverters._
 
-    val feedUrl = new URL(apiEndpoint + "query?search_query=" + name + "&max_results=10000")
-    Throttle("arxiv.org")
+    val feedUrl = apiEndpoint + "query?search_query=" + name + "&max_results=10000"
+    Throttle(feedUrl)
 
-    val feed = new SyndFeedInput().build(new XmlReader(feedUrl))
+    val feed = new SyndFeedInput().build(new XmlReader(new URL(feedUrl)))
     for(entry: SyndEntry <- feed.getEntries().asScala.toList.asInstanceOf[List[SyndEntry]]) yield {
       Article.fromAtomEntry(entry, true)
     }
