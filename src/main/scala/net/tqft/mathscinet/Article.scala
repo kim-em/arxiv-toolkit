@@ -3,6 +3,10 @@ import net.tqft.util.Slurp
 import net.tqft.util.URLEncode
 import net.tqft.arxiv.arXiv
 import net.tqft.util.BIBTEX
+import java.io.File
+import scala.io.Source
+import net.tqft.toolkit.amazon.AnonymousS3
+import net.tqft.toolkit.Extractors.Int
 
 trait Article {
   def identifier: Int
@@ -51,22 +55,61 @@ trait Article {
   def authors: List[Author] = endnote("%A").map(Author(_))
   def journalReference: String = endnote("%J").head + " " + endnote("%V").head + " (" + endnote("%D").head + "), no. " + endnote("%N").head + ", " + endnote("%P").head
 
+  def year: Int = {
+    bibtex.get("YEAR").get.toInt
+  }
+  def volume: Int = {
+    bibtex.get("VOLUME").get.toInt
+  }
+  def number: Int = {
+    bibtex.get("NUMBER").get.toInt
+  }
+  
+  def pageStart: Option[Int] = {
+    val pages = bibtex.get("PAGES")
+    pages flatMap { p =>
+      val pageString = if (p.contains("--")) {
+        p.split("--")(0)
+      } else {
+        p
+      }
+      pageString match {
+        case Int(i) => Some(i)
+        case _ => None
+      }
+    }
+  }
+  def pageEnd: Option[Int] = {
+    val pages = bibtex.get("PAGES")
+    pages flatMap { p =>
+      val pageString = if (p.contains("--")) {
+        Some(p.split("--")(1))
+      } else {
+        None
+      }
+      pageString flatMap {
+        case Int(i) => Some(i)
+        case _ => None
+      }
+    }
+  }
+
   def DOI: Option[String] = {
     bibtex.get("DOI")
-    
-//    bibtexData match {
-//      case Some(data) => data.get("DOI")
-//      case None => {
-//        val re = """<a .* href="/leavingmsn\?url=http://dx.doi.org/([^"]*)">Article</a>""".r
-//
-//        (slurp.flatMap { line =>
-//          line.trim match {
-//            case re(doi) => Some(doi)
-//            case _ => None
-//          }
-//        }).headOption
-//      }
-//    }
+
+    //    bibtexData match {
+    //      case Some(data) => data.get("DOI")
+    //      case None => {
+    //        val re = """<a .* href="/leavingmsn\?url=http://dx.doi.org/([^"]*)">Article</a>""".r
+    //
+    //        (slurp.flatMap { line =>
+    //          line.trim match {
+    //            case re(doi) => Some(doi)
+    //            case _ => None
+    //          }
+    //        }).headOption
+    //      }
+    //    }
   }
 
 }
@@ -83,10 +126,14 @@ object Article {
     }
   }
 
+  def fromDOI(doi: String): Option[Article] = {
+    AnonymousS3("DOI2mathscinet").get(doi).map(apply)
+  }
+
   def fromBibtex(bibtexString: String): Option[Article] = {
     BIBTEX.parse(bibtexString).map({
       case b @ BIBTEX(_, identifierString @ MRIdentifier(id), data) =>
-        b.save
+        if (saving_?) b.save
         val result = new Article {
           override val identifier = id
         }
@@ -94,6 +141,9 @@ object Article {
         result
     })
   }
+
+  private var saving_? = true
+  def disableBibtexSaving { saving_? = false }
 }
 
 object MRIdentifier {
@@ -110,4 +160,10 @@ object Articles {
   def withCachedBIBTEX: Iterator[Article] = {
     BIBTEX.cache.keysIterator.collect({ case MRIdentifier(id) => Article(id) })
   }
+
+  def fromBibtexFile(file: String): Iterator[Article] = {
+    import net.tqft.toolkit.collections.Split._
+    Source.fromFile(file).getLines.splitOn(_.isEmpty).map(_.mkString("\n")).grouped(100).flatMap(_.par.flatMap(Article.fromBibtex))
+  }
+
 }

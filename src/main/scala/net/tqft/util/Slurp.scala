@@ -22,6 +22,8 @@ import org.openqa.selenium.By
 import java.io.BufferedInputStream
 import com.ibm.icu.text.CharsetDetector
 import java.nio.charset.UnsupportedCharsetException
+import org.openqa.selenium.htmlunit.HtmlUnitDriver
+import com.gargoylesoftware.htmlunit.BrowserVersion
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -69,13 +71,15 @@ trait HttpClientSlurp extends Slurp {
   }
 }
 
-trait SeleniumSlurp extends Slurp {
-  private def driver = SeleniumSlurp.driver
+object HttpClientSlurp extends HttpClientSlurp
+
+trait FirefoxSlurp extends Slurp {
+  private def driver = FirefoxSlurp.driverInstance
 
   override def getStream(url: String) = {
     import scala.collection.JavaConverters._
 
-    if (SeleniumSlurp.enabled_?) {
+    if (FirefoxSlurp.enabled_?) {
       try {
         driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
           case Some(element) => {
@@ -95,7 +99,7 @@ trait SeleniumSlurp extends Slurp {
       } catch {
         case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException) => {
           Logging.warn("Browser window closed, trying to restart Firefox/webdriver")
-          SeleniumSlurp.quit
+          FirefoxSlurp.quit
           Logging.info("retrying ...")
           getStream(url)
         }
@@ -104,13 +108,73 @@ trait SeleniumSlurp extends Slurp {
       throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
     }
   }
-
 }
 
-object SeleniumSlurp extends Slurp {
+trait HtmlUnitSlurp extends Slurp {
+   private def driver = HtmlUnitSlurp.driverInstance
+
+  override def getStream(url: String) = {
+    import scala.collection.JavaConverters._
+
+    if (HtmlUnitSlurp.enabled_?) {
+      try {
+        driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
+          case Some(element) => {
+            Logging.info("webdriver: clicking an available link")
+            element.click()
+          }
+          case None => driver.get(url)
+        }
+
+        // TODO more validation we really arrived?
+        driver.getTitle match {
+          case e @ ("502 Bad Gateway" | "500 Internal Server Error") => throw new HttpException(e)
+          case e @ ("MathSciNet Access Error") => throw new HttpException("403 " + e)
+          case _ =>
+        }
+        new ByteArrayInputStream(driver.getPageSource.getBytes("UTF-8"))
+      } catch {
+        case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException) => {
+          Logging.warn("Browser window closed, trying to restart Firefox/webdriver")
+          FirefoxSlurp.quit
+          Logging.info("retrying ...")
+          getStream(url)
+        }
+      }
+    } else {
+      throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
+    }
+  }
+ 
+}
+
+object HtmlUnitSlurp extends HtmlUnitSlurp {
   private var driverOption: Option[WebDriver] = None
 
-  def driver = {
+  def driverInstance = {
+    if (driverOption.isEmpty) {
+      Logging.info("Starting HtmlUnit/webdriver")
+      driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_10))
+      Logging.info("   ... finished starting HTMLUnit")
+    }
+    driverOption.get
+  }
+
+  def quit = {
+    driverOption.map(_.quit)
+    driverOption = None
+  }
+
+  private var enabled = true
+  def disable = enabled = false
+  def enabled_? = enabled
+}
+
+
+object FirefoxSlurp extends FirefoxSlurp {
+  private var driverOption: Option[WebDriver] = None
+
+  def driverInstance = {
     if (driverOption.isEmpty) {
       Logging.info("Starting Firefox/webdriver")
       driverOption = Some(new FirefoxDriver())
@@ -223,7 +287,7 @@ object Throttle extends Logging {
   }
 }
 
-object Slurp extends SeleniumSlurp with MathSciNetMirrorSlurp with S3CachingSlurp {
+object Slurp extends FirefoxSlurp with MathSciNetMirrorSlurp with S3CachingSlurp {
   override val s3 = AnonymousS3
   override val bucketSuffix = ".cache"
 }
