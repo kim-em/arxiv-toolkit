@@ -17,7 +17,9 @@
 // @include   http://www.ams.org.proxy.library.emory.edu/mathscinet-getitem*
 // @include   http://www.ams.org.proxy.library.emory.edu/mathscinet/search/*
 // @include   http://*.herokuapp.com/*
-// @include   http://link.springer.com/*
+// @include   http://dx.doi.org/*
+// @include   http://linkinghub.elsevier.com/*
+// @include   http://www.sciencedirect.com/*
 // @match     http://www.ams.org/*
 // @match     http://ams.rice.edu/*
 // @match     http://ams.impa.br/*
@@ -26,6 +28,9 @@
 // @match   http://ams.u-strasbg.fr/*
 // @match   http://www.ams.org.proxy.library.emory.edu/*
 // @match   http://evening-headland-2959.herokuapp.com/*
+// @match   http://linkinghub.elsevier.com/*
+// @match   http://www.sciencedirect.com/*
+// @match   http://dx.doi.org/*
 // @updateURL https://bitbucket.org/scottmorrison/arxiv-toolkit/raw/tip/src/main/js/mathscinet/direct-article-link/direct-article-link.user.js
 // ==/UserScript==
 
@@ -33,6 +38,7 @@
 loadJQuery();
 
 function main() {
+    // FIXME check that we're on a mathscinet page!!
     rewriteArticleLinks();
 }
 
@@ -43,32 +49,38 @@ function rewriteArticleLinks() {
     if(elements.length == 1) {
         eventually = function(link) {
             if(link.href.indexOf("pdf") !== -1) {
-                $('<iframe/>').attr({id: 'pdf-iframe', src:link.href, width:'100%', height: $(window).height(), border:'none', onmouseover:'window.location.href = "' + link.href + '"'}).appendTo('div#content');
+//                var downloadLink = $('<a>').attr({ id: 'pdf-download', href:link.href, download:'file.pdf'} ).text('Download PDF');
+//                elements.after(downloadLink);
+//                elements.append(" ");                
+                $('<iframe/>').attr({id: 'pdf-iframe', src:link.href, width:'100%', height: $(window).height(), border:'none' /*, onmouseover:'window.location.href = "' + link.href + '"' */}).appendTo('div#content');
             }
         }
     }
     elements.each(function() {
-            if(this.href.startsWith("http://dx.doi.org/")) {
-                var link = this
-                loadJSON(
-                    this.href.replace("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/"),
-                         function (data) { if(data.redirect) link.href = data.redirect; eventually(link); }
-                );
+            // handle Elsevier separately
+            if(this.href.startsWith("http://dx.doi.org/10.1006") || this.href.startsWith("http://dx.doi.org/10.1016")) {
+                  var link = this;
+                  loadAsync(this.href, function(response) {
+                            var regex = /pdfurl="([^"]*)"/;
+                            link.href = regex.exec(response)[1];
+                            eventually(link);
+                    });
+            } else {
+                if(this.href.startsWith("http://dx.doi.org/")) {
+                    var link = this;
+                    loadJSON(
+                        this.href.replace("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/"),
+                             function (data) { if(data.redirect) link.href = data.redirect; eventually(link); }
+                    );
+                };
+                // TODO e.g. http://projecteuclid.org/getRecord?id=euclid.cmp/1104272854
+                if(this.href.startsWith("http://www.numdam.org/item?id=")) {
+                      this.href = this.href.replace("http://www.numdam.org/item?id=", "http://archive.numdam.org/article/") + ".pdf";
+                      eventually(this);
+                };
             }
         });
 
-// This is not such a good idea, it turns out. Often there are multiple PDF links, etc, moreover using jQuery to instantiate a DOM for html loaded from another server is a bit scary.
-//    elements.each(function() {
-//                  var link = this
-//                  loadAsync(this.href, function(responseText) {
-//                            alert(responseText);
-//                            var PDFLinks = $(responseText).find("a:contains('PDF')");
-//                            if(PDFLinks.length == 1) {
-//                                link.href = PDFLinks.first().attr('href');
-//                            }
-//                            eventually(link);
-//                            })
-//                  });
 }
 
 
