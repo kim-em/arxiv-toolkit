@@ -4,7 +4,7 @@ import net.tqft.util.Slurp
 import java.util.Date
 import java.io.InputStream
 import net.tqft.citation.Citation
-import net.tqft.util.HTML
+import net.tqft.util.Html
 
 trait Article {
   def identifier: String
@@ -36,7 +36,7 @@ trait Article {
   }
 
   trait Version {
-    private lazy val abs = HTML.jQuery("http://arxiv.org/abs/" + identifier + "v" + number)
+    private lazy val abs = Html.usingSlurp(Slurp).jQuery("http://arxiv.org/abs/" + identifier + "v" + number)
     
     def title: String = ???
     def authors: List[Author] = ???

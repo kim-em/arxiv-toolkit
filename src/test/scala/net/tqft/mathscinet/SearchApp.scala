@@ -2,7 +2,7 @@ package net.tqft.mathscinet
 
 import net.tqft.util.Throttle
 import net.tqft.eigenfactor.Eigenfactor
-import net.tqft.util.SeleniumSlurp
+import net.tqft.util.FirefoxSlurp
 
 object SearchApp extends App {
   // everything in Annals
@@ -35,6 +35,6 @@ object SearchApp extends App {
     println(article.bibtex.toBIBTEXString)
   }
   
-  SeleniumSlurp.quit
+  FirefoxSlurp.quit
 }
 

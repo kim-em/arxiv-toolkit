@@ -1,10 +1,10 @@
 package net.tqft.mathscinet
 
 import scala.collection.parallel.ForkJoinTaskSupport
-import net.tqft.util.SeleniumSlurp
+import net.tqft.util.FirefoxSlurp
 
 object BIBTEXApp extends App {
-  SeleniumSlurp.disable
+  FirefoxSlurp.disable
 
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
