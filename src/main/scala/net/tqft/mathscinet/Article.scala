@@ -114,12 +114,30 @@ trait Article {
     //    }
   }
 
-  def pdf: Option[URL] = {
-    DOI map { doi =>
-      ???
+  def URL: Option[String] = {
+    bibtex.get("URL")
+  }
+  
+  def pdfURL: Option[String] = {
+    URL map { url =>
+      url match {
+        case url if url.startsWith("http://dx.doi.org/") => {
+          ???
+        }
+        case url if url.startsWith(???) => {
+          ???
+        }
+        case url if url.startsWith(???) => {
+          ???
+        }
+      }
     }
   }
 
+  def pdf: Option[Array[Byte]] = {
+    pdfURL.map(Slurp.getBytes)
+  }
+  
 }
 
 object Article {
