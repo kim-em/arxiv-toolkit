@@ -7,6 +7,8 @@ import java.io.File
 import scala.io.Source
 import net.tqft.toolkit.amazon.AnonymousS3
 import net.tqft.toolkit.Extractors.Int
+import java.net.URL
+import net.tqft.toolkit.Logging
 
 trait Article {
   def identifier: Int
@@ -64,7 +66,7 @@ trait Article {
   def number: Int = {
     bibtex.get("NUMBER").get.toInt
   }
-  
+
   def pageStart: Option[Int] = {
     val pages = bibtex.get("PAGES")
     pages flatMap { p =>
@@ -112,6 +114,12 @@ trait Article {
     //    }
   }
 
+  def pdf: Option[URL] = {
+    DOI map { doi =>
+      ???
+    }
+  }
+
 }
 
 object Article {
@@ -127,7 +135,11 @@ object Article {
   }
 
   def fromDOI(doi: String): Option[Article] = {
-    AnonymousS3("DOI2mathscinet").get(doi).map(apply)
+    val result = AnonymousS3("DOI2mathscinet").get(doi).map(apply)
+    if(result.isEmpty) {
+      Logging.info("No mathscinet entry found for DOI: " + doi)
+    }
+    result
   }
 
   def fromBibtex(bibtexString: String): Option[Article] = {
@@ -164,6 +176,10 @@ object Articles {
   def fromBibtexFile(file: String): Iterator[Article] = {
     import net.tqft.toolkit.collections.Split._
     Source.fromFile(file).getLines.splitOn(_.isEmpty).map(_.mkString("\n")).grouped(100).flatMap(_.par.flatMap(Article.fromBibtex))
+  }
+
+  def withDOIPrefix(prefix: String): Iterator[Article] = {
+    AnonymousS3("DOI2mathscinet").keysWithPrefix(prefix).iterator.flatMap(Article.fromDOI)
   }
 
 }
