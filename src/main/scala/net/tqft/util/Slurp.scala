@@ -24,6 +24,8 @@ import com.ibm.icu.text.CharsetDetector
 import java.nio.charset.UnsupportedCharsetException
 import org.openqa.selenium.htmlunit.HtmlUnitDriver
 import com.gargoylesoftware.htmlunit.BrowserVersion
+import org.apache.http.impl.conn.PoolingClientConnectionManager
+import org.apache.http.impl.conn.SchemeRegistryFactory
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -38,7 +40,7 @@ trait Slurp {
     if (cm != null) {
       val reader = cm.getReader();
       val charset = cm.getName();
-//      Logging.info("reading stream in charset " + charset)
+      //      Logging.info("reading stream in charset " + charset)
       Source.fromInputStream(bis, charset).getLines
     } else {
       throw new UnsupportedCharsetException("")
@@ -56,19 +58,25 @@ trait Slurp {
 }
 
 trait HttpClientSlurp extends Slurp {
-  val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient)
+  val cxMgr = new PoolingClientConnectionManager(SchemeRegistryFactory.createDefault());
+  cxMgr.setMaxTotal(100);
+  cxMgr.setDefaultMaxPerRoute(20);
+
+  val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(cxMgr))
   client.getParams().setBooleanParameter("http.protocol.handle-redirects", true)
 
   def useragent = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)"
   HttpProtocolParams.setUserAgent(client.getParams(), useragent);
 
-  override def getStream(url: String) = {
+  override def getStream(url: String) = getStream(url, None)
+  def getStream(url: String, referer: Option[String]) = {
     val get = new HttpGet(url)
-    get.setHeader("Accept", "text/html,application/xhtml+xml,application/xml");
+    get.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+    referer.map(r => get.setHeader("Referer", r))
 
     val response = client.execute(get);
     response.getEntity.getContent()
-  }
+  }  
 }
 
 object HttpClientSlurp extends HttpClientSlurp
@@ -111,7 +119,7 @@ trait FirefoxSlurp extends Slurp {
 }
 
 trait HtmlUnitSlurp extends Slurp {
-   private def driver = HtmlUnitSlurp.driverInstance
+  private def driver = HtmlUnitSlurp.driverInstance
 
   override def getStream(url: String) = {
     import scala.collection.JavaConverters._
@@ -145,7 +153,7 @@ trait HtmlUnitSlurp extends Slurp {
       throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
     }
   }
- 
+
 }
 
 object HtmlUnitSlurp extends HtmlUnitSlurp {
@@ -154,7 +162,7 @@ object HtmlUnitSlurp extends HtmlUnitSlurp {
   def driverInstance = {
     if (driverOption.isEmpty) {
       Logging.info("Starting HtmlUnit/webdriver")
-      driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_10))
+      driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_17))
       Logging.info("   ... finished starting HTMLUnit")
     }
     driverOption.get
@@ -169,7 +177,6 @@ object HtmlUnitSlurp extends HtmlUnitSlurp {
   def disable = enabled = false
   def enabled_? = enabled
 }
-
 
 object FirefoxSlurp extends FirefoxSlurp {
   private var driverOption: Option[WebDriver] = None

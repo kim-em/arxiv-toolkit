@@ -29,7 +29,8 @@ libraryDependencies ++= Seq(
 	"org.seleniumhq.selenium" % "selenium-htmlunit-driver" % "2.31.0",
 	"org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.31.0",
 	"org.seleniumhq.selenium" % "selenium-chrome-driver" % "2.31.0",
-	"be.roam.hue" % "hue" % "1.1"
+	"be.roam.hue" % "hue" % "1.1",
+	"eu.medsea.mimeutil" % "mime-util" % "2.1.3"
 )
 
 // lift-json
