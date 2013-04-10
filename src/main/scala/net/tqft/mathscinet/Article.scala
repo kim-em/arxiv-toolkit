@@ -142,13 +142,16 @@ trait Article {
         //						   ---resolves to something like---> http://journals.cambridge.org/download.php?file=%2FFLM%2FFLM655%2FS0022112010001734a.pdf&code=ac265aacb742b93fa69d566e33aeaf5e
         // We also need to grab some 10.1112 DOIs, for LMS journals run by CMP
         case url if url.startsWith("http://dx.doi.org/10.1017/S") || url.startsWith("http://dx.doi.org/10.1051/S") || url.startsWith("http://dx.doi.org/10.1112/S0010437X") || url.startsWith("http://dx.doi.org/10.1112/S14611570") || url.startsWith("http://dx.doi.org/10.1112/S00255793") => {
-          val scrape = Html.jQuery(url).get("a.article-pdf").first
-          if (scrape.size == 1) {
-            Some("http://journals.cambridge.org/action/" + scrape.attribute("href").replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
-          } else {
-            Logging.warn("Looking for PDF link on CUP page " + url + " failed, found " + scrape.size + " results")
-            None
-          }
+          val regex = """<a href="([^"]*)"[ \t\n]*title="View PDF" class="article-pdf">""".r
+          regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
+          
+//          val scrape = Html.jQuery(url).get("a.article-pdf").first
+//          if (scrape.size == 1) {
+//            Some("http://journals.cambridge.org/action/" + scrape.attribute("href").replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
+//          } else {
+//            Logging.warn("Looking for PDF link on CUP page " + url + " failed, found " + scrape.size + " results")
+//            None
+//          }
         }
 
         // TODO imitate this in direct-article-link
@@ -156,7 +159,8 @@ trait Article {
         // 10.1002/(SICI)1097-0312(199602)49:2<85::AID-CPA1>3.0.CO;2-2 ---resolves to---> http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/abstract
         // 															 ---links to--->    http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/pdf
         //															 ---???---> http://onlinelibrary.wiley.com/store/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/asset/1_ftp.pdf?v=1&t=hfc3fjoo&s=dc6fad69f11cfc2ff2f302f5d1386c553d48f47c
-        // the mystery step here is somewhat strange; it looks like it contains an iframe, but then redirects to the contents of the iframe?
+        // the mystery step here is somewhat strange; it looks like it contains an iframe, but then redirects (via javascript) to the contents of the iframe?
+        // anyway, the following scraping seems to work
         case url if url.startsWith("http://dx.doi.org/10.1002/") => {
           val regex = """id="pdfDocument" src="([^"]*)"""".r
           val url2 = "http://onlinelibrary.wiley.com/doi/" + url.stripPrefix("http://dx.doi.org/") + "/pdf"
