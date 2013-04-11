@@ -104,21 +104,37 @@ function rewriteArticleLinks() {
     var eventually = function(link) { };
     if(elements.length == 1) {
         eventually = function(link) {
-            if(link.href.indexOf("pdf") !== -1) {
+            if(link.href.indexOf("pdf") !== -1 || link.href.indexOf("displayFulltext") !== -1 /* CUP */) {
                 $("a:contains('Article'), a:contains('Chapter'), a:contains('Thesis'), a:contains('Book')").after($('<span/>').attr({id: 'loading'}).text('…'))
                 saveFile(link.href, MRNumber() + ".pdf", showBlobInIframe, indicateNoPDF);
             }
         }
     }
     elements.each(function() {
-            // handle Elsevier separately
             if(this.href.startsWith("http://dx.doi.org/10.1006") || this.href.startsWith("http://dx.doi.org/10.1016")) {
-                  var link = this;
-                  loadAsync(this.href, function(response) {
-                            var regex = /pdfurl="([^"]*)"/;
-                            link.href = regex.exec(response)[1];
-                            eventually(link);
-                    });
+              // handle Elsevier separately
+              var link = this;
+              loadAsync(this.href, function(response) {
+                        var regex = /pdfurl="([^"]*)"/;
+                        link.href = regex.exec(response)[1];
+                        eventually(link);
+                });
+            } else if(this.href.startsWith("http://dx.doi.org/10.1017/S") || this.href.startsWith("http://dx.doi.org/10.1051/S") || this.href.startsWith("http://dx.doi.org/10.1112/S0010437X") || this.href.startsWith("http://dx.doi.org/10.1112/S14611570") || this.href.startsWith("http://dx.doi.org/10.1112/S00255793")) {
+                // Cambridge University Press
+                var link = this;
+                loadAsync(this.href, function(response) {
+                    var regex = /<a href="([^"]*)"\s*title="View PDF" class="article-pdf">/;
+                    link.href = "http://journals.cambridge.org/action/" + regex.exec(response)[1].trim();
+                    eventually(link);
+                });
+            } else if(this.href.startsWith("http://dx.doi.org/10.1002/")) {
+                // Wiley
+               var link = this;
+               loadAsync("http://onlinelibrary.wiley.com/doi/" + this.href.slice(18) + "/pdf", function(response) {
+                        var regex = /id="pdfDocument" src="([^"]*)/;
+                        link.href = regex.exec(response)[1];
+                        eventually(link);
+               });
             } else {
                 if(this.href.startsWith("http://dx.doi.org/")) {
                     var link = this;
@@ -128,7 +144,6 @@ function rewriteArticleLinks() {
                     );
                 };
                 if(this.href.startsWith("http://projecteuclid.org/getRecord?id=")) {
-                    http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=euclid.ojm/1317044943
                     this.href = this.href.replace("http://projecteuclid.org/getRecord?id=", "http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=");
                     eventually(this);
                 }

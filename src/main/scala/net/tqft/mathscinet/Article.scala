@@ -134,7 +134,6 @@ trait Article {
           regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => m.group(1))
         }
         // TODO imitate this in direct-article-link
-        // over there using jQuery is a bit problematic; maybe  it's worth finding the regex that does this!
         // Cambridge University Press
         // 10.1017 10.1051
         // 10.1017/S0022112010001734 ---resolves to---> http://journals.cambridge.org/action/displayAbstract?fromPage=online&aid=7829674
@@ -144,14 +143,6 @@ trait Article {
         case url if url.startsWith("http://dx.doi.org/10.1017/S") || url.startsWith("http://dx.doi.org/10.1051/S") || url.startsWith("http://dx.doi.org/10.1112/S0010437X") || url.startsWith("http://dx.doi.org/10.1112/S14611570") || url.startsWith("http://dx.doi.org/10.1112/S00255793") => {
           val regex = """<a href="([^"]*)"[ \t\n]*title="View PDF" class="article-pdf">""".r
           regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
-          
-//          val scrape = Html.jQuery(url).get("a.article-pdf").first
-//          if (scrape.size == 1) {
-//            Some("http://journals.cambridge.org/action/" + scrape.attribute("href").replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
-//          } else {
-//            Logging.warn("Looking for PDF link on CUP page " + url + " failed, found " + scrape.size + " results")
-//            None
-//          }
         }
 
         // TODO imitate this in direct-article-link

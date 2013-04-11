@@ -9,6 +9,7 @@ import java.io.File
 import org.openqa.selenium.By
 import org.openqa.selenium.firefox.FirefoxProfile
 
+// For in-browser PDF collection.
 object Process extends Logging {
   lazy val driver: WebDriver = {
     Logging.info("Starting Firefox/webdriver")

@@ -8,7 +8,7 @@ object SavePDFApp extends App {
   FirefoxSlurp.disable
   Article.disableBibtexSaving
 
-  val dir = new File("/Users/scott/scratch/pdfs/")
+  val dir = new File(System.getProperty("user.home") + "/scratch/pdfs/")
   
   val visitedHosts = scala.collection.mutable.Set[String]()
   val visitedPrefixes = scala.collection.mutable.Set[String]()
@@ -26,7 +26,7 @@ object SavePDFApp extends App {
   println("Identified URL for PDF: " + a.pdfURL.get)
   a.savePDF(dir)
   
-//  val articles = Articles.fromBibtexFile("/Users/scott/projects/arxiv-toolkit/50.bib").drop(scala.util.Random.nextInt(100000) + 50000)
+//  val articles = Articles.fromBibtexFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/50.bib").drop(scala.util.Random.nextInt(100000) + 50000)
 //    .filterNot(_.DOI.isEmpty)
 ////    .filterNot(_.DOI.get.startsWith("10.1002")) // Wiley (working)
 ////    .filterNot(_.DOI.get.startsWith("10.1007")) // Springer (working)
