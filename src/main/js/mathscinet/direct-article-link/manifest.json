@@ -26,5 +26,6 @@
     "http://*/*",
     "storage",
     "tabs"
-  ]
+  ],
+  "web_accessible_resources": [ "download.svg" ]
 }

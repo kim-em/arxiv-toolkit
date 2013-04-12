@@ -34,24 +34,24 @@ function loadAsync(url, callback) {
             // console.log("GM_xmlhttpRequest available")
             // load via GM
             GM_xmlhttpRequest({
-                              method: "GET",
-                              url: url,
-                              onload: function(response) {
-                              callback(response.responseText);
-                              }
-                              });
+              method: "GET",
+              url: url,
+              onload: function(response) {
+                  callback(response.responseText);
+              }
+          });
         }
-}
+    }
 
-function loadJSON(url, callback) {
-    if(typeof callback === "undefined") callback = function() {}
-        var request = {
-        method: "GET",
-        url: url,
-        dataType: "json",
-        success: callback
-        }
-    if(typeof GM_xmlhttpRequest === "undefined") {
+    function loadJSON(url, callback) {
+        if(typeof callback === "undefined") callback = function() {}
+            var request = {
+                method: "GET",
+                url: url,
+                dataType: "json",
+                success: callback
+            }
+            if(typeof GM_xmlhttpRequest === "undefined") {
         // console.log("GM_xmlhttpRequest unavailable")
         // hope for the best (i.e. that we're running as a Chrome extension)
         $.ajax(request)

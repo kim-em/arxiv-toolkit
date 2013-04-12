@@ -31,7 +31,13 @@ object SearchApp extends App {
 //     println(article.bibtex.toBIBTEXString)   
 //  }
   
-  for (article <- Search.inTopJournalsJumbled(50)) {
+  // AMS
+   for (article <- Search.inJournalsJumbled(Seq("0002-9947", "1056-3911", "1073-7928", "0894-0347", "0075-4102", "1088-4173", "0273-0979", "0002-9939", "0025-5718", "0024-6107", "0002-9904", "0234-0852", "1088-4165", "0065-9266"))) {
+    println(article.bibtex.toBIBTEXString)
+  }
+ 
+  
+  for (article <- Search.inTopJournalsJumbled(100)) {
     println(article.bibtex.toBIBTEXString)
   }
   
