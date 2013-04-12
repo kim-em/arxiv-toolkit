@@ -27,5 +27,5 @@
     "storage",
     "tabs"
   ],
-  "web_accessible_resources": [ "download.svg" ]
+  "web_accessible_resources": [ "download.svg", "PDFViewer.html" ]
 }

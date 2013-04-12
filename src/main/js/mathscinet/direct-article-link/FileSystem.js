@@ -2,9 +2,10 @@ var fileSystem;
 
 var fileSystemInitializing = true;
 
-// FIXME we should do this once and for all, not per page!
+// FIXME we should do this once and for all, not per page load!
 
 // If only we were an app, we can ask for permission for "syncFileSystem", and then use chrome.syncFileSystem.requestFileSystem  here.
+// Even that might not really help get access to the PDFs
 
 // Setup a file system
 window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;

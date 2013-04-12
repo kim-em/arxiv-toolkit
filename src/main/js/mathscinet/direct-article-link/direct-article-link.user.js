@@ -22,11 +22,7 @@ There are some error messages on the console about permissions to "tabs" and "ex
 }
 
 function insertMenuItem() {
-  $("ul#menu").prepend($("<li/>").attr({ class: 'first' }).append($("<a/>").text("PDFs").click(function() { doPDFMenu(); })));
-  function doPDFMenu() {
-    switchToPDFViewer();
-    showFiles("");
-  }
+  $("ul#menu").prepend($("<li/>").attr({ class: 'first' }).append($("<a/>").text("PDFs").click(function() { switchToPDFViewer(); })));
 
   function showFiles(filter) {
    findFilesByName(function(name) { return name.indexOf(filter) !== -1; }, continuation);
@@ -37,7 +33,7 @@ function insertMenuItem() {
       li
       .append($("<a/>").text("x").css('color', 'red').click(function() { deleteFile(file.name); li.remove(); }))
       .append($("<a/>").attr({ href: file.toURL(), download: '' }).append(downloadIcon()))
-      .append($("<a/>").text(file.name).attr({ href: file.toURL() }))
+      .append($("<a/>").text(file.name).attr({ class: 'pdf', href: file.toURL() }))
       $("#FileList").append(li);
     });
   }
@@ -45,11 +41,19 @@ function insertMenuItem() {
 
 function switchToPDFViewer() {
   $("#everything").hide();
-  $("#everything").after($("<div/>").attr({id: 'PDFViewer'}).css('text-align', 'left'));
-  $("#PDFViewer").append($("<p/>") .append($("<a/>").text("Return to MathScinet").click(switchBack)));
-  $("#PDFViewer").append($("<p/>")).append("Filter: ").append($("<input/>").keyup(function(event) { showFiles(this.value); }));
-  $("#PDFViewer").append($("<div/>").append($("<ul/>").attr({id: 'FileList' })));
+  $("#everything").after($("<div/>").load(chrome.extension.getURL('PDFViewer.html'), function() {
+    $("#return").click(switchBack);
+    $("#filter").keyup(function(event) { showFiles(this.value); });
+    $("#delete-all").click(function() {
+      $("#FileList a.pdf").each(function() { deleteFile($(this).text()); $(this).parent().remove(); });
+    });
+    $("#download-all").click(function() {
+      $("#FileList a.pdf").each(function() { var name = $(this).text(); loadBlob(this.href, function(blob) { window.saveAs(blob, name); }); });
+    });
+  }));
+  showFiles("");
 }
+
 function switchBack() {
   $("#PDFViewer").remove();
   $("#everything").show();
@@ -57,12 +61,16 @@ function switchBack() {
 
 }
 
+// In berserk mode, we try to process all the PDFs on a search page.
+// It's actually not that insane, although authentication dialogs from the AMS pop up haphazardly.
+var berserk = false;
+
 function processPDF(metadata) {
   loadBlob(metadata.PDF, function(blob) {
     verifyBlob(blob, function(blob) {
       metadata.blob = blob;
-      forkCallback([ saveToFile, saveToFileSystem, showInIFrame ])(metadata)
-    }, indicateNoPDF)
+      forkCallback([ saveToFileSystem, showInIFrame ])(metadata)
+    }, function() { indicateNoPDF(metadata); })
   });
 }
 
@@ -92,10 +100,6 @@ function filename(metadata) {
   }
 }
 
-function saveToFile(metadata) {
-  // window.saveAs(metadata.blob, metadata.MRNUMBER + ".pdf");
-}
-
 function saveToFileSystem(metadata) {
   function errorHandler(error) { console.log("An error occurred while saving to the chrome file system: ", error); }
 
@@ -118,7 +122,7 @@ function saveToFileSystem(metadata) {
             console.log("Writing blob to " + fileEntry.toURL());
           }, errorHandler);
   } else {
-    console.log("Warning: chrome file system not available (yet?)");
+    console.log("Warning: chrome file system not available.");
   }
 }
 
@@ -129,16 +133,18 @@ function showInIFrame(metadata) {
   } else {
     url = window.URL.createObjectURL(metadata.blob);
   }
-  var iframe = $('<iframe/>').attr({id: 'pdf-iframe', src:url, width:'100%', height: $(window).height(), border:'none' }).appendTo('div#content');
-  $("#loading").text('').append($("<a/>").attr({ href: url, download: filename(metadata) }).append(downloadIcon));
+  if(!berserk) {
+    var iframe = $('<iframe/>').attr({id: 'pdf-iframe', src:url, width:'100%', height: $(window).height(), border:'none' }).appendTo('div#content');
+  }
+  $("#loading" + metadata.MRNUMBER).text('').append($("<a/>").attr({ href: url, download: filename(metadata) }).append(downloadIcon));
 }
 
 function downloadIcon() {
   return $("<img/>").attr({ width: '25px', style: 'vertical-align:-30%;', src: chrome.extension.getURL('download.svg') });
 }
 
-function indicateNoPDF() {
-  $("#loading").text('✘');
+function indicateNoPDF(metadata) {
+  $("#loading" + metadata.MRNUMBER).text('✘');
 }
 
 // Given some metadata, tries to find a URL for the PDF, and if successful calls the callback function with the metadata know containing a "PDF" field.
@@ -226,7 +232,6 @@ function findPDF(metadata, callback) {
             h.find("a[href*=mscdoc]").remove();
             h.find(".sfx").nextAll().remove();
             h.find(".sfx").remove();
-            // TODO remove reviewer
             // insert dashes
             h.find("a.mrnum").after(" - ");
             h.find("span.title").before(" - ");
@@ -249,13 +254,13 @@ function findPDF(metadata, callback) {
         }
 
         var eventually = function(metadata) { };
-        if(metadataDivs.length == 1) {
+        if(metadataDivs.length == 1 || berserk) {
           eventually = function(metadata) {
             var href = metadata.link.attr('href');
             if(href.indexOf("http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=euclid.dmj/") == 0) {
               showInIFrame(href);
             } else if(href.indexOf("pdf") !== -1 || href.indexOf("displayFulltext") !== -1 /* CUP */) {
-              metadata.link.after($('<span/>').attr({id: 'loading'}).text('…'))                
+              metadata.link.after($('<span/>').attr({id: 'loading' + metadata.MRNUMBER}).text('…'))                
               processPDF(metadata);
             }
           }
