@@ -1,0 +1,31 @@
+{
+  "name": "Rewrite article links directly to PDF",
+  "version": "0.1.1",
+  "manifest_version": 2,
+  "description": "Rewrite article links directly to PDF",
+  "content_scripts": [
+    {
+      "matches": [
+	"http://www.ams.org/mathscinet*",
+	"http://ams.rice.edu/mathscinet*",
+	"http://ams.impa.br/mathscinet*",
+	"http://ams.math.uni-bielefeld.de/mathscinet*",
+	"http://ams.mpim-bonn.mpg.de/mathscinet*",
+	"http://ams.u-strasbg.fr/mathscinet*",
+	"http://www.ams.org.proxy.library.emory.edu/mathscinet*",
+	"http://www.ams.org.libproxy.mit.edu/mathscinet*",
+	"http://www.ams.org.virtual.anu.edu.au/mathscinet*"
+       ],
+      "js": ["lib/jquery-1.9.1.min.js", "lib/FileSaver.min.js", "FileSystem.js", "Load.js", "direct-article-link.user.js"]
+    },
+    {
+	"matches": [ "http://projecteuclid.org/DPubS?*&page=record" ], "js": [  "lib/jquery-1.9.1.min.js", "duke.js" ], "all_frames": true
+    }
+  ],
+  "permissions": [
+    "http://*/*",
+    "storage",
+    "tabs"
+  ],
+  "web_accessible_resources": [ "download.svg", "PDFViewer.html" ]
+}
