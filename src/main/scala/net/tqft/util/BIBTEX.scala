@@ -46,7 +46,7 @@ object BIBTEX extends Logging {
       val identifier = lines.head match {
         case IdentifierPattern(id) => id
       }
-      require(lines.last == "}")
+      require(lines.last == "}", "Failed while parsing BIBTEX: " + bibtexString)
       val data = lines.tail.init.mkString("\n").replaceAll("\n             ", "").split("\n").map(line => line.replaceAllLiterally("&gt;", ">").replaceAllLiterally("&lt;", "<").replaceAllLiterally("&amp;", "&")).map(line => line.take(10).trim -> line.drop(14).dropRight(2)).toList
 
       Some(BIBTEX(documentType, identifier, data))
