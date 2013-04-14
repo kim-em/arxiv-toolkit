@@ -225,6 +225,7 @@ trait Article {
   }
 
   def savePDF(directory: File) {
+    // FIXME Better filename? "MRXXX - Author A and Author B - A Great Paper - Journal of Everything 12 13 14.pdf"
     val file = new File(directory, identifierString + ".pdf")
     if (file.exists()) {
       Logging.info("PDF for " + identifierString + " already exists in " + directory)

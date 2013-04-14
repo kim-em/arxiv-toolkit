@@ -37,7 +37,7 @@ object BIBTEX extends Logging {
     if (bibtexString.startsWith("@preamble")) {
       None
     } else {
-      val lines = bibtexString.split("\n")
+      val lines = bibtexString.split("\n").filterNot(_.trim.startsWith("</") /* sometimes DOIs look like they contain a tag, and browsers sometimes insert spurious close tags when reporting the source */)
       val DocumentTypePattern = """@([a-z ]*)\{[A-Za-z0-9]*,""".r
       val documentType = lines.head match {
         case DocumentTypePattern(t) => t.trim
