@@ -16,7 +16,7 @@
 	"http://www.ams.org.libproxy.mit.edu/mathscinet*",
 	"http://www.ams.org.virtual.anu.edu.au/mathscinet*"
        ],
-      "js": ["lib/jquery-1.9.1.min.js", "lib/FileSaver.min.js", "FileSystem.js", "Load.js", "direct-article-link.user.js"]
+      "js": ["lib/jquery-1.9.1.min.js", "lib/FileSaver.min.js", "FileSystem.js", "Load.js", "lib/JSZip.js", "direct-article-link.user.js"]
     },
     {
 	"matches": [ "http://projecteuclid.org/DPubS?*&page=record" ], "js": [  "lib/jquery-1.9.1.min.js", "duke.js" ], "all_frames": true

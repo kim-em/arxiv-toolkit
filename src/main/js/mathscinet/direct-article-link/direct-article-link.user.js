@@ -1,6 +1,8 @@
 function main() {    
   console.log("direct-article-link.user.js starting up on " + location.href + " at " + new Date().getTime());
 
+  verifyEncoding("a perfectly safe string, hopefully");
+
   insertMenuItem();
   rewriteArticleLinks();
 
@@ -21,6 +23,12 @@ There are some error messages on the console about permissions to "tabs" and "ex
 //                        });
 }
 
+function verifyEncoding(string) {
+  // var zip = new JSZip();
+  // zip.file(string, string);
+  // window.saveAs(zip.generate({type:"blob"}),string + ".zip");
+}
+
 function insertMenuItem() {
   $("ul#menu").prepend($("<li/>").attr({ class: 'first' }).append($("<a/>").text("PDFs").click(function() { switchToPDFViewer(); })));
 
@@ -29,10 +37,11 @@ function insertMenuItem() {
    function continuation(files) {
     $("#FileList").children().remove();
     files.forEach(function(file) {
+      verifyEncoding(file.name);
       var li = $("<li/>");
       li
       .append($("<a/>").text("x").css('color', 'red').click(function() { deleteFile(file.name); li.remove(); }))
-      .append($("<a/>").attr({ href: file.toURL(), download: '' }).append(downloadIcon()))
+      .append($("<a/>").attr({ href: file.toURL(), download: file.name  }).append(downloadIcon()))
       .append($("<a/>").text(file.name).attr({ class: 'pdf', href: file.toURL() }))
       $("#FileList").append(li);
     });
@@ -45,13 +54,47 @@ function switchToPDFViewer() {
     $("#return").click(switchBack);
     $("#filter").keyup(function(event) { showFiles(this.value); });
     $("#delete-all").click(function() {
-      $("#FileList a.pdf").each(function() { deleteFile($(this).text()); $(this).parent().remove(); });
+      $("#FileList a.pdf").each(function() {
+        deleteFile($(this).text());
+        $(this).parent().remove();
+      });
     });
     $("#download-all").click(function() {
-      $("#FileList a.pdf").each(function() { var name = $(this).text(); loadBlob(this.href, function(blob) { window.saveAs(blob, name); }); });
+      $("#FileList a.pdf").each(function() {
+        var name = $(this).text();
+        loadBlob(this.href, function(blob) {
+          window.saveAs(blob, name);
+        });
+      });
     });
+    $("#download-zip").click(function() {
+      console.log("Creating zip file...");
+      var zip = new JSZip();
+      console.log("JSZip thinks it can handle arraybuffer: ", JSZip.support.arraybuffer);
+      console.log("JSZip thinks it can handle blob: ", JSZip.support.blob);
+      var count = $("#FileList a.pdf").length;
+      $("#FileList a.pdf").each(function() {
+        var name = $(this).text();
+        console.log("...requesting zip entry for " + name);
+        window.resolveLocalFileSystemURL(this.href, function(fileEntry) {
+          fileEntry.file(function(file) {
+            console.log("...obtained file entry for " + name);
+            readAsArrayBuffer(file, function(buffer) {
+              console.log("...obtained array buffer for " + name);
+              zip.file(name, buffer, { binary: true });
+              count--;
+              console.log("..." + count + " entries remaining")
+              if(count == 0) {
+                console.log("...initiating save")
+                window.saveAs(zip.generate({type:"blob", compression:"STORE"}), "papers.zip");
+              }
+            });
+          });
+        });
+      });
+    });
+    showFiles("");
   }));
-  showFiles("");
 }
 
 function switchBack() {
@@ -100,15 +143,11 @@ function filename(metadata) {
   }
 }
 
-function saveToFileSystem(metadata) {
+function saveBlobToFileSystem(blob, filename) {
   function errorHandler(error) { console.log("An error occurred while saving to the chrome file system: ", error); }
 
-  if(metadata.PDF.indexOf("filesystem:") === 0) {
-    console.log("PDF is already in the chrome file system");
-  }
-
   if(typeof fileSystem !== "undefined") {
-    fileSystem.root.getFile(filename(metadata), {create: true}, function(fileEntry) {
+    fileSystem.root.getFile(filename, {create: true}, function(fileEntry) {
             // Create a FileWriter object for our FileEntry .
             fileEntry.createWriter(function(fileWriter) {
              fileWriter.onwriteend = function(e) {
@@ -117,13 +156,24 @@ function saveToFileSystem(metadata) {
             fileWriter.onerror = function(e) {
               console.log('Write failed: ' + e.toString());
             };
-            fileWriter.write(metadata.blob);
+            fileWriter.write(blob);
           }, errorHandler);
             console.log("Writing blob to " + fileEntry.toURL());
           }, errorHandler);
   } else {
     console.log("Warning: chrome file system not available.");
+  }  
+}
+
+function saveToFileSystem(metadata) {
+
+  if(metadata.PDF.indexOf("filesystem:") === 0) {
+    console.log("PDF is already in the chrome file system");
+    return;
+  } else {
+    saveBlobToFileSystem(metadata.blob, filename(metadata));
   }
+
 }
 
 function showInIFrame(metadata) {
@@ -148,7 +198,7 @@ function indicateNoPDF(metadata) {
 }
 
 // Given some metadata, tries to find a URL for the PDF, and if successful calls the callback function with the metadata know containing a "PDF" field.
-function findPDF(metadata, callback) {
+function findPDF(metadata, callback, allowScraping) {
   console.log("Attempting to find PDF for " + JSON.stringify({ URL: metadata.URL, MRNUMBER: metadata.MRNUMBER, citation: metadata.citation }));
   function doCallback(url) {
     metadata.PDF = url;
@@ -174,25 +224,31 @@ function findPDF(metadata, callback) {
     if(metadata.URL) {
       if(metadata.URL.startsWith("http://dx.doi.org/10.1006") || metadata.URL.startsWith("http://dx.doi.org/10.1016")) {
               // handle Elsevier separately
+              if(allowScraping) {
               loadAsync(metadata.URL, function(response) {
                 var regex = /pdfurl="([^"]*)"/;
                 doCallback(regex.exec(response)[1]);
                 return;
               });
+            }
             } else if(metadata.URL.startsWith("http://dx.doi.org/10.1017/S") || metadata.URL.startsWith("http://dx.doi.org/10.1017/is") || metadata.URL.startsWith("http://dx.doi.org/10.1051/S") || metadata.URL.startsWith("http://dx.doi.org/10.1112/S0010437X") || metadata.URL.startsWith("http://dx.doi.org/10.1112/S14611570") || metadata.URL.startsWith("http://dx.doi.org/10.1112/S00255793")) {
               // Cambridge University Press
+              if(allowScraping) {
               loadAsync(metadata.URL, function(response) {
                 var regex = /<a href="([^"]*)"\s*title="View PDF" class="article-pdf">/;
                 doCallback("http://journals.cambridge.org/action/" + regex.exec(response)[1].trim());
-                return;
+                return; 
               });
+            }
             } else if(metadata.URL.startsWith("http://dx.doi.org/10.1002/")) {
               // Wiley
+              if(allowScraping) {
               loadAsync("http://onlinelibrary.wiley.com/doi/" + metadata.URL.slice(18) + "/pdf", function(response) {
                 var regex = /id="pdfDocument" src="([^"]*)/;
                 doCallback(regex.exec(response)[1]);
                 return;
               });
+            }
             } else if(metadata.URL.startsWith("http://dx.doi.org/")) {
               loadJSON(
                metadata.URL.replace("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/"),
@@ -250,6 +306,7 @@ function findPDF(metadata, callback) {
           // cleanup
           h.contents().filter(function() { return this.nodeType === 3 && this.textContent === "; "; }).replaceWith(" and ");
           var citation = h.text().replace(/\(Reviewer: .*\)/, '').replace(/\s+/g, ' ').trim();
+          verifyEncoding(citation);
           return { URL: URL, MRNUMBER: MRNUMBER, div: div, link: link, citation: citation }
         }
 
@@ -272,7 +329,7 @@ function findPDF(metadata, callback) {
              metadata.link.attr('href', metadata.PDF);
              eventually(metadata);
            }
-         });
+         }, metadataDivs.length == 1 || berserk);
         });
       }
 
