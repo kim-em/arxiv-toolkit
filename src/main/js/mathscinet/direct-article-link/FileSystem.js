@@ -9,6 +9,8 @@ var fileSystemInitializing = true;
 
 // Setup a file system
 window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
+window.resolveLocalFileSystemURL = window.resolveLocalFileSystemURL ||
+                                   window.webkitResolveLocalFileSystemURL;
 window.webkitStorageInfo.requestQuota(PERSISTENT, 1024*1024*1024, function(grantedBytes) {
   window.requestFileSystem(
     PERSISTENT, 
@@ -60,6 +62,23 @@ function findFilesByName(predicate, callback) {
       }
     }
   }
+
+function readAsArrayBuffer(file, callback) {
+      var reader = new FileReader();
+
+      reader.onerror = function(e) {
+        console.log("onerror" + e);
+      }
+      // Closure to capture the file information.
+      reader.onloadend = function(e) {
+        console.log("onloadend");
+          callback(e.target.result);
+      }
+
+      console.log("starting FileReader on " + file.name);
+      // Read in the image file as a data URL.
+      reader.readAsArrayBuffer(file);
+    }
 
   function deleteFile(name) {
     fileSystem.root.getFile(name, {create: false}, function(fileEntry) {
