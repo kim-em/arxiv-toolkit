@@ -59,20 +59,21 @@ function switchToPDFViewer() {
         $(this).parent().remove();
       });
     });
-    $("#download-all").click(function() {
-      $("#FileList a.pdf").each(function() {
-        var name = $(this).text();
-        loadBlob(this.href, function(blob) {
-          window.saveAs(blob, name);
-        });
-      });
-    });
-    $("#download-zip").click(function() {
-      console.log("Creating zip file...");
-      var zip = new JSZip();
-      console.log("JSZip thinks it can handle arraybuffer: ", JSZip.support.arraybuffer);
-      console.log("JSZip thinks it can handle blob: ", JSZip.support.blob);
+    // $("#download-all").click(function() {
+    //   $("#FileList a.pdf").each(function() {
+    //     var name = $(this).text();
+    //     loadBlob(this.href, function(blob) {
+    //       window.saveAs(blob, name);
+    //     });
+    //   });
+    // });
+$("#download-all").click(function() {
+  console.log("Creating zip file...");
+  var zip = new JSZip();
+      // TODO perhaps we can just hand JSZip blobs, and this would be more efficient than creating ArrayBuffers?
       var count = $("#FileList a.pdf").length;
+      $("#zip-progress").show();
+      $("#zip-counter").text(count);
       $("#FileList a.pdf").each(function() {
         var name = $(this).text();
         console.log("...requesting zip entry for " + name);
@@ -83,18 +84,20 @@ function switchToPDFViewer() {
               console.log("...obtained array buffer for " + name);
               zip.file(name, buffer, { binary: true });
               count--;
+              $("#zip-counter").text(count);
               console.log("..." + count + " entries remaining")
               if(count == 0) {
                 console.log("...initiating save")
                 window.saveAs(zip.generate({type:"blob", compression:"STORE"}), "papers.zip");
+                $("#zip-progress").hide();
               }
             });
           });
         });
       });
     });
-    showFiles("");
-  }));
+showFiles("");
+}));
 }
 
 function switchBack() {
@@ -225,30 +228,30 @@ function findPDF(metadata, callback, allowScraping) {
       if(metadata.URL.startsWith("http://dx.doi.org/10.1006") || metadata.URL.startsWith("http://dx.doi.org/10.1016")) {
               // handle Elsevier separately
               if(allowScraping) {
-              loadAsync(metadata.URL, function(response) {
-                var regex = /pdfurl="([^"]*)"/;
-                doCallback(regex.exec(response)[1]);
-                return;
-              });
-            }
+                loadAsync(metadata.URL, function(response) {
+                  var regex = /pdfurl="([^"]*)"/;
+                  doCallback(regex.exec(response)[1]);
+                  return;
+                });
+              }
             } else if(metadata.URL.startsWith("http://dx.doi.org/10.1017/S") || metadata.URL.startsWith("http://dx.doi.org/10.1017/is") || metadata.URL.startsWith("http://dx.doi.org/10.1051/S") || metadata.URL.startsWith("http://dx.doi.org/10.1112/S0010437X") || metadata.URL.startsWith("http://dx.doi.org/10.1112/S14611570") || metadata.URL.startsWith("http://dx.doi.org/10.1112/S00255793")) {
               // Cambridge University Press
               if(allowScraping) {
-              loadAsync(metadata.URL, function(response) {
-                var regex = /<a href="([^"]*)"\s*title="View PDF" class="article-pdf">/;
-                doCallback("http://journals.cambridge.org/action/" + regex.exec(response)[1].trim());
-                return; 
-              });
-            }
+                loadAsync(metadata.URL, function(response) {
+                  var regex = /<a href="([^"]*)"\s*title="View PDF" class="article-pdf">/;
+                  doCallback("http://journals.cambridge.org/action/" + regex.exec(response)[1].trim());
+                  return; 
+                });
+              }
             } else if(metadata.URL.startsWith("http://dx.doi.org/10.1002/")) {
               // Wiley
               if(allowScraping) {
-              loadAsync("http://onlinelibrary.wiley.com/doi/" + metadata.URL.slice(18) + "/pdf", function(response) {
-                var regex = /id="pdfDocument" src="([^"]*)/;
-                doCallback(regex.exec(response)[1]);
-                return;
-              });
-            }
+                loadAsync("http://onlinelibrary.wiley.com/doi/" + metadata.URL.slice(18) + "/pdf", function(response) {
+                  var regex = /id="pdfDocument" src="([^"]*)/;
+                  doCallback(regex.exec(response)[1]);
+                  return;
+                });
+              }
             } else if(metadata.URL.startsWith("http://dx.doi.org/")) {
               loadJSON(
                metadata.URL.replace("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/"),
