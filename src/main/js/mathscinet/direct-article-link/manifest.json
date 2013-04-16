@@ -11,6 +11,7 @@
     "default_title": "MathScinet article links",      // optional; shown in tooltip
     "default_popup": "Settings.html"
   },
+  "options_page": "Settings.html",
   "background": { "scripts": ["background.js"] },
   "content_scripts": [
   // inject the main script on any mathscinet page, or mirrors or proxies
