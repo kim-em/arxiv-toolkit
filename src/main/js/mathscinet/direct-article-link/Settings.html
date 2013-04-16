@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<head>
+	<style>
+	.disabled {
+		color: gray;
+	}
+	body {
+       width: 500px;
+    }
+	</style>
+</head>
+<body>
+	<div id="content">
+		<p>
+			<input type="checkbox" id="berserk"/>Process search pages too.
+		</p>
+		<hr/>
+		<p>
+			Process PDF links:
+			<ul style="list-style: none;">
+				<li><input type="checkbox" id="inline" checked/>Show inline.</li>
+				<li><input type="checkbox" id="download"/>Download (<input type="checkbox" id="download-zip" checked/> in .zip form).</li>
+				<li ><input type="checkbox" id="store" checked/>Store in browser storage (<span class="disabled"><input type="checkbox" id="store-synchronized" disabled/> synchronized</span>).</li>
+				<li>Send to:
+					<ul style="list-style: none;">
+						<li class="disabled"><input type="checkbox" id="dropbox" disabled/>Dropbox</li>
+						<li class="disabled"><input type="checkbox" id="drive" disabled/>Google Drive</li>
+						<li class="disabled"><input type="checkbox" id="mega" disabled/>mega.co.nz account <input id="mega-account" disabled/></li>
+					</ul>
+				</li>
+			</ul>
+		</p>
+	</div>
+	<script src="lib/jquery-1.9.1.min.js"></script>
+	<script src="Settings.js"></script>
+</body>
+</hmtl>
