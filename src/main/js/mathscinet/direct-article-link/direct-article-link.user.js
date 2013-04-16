@@ -1,10 +1,21 @@
+var settingsKeys = ["#berserk","#inline","#download","#download-zip", "#store","#store-synchronized","#dropbox","#drive","#mega","#mega-account"];
+var settings = {};
+
+var onSearchPage = false;
+
+// In berserk mode, we try to process all the PDFs on a search page.
+// It's actually not that insane, although authentication dialogs from the AMS pop up haphazardly.
+
 function main() {    
   console.log("direct-article-link.user.js starting up on " + location.href + " at " + new Date().getTime());
 
-  verifyEncoding("a perfectly safe string, hopefully");
-
   insertMenuItem();
-  rewriteArticleLinks();
+
+  chrome.storage.sync.get(settingsKeys, function(items) {
+    settings = items;
+    rewriteArticleLinks();
+  });
+
 
 
 /* Hmm... my attemps to integrate with Dropbox seem to have run into a dead-end. The authenticate call never reaches the callback.
@@ -23,12 +34,6 @@ There are some error messages on the console about permissions to "tabs" and "ex
 //                        });
 }
 
-function verifyEncoding(string) {
-  // var zip = new JSZip();
-  // zip.file(string, string);
-  // window.saveAs(zip.generate({type:"blob"}),string + ".zip");
-}
-
 function insertMenuItem() {
   $("ul#menu").prepend($("<li/>").attr({ class: 'first' }).append($("<a/>").text("PDFs").click(function() { switchToPDFViewer(); })));
 
@@ -37,7 +42,6 @@ function insertMenuItem() {
    function continuation(files) {
     $("#FileList").children().remove();
     files.forEach(function(file) {
-      verifyEncoding(file.name);
       var li = $("<li/>");
       li
       .append($("<a/>").text("x").css('color', 'red').click(function() { deleteFile(file.name); li.remove(); }))
@@ -70,32 +74,31 @@ function switchToPDFViewer() {
 $("#download-all").click(function() {
   console.log("Creating zip file...");
   var zip = new JSZip();
-      // TODO perhaps we can just hand JSZip blobs, and this would be more efficient than creating ArrayBuffers?
-      var count = $("#FileList a.pdf").length;
-      $("#zip-progress").show();
-      $("#zip-counter").text(count);
-      $("#FileList a.pdf").each(function() {
-        var name = $(this).text();
-        console.log("...requesting zip entry for " + name);
-        window.resolveLocalFileSystemURL(this.href, function(fileEntry) {
-          fileEntry.file(function(file) {
-            console.log("...obtained file entry for " + name);
-            readAsArrayBuffer(file, function(buffer) {
-              console.log("...obtained array buffer for " + name);
-              zip.file(name, buffer, { binary: true });
-              count--;
-              $("#zip-counter").text(count);
-              console.log("..." + count + " entries remaining")
-              if(count == 0) {
-                console.log("...initiating save")
-                window.saveAs(zip.generate({type:"blob", compression:"STORE"}), "papers.zip");
-                $("#zip-progress").hide();
-              }
-            });
-          });
+  var count = $("#FileList a.pdf").length;
+  $("#zip-progress").show();
+  $("#zip-counter").text(count);
+  $("#FileList a.pdf").each(function() {
+    var name = $(this).text();
+    console.log("...requesting zip entry for " + name);
+    window.resolveLocalFileSystemURL(this.href, function(fileEntry) {
+      fileEntry.file(function(file) {
+        console.log("...obtained file entry for " + name);
+        readAsArrayBuffer(file, function(buffer) {
+          console.log("...obtained array buffer for " + name);
+          zip.file(name, buffer, { binary: true });
+          count--;
+          $("#zip-counter").text(count);
+          console.log("..." + count + " entries remaining")
+          if(count == 0) {
+            console.log("...initiating save")
+            window.saveAs(zip.generate({type:"blob", compression:"STORE"}), "papers.zip");
+            $("#zip-progress").hide();
+          }
         });
       });
     });
+  });
+});
 showFiles("");
 }));
 }
@@ -107,17 +110,17 @@ function switchBack() {
 
 }
 
-// In berserk mode, we try to process all the PDFs on a search page.
-// It's actually not that insane, although authentication dialogs from the AMS pop up haphazardly.
-var berserk = false;
 
 function processPDF(metadata) {
-  loadBlob(metadata.PDF, function(blob) {
-    verifyBlob(blob, function(blob) {
-      metadata.blob = blob;
-      forkCallback([ saveToFileSystem, showInIFrame ])(metadata)
-    }, function() { indicateNoPDF(metadata); })
-  });
+  if(settings["#inline"] || settings["#store"] || settings["#download"]) {
+    metadata.link.after($('<span/>').attr({id: 'loading' + metadata.MRNUMBER}).text('…'))                
+    loadBlob(metadata.PDF, function(blob) {
+      verifyBlob(blob, function(blob) {
+        metadata.blob = blob;
+        forkCallback([ saveToFileSystem, showInIFrame, generateDownload ])(metadata)
+      }, function() { indicateNoPDF(metadata); })
+    });
+  }
 }
 
 function forkCallback(callbacks) {
@@ -169,25 +172,41 @@ function saveBlobToFileSystem(blob, filename) {
 }
 
 function saveToFileSystem(metadata) {
-
-  if(metadata.PDF.indexOf("filesystem:") === 0) {
-    console.log("PDF is already in the chrome file system");
-    return;
-  } else {
-    saveBlobToFileSystem(metadata.blob, filename(metadata));
+  if(settings["#store"]) {
+    if(metadata.PDF.indexOf("filesystem:") === 0) {
+      console.log("PDF is already in the chrome file system");
+      return;
+    } else {
+      saveBlobToFileSystem(metadata.blob, filename(metadata));
+    }
   }
+}
 
+function generateDownload(metadata) {
+  if(settings["#download"]) {
+    if(settings["#download-zip"]) {
+      var zip = new JSZip();
+      readAsArrayBuffer(metadata.blob, function(buffer) {
+        zip.file(filename(metadata), buffer, { binary: true });
+        window.saveAs(zip.generate({type:"blob", compression:"STORE"}), filename(metadata) + ".zip");
+      });
+    } else {
+      window.saveAs(metadata.blob, filename(metadata));
+    }
+  }
 }
 
 function showInIFrame(metadata) {
-  var url
-  if(metadata.PDF.indexOf("filesystem:") === 0) {
-    url = metadata.PDF;
-  } else {
-    url = window.URL.createObjectURL(metadata.blob);
-  }
-  if(!berserk) {
-    var iframe = $('<iframe/>').attr({id: 'pdf-iframe', src:url, width:'100%', height: $(window).height(), border:'none' }).appendTo('div#content');
+  if(settings["#inline"]) {
+    var url
+    if(metadata.PDF.indexOf("filesystem:") === 0) {
+      url = metadata.PDF;
+    } else {
+      url = window.URL.createObjectURL(metadata.blob);
+    }
+    if(!onSearchPage) {
+      var iframe = $('<iframe/>').attr({id: 'pdf-iframe', src:url, width:'100%', height: $(window).height(), border:'none' }).appendTo('div#content');
+    }
   }
   $("#loading" + metadata.MRNUMBER).text('').append($("<a/>").attr({ href: url, download: filename(metadata) }).append(downloadIcon));
 }
@@ -276,11 +295,14 @@ function findPDF(metadata, callback, allowScraping) {
         // First, strip out all the "leavingmsn" prefixes
         metadataDivs.find("a").attr('href', function() { return this.href.replace(/http:\/\/[^\/]*\/leavingmsn\?url=/,""); });
 
+        onSearchPage = metadataDivs.length > 1;
+
         function extractMetadata(div) {
           var link = $(div).find("a:contains('Article'), a:contains('Chapter'), a:contains('Thesis'), a:contains('Book')")
           var URL = link.attr('href');
           var MRNUMBER = $(div).find("strong").first().text();
           var h = $(div).clone();
+          // TODO parse citation further, and have file name customizable.
           h.find(".item_status").remove();
           h.find("span.MathTeX").remove();
           if(h.find("div.checkbox").length !== 0) {
@@ -309,18 +331,18 @@ function findPDF(metadata, callback, allowScraping) {
           // cleanup
           h.contents().filter(function() { return this.nodeType === 3 && this.textContent === "; "; }).replaceWith(" and ");
           var citation = h.text().replace(/\(Reviewer: .*\)/, '').replace(/\s+/g, ' ').trim();
-          verifyEncoding(citation);
           return { URL: URL, MRNUMBER: MRNUMBER, div: div, link: link, citation: citation }
         }
 
         var eventually = function(metadata) { };
-        if(metadataDivs.length == 1 || berserk) {
+        if(!onSearchPage || settings["#berserk"]) {
           eventually = function(metadata) {
             var href = metadata.link.attr('href');
             if(href.indexOf("http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=euclid.dmj/") == 0) {
-              showInIFrame(href);
+              if(settings["#inline"]) {
+                showInIFrame(href);
+              }
             } else if(href.indexOf("pdf") !== -1 || href.indexOf("displayFulltext") !== -1 /* CUP */) {
-              metadata.link.after($('<span/>').attr({id: 'loading' + metadata.MRNUMBER}).text('…'))                
               processPDF(metadata);
             }
           }
@@ -332,7 +354,7 @@ function findPDF(metadata, callback, allowScraping) {
              metadata.link.attr('href', metadata.PDF);
              eventually(metadata);
            }
-         }, metadataDivs.length == 1 || berserk);
+         }, metadataDivs.length == 1 || settings["#berserk"]);
         });
       }
 

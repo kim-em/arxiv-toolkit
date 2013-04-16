@@ -1,9 +1,19 @@
 {
-  "name": "Rewrite article links directly to PDF",
-  "version": "0.1.1",
+  "name": "Add direct article links to MathSciNet",
+  "version": "0.1.2",
   "manifest_version": 2,
-  "description": "Rewrite article links directly to PDF",
+  "description": "Add direct article links to MathSciNet",
+  "icons" : {
+      "128" : "library.png"
+    },
+  "page_action": {
+    "default_icon": "library.png",
+    "default_title": "MathScinet article links",      // optional; shown in tooltip
+    "default_popup": "Settings.html"
+  },
+  "background": { "scripts": ["background.js"] },
   "content_scripts": [
+  // inject the main script on any mathscinet page, or mirrors or proxies
   {
     "matches": [
     "http://www.ams.org/mathscinet*",
@@ -18,12 +28,13 @@
     ],
     "js": ["lib/jquery-1.9.1.min.js", "lib/FileSaver.min.js", "FileSystem.js", "Load.js", "lib/JSZip.js", "direct-article-link.user.js"]
     },
+    // and an extra snippet for Duke, so we can get the referer right.
     {
      "matches": [ "http://projecteuclid.org/DPubS?*&page=record" ], "js": [  "lib/jquery-1.9.1.min.js", "duke.js" ], "all_frames": true
    }
    ],
     "permissions": [
-    "http://*/*",
+    "http://*/*", // we need this to access publishers web pages
     "storage",
     "tabs"
     ],

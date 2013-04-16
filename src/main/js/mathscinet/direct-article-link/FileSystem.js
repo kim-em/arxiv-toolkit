@@ -5,7 +5,8 @@ var fileSystemInitializing = true;
 // FIXME we should do this once and for all, not per page load!
 
 // If only we were an app, we can ask for permission for "syncFileSystem", and then use chrome.syncFileSystem.requestFileSystem  here.
-// Even that might not really help get access to the PDFs
+// It synchronizes to a hidden folder, that isn't synced by the Google Drive application, so it's not really a complete solution anyway.
+// Best of all would be sending the PDF direct to Google Drive and/or Dropbox (or even Mega).
 
 // Setup a file system
 window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
