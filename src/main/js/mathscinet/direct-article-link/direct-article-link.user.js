@@ -16,20 +16,6 @@ function main() {
     rewriteArticleLinks();
   });
 
-/* Hmm... my attemps to integrate with Dropbox seem to have run into a dead-end. The authenticate call never reaches the callback.
-There are some error messages on the console about permissions to "tabs" and "experimental.identity", which I haven't been able to resolve. */
-   var client = new Dropbox.Client({ key: "cIrBuCz5CWA=|fGPZmdP8KEuRpnB0DUK27/oCcPvCWXzzJAF16wpHuA==" /* encoded at https://dl-web.dropbox.com/spa/pjlfdak1tmznswp/api_keys.js/public/index.html */, sandbox: true });
-   client.authDriver(new Dropbox.Drivers.Chrome({ receiverPath: chrome.extension.getURL("oauth/chrome_oauth_receiver.html") }));
-   client.authenticate(function(error, client) {
-                       if (error) {
-                           alert("Dropbox authentication failed: ", error);
-                           // Don't forget to return from the callback, so you don't execute the code
-                           // that assumes everything went well.
-                           return false;
-                       } else {
-                           alert("Successfully authenticated Dropbox!");
-                       }
-                       });
 }
 
 function insertMenuItem() {
@@ -61,44 +47,36 @@ function switchToPDFViewer() {
         $(this).parent().remove();
       });
     });
-    // $("#download-all").click(function() {
-    //   $("#FileList a.pdf").each(function() {
-    //     var name = $(this).text();
-    //     loadBlob(this.href, function(blob) {
-    //       window.saveAs(blob, name);
-    //     });
-    //   });
-    // });
-$("#download-all").click(function() {
-  console.log("Creating zip file...");
-  var zip = new JSZip();
-  var count = $("#FileList a.pdf").length;
-  $("#zip-progress").show();
-  $("#zip-counter").text(count);
-  $("#FileList a.pdf").each(function() {
-    var name = $(this).text();
-    console.log("...requesting zip entry for " + name);
-    window.resolveLocalFileSystemURL(this.href, function(fileEntry) {
-      fileEntry.file(function(file) {
-        console.log("...obtained file entry for " + name);
-        readAsArrayBuffer(file, function(buffer) {
-          console.log("...obtained array buffer for " + name);
-          zip.file(name, buffer, { binary: true });
-          count--;
-          $("#zip-counter").text(count);
-          console.log("..." + count + " entries remaining")
-          if(count == 0) {
-            console.log("...initiating save")
-            window.saveAs(zip.generate({type:"blob", compression:"STORE"}), "papers.zip");
-            $("#zip-progress").hide();
-          }
+    $("#download-all").click(function() {
+      console.log("Creating zip file...");
+      var zip = new JSZip();
+      var count = $("#FileList a.pdf").length;
+      $("#zip-progress").show();
+      $("#zip-counter").text(count);
+      $("#FileList a.pdf").each(function() {
+        var name = $(this).text();
+        console.log("...requesting zip entry for " + name);
+        window.resolveLocalFileSystemURL(this.href, function(fileEntry) {
+          fileEntry.file(function(file) {
+            console.log("...obtained file entry for " + name);
+            readAsArrayBuffer(file, function(buffer) {
+              console.log("...obtained array buffer for " + name);
+              zip.file(name, buffer, { binary: true });
+              count--;
+              $("#zip-counter").text(count);
+              console.log("..." + count + " entries remaining")
+              if(count == 0) {
+                console.log("...initiating save")
+                window.saveAs(zip.generate({type:"blob", compression:"STORE"}), "papers.zip");
+                $("#zip-progress").hide();
+              }
+            });
+          });
         });
       });
     });
-  });
-});
-showFiles("");
-}));
+    showFiles("");
+  }));
 }
 
 function switchBack() {
@@ -110,12 +88,12 @@ function switchBack() {
 
 
 function processPDF(metadata) {
-  if(settings["#inline"] || settings["#store"] || settings["#download"]) {
+  if(settings["#inline"] || settings["#store"] || settings["#download"] || settings["#dropbox"]) {
     metadata.link.after($('<span/>').attr({id: 'loading' + metadata.MRNUMBER}).text('…'))                
     loadBlob(metadata.PDF, function(blob) {
       verifyBlob(blob, function(blob) {
         metadata.blob = blob;
-        forkCallback([ saveToFileSystem, showInIFrame, generateDownload ])(metadata)
+        forkCallback([ saveToFileSystem, showInIFrame, generateDownload, saveToDropbox ])(metadata)
       }, function() { indicateNoPDF(metadata); })
     });
   }
@@ -144,6 +122,25 @@ function filename(metadata) {
     return metadata.citation + ".pdf";
   } else {
     return metadata.MRNUMBER + ".pdf";
+  }
+}
+
+function packMetadata(metadata, callback) {
+  readAsDataURL(metadata.blob, function(uri) {
+   callback({ filename: filename(metadata), uri: uri });
+ });
+ //  readAsArrayBuffer(metadata.blob, function(buffer) {
+ //   callback({ filename: filename(metadata), packedBuffer: { data: Array.apply(null, new Uint8Array(buffer)) } });
+ // });
+}
+
+function saveToDropbox(metadata) {
+  if(settings["#dropbox"]) {
+    console.log("Packing metadata to send to the background page.")
+    packMetadata(metadata, function(packedMetadata) {
+      console.log("Sending a 'saveToDropbox' request to the background page.")
+      chrome.runtime.sendMessage({cmd: "saveToDropbox", metadata: packedMetadata });
+    });
   }
 }
 
@@ -217,7 +214,7 @@ function indicateNoPDF(metadata) {
   $("#loading" + metadata.MRNUMBER).text('✘');
 }
 
-// Given some metadata, tries to find a URL for the PDF, and if successful calls the callback function with the metadata know containing a "PDF" field.
+// Given some metadata, tries to find a URL for the PDF, and if successful calls the callback function with the metadata now containing a "PDF" field.
 function findPDF(metadata, callback, allowScraping) {
   console.log("Attempting to find PDF for " + JSON.stringify({ URL: metadata.URL, MRNUMBER: metadata.MRNUMBER, citation: metadata.citation }));
   function doCallback(url) {
