@@ -16,13 +16,36 @@ function loadBlob(url, callback) {
     xhr.send();
 }
 
-function blob2Text(blob, callback) {
+function readAsText(blob, callback) {
     var f = new FileReader();
     f.onload = function(e) {
         callback(e.target.result)
     }
     f.readAsText(blob);
 }
+
+ function readAsArrayBuffer(file, callback) {
+    var reader = new FileReader();
+
+    reader.onloadend = function(e) {
+      callback(e.target.result);
+    }
+
+    console.log("starting FileReader on " + file.name);
+    reader.readAsArrayBuffer(file);
+  }
+
+  function readAsDataURL(file, callback) {
+    var reader = new FileReader();
+
+    reader.onloadend = function(e) {
+      callback(e.target.result);
+    }
+
+    console.log("starting FileReader on " + file.name);
+    reader.readAsDataURL(file);
+  }
+
 
 function dataURItoBlob(dataURI) {
     // convert base64 to raw binary data held in a string
@@ -43,6 +66,17 @@ function dataURItoBlob(dataURI) {
     // write the ArrayBuffer to a blob, and you're done
     return new Blob([ab], {type: mimeString});
   }
+
+    function unpackMetadata(metadata) {
+    if(metadata.uri) {
+      metadata.blob = dataURItoBlob(metadata.uri);
+      delete metadata['uri'];
+      return metadata;
+    } else {
+      return metadata;
+    }
+  }
+
 
 function loadAsync(url, callback) {
     if(typeof callback === "undefined") callback = function() {}

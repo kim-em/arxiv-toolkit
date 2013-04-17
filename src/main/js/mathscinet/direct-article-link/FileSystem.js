@@ -64,36 +64,6 @@ function findFilesByName(predicate, callback) {
     }
   }
 
-  function readAsArrayBuffer(file, callback) {
-    var reader = new FileReader();
-
-    reader.onerror = function(e) {
-      console.log("onerror" + e);
-    }
-    reader.onloadend = function(e) {
-      console.log("onloadend");
-      callback(e.target.result);
-    }
-
-    console.log("starting FileReader on " + file.name);
-    reader.readAsArrayBuffer(file);
-  }
-
-  function readAsDataURL(file, callback) {
-    var reader = new FileReader();
-
-    reader.onerror = function(e) {
-      console.log("onerror" + e);
-    }
-    reader.onloadend = function(e) {
-      console.log("onloadend");
-      callback(e.target.result);
-    }
-
-    console.log("starting FileReader on " + file.name);
-    reader.readAsDataURL(file);
-  }
-
   function deleteFile(name) {
     fileSystem.root.getFile(name, {create: false}, function(fileEntry) {
       fileEntry.remove(function() {
