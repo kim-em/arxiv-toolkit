@@ -11,6 +11,8 @@ chrome.tabs.onUpdated.addListener(checkForMathSciNet);
 
 var dropboxClient
 var dropboxClientStarting = false;
+var papersSavedInDropbox = [];
+
 
 function startDropboxClient() {
   if(typeof dropboxClient === "undefined") {
@@ -24,6 +26,7 @@ function startDropboxClient() {
        return false;
      } else {
        console.log("Successfully authenticated Dropbox!");
+       /* TODO populate papersSavedInDropbox */
        dropboxClient = client;
      }
    });
@@ -52,26 +55,38 @@ function saveToDropbox(metadata) {
   });
 }
 
-function dataURItoBlob(dataURI) {
-    // convert base64 to raw binary data held in a string
-    // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
-    var byteString = atob(dataURI.split(',')[1]);
-    console.log("... byteString.length: " + byteString.length);
-
-    // separate out the mime component
-    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
-    console.log("... mimeString: " + mimeString);
-
-    // write the bytes of the string to an ArrayBuffer
-    var ab = new ArrayBuffer(byteString.length);
-    var ia = new Uint8Array(ab);
-    for (var i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-
-    // write the ArrayBuffer to a blob, and you're done
-    return new Blob([ab], {type: mimeString});
+function loadFromDropbox(metadata, callback, onerror) {
+  if(!metadata.filename) {
+    dropboxClient.findByName("", metadata.MRNUMBER, null, function(status, results) {
+      if(results.length > 0) {
+        metadata.filename = results[0].name;
+        continuation();  
+      } else {
+        onerror();
+      }
+    });
+  } else {
+    continuation();
   }
+
+  function continuation() {
+  waitForDropboxClient(function() {
+    console.log("Reading file from dropbox.");
+    dropboxClient.readFile(metadata.filename, { blob: true }, function(status, blob) {
+      if(status == null) {
+      console.log("Finished reading file from dropbox.");
+      readAsDataURL(blob, function(uri) {
+        metadata.uri = uri;
+        callback(metadata);
+      });
+    } else {
+      console.log("Error while reading file from dropbox.");
+      onerror();
+    }
+    });
+  });
+}
+}
 
   function unpackMetadata(metadata) {
     if(metadata.uri) {
@@ -86,8 +101,16 @@ function dataURItoBlob(dataURI) {
 
   chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-      console.log("Background page received a " + request.cmd + " request.")
+      console.log("Background page received a '" + request.cmd + "'' request.")
       if (request.cmd == "saveToDropbox") {
         setTimeout(function() { saveToDropbox(unpackMetadata(request.metadata)) }, 0);
+      } else if(request.cmd == "listPapersSavedInDropbox") {
+        sendResponse(papersSavedInDropbox)
+      } else if(request.cmd == "loadFromDropbox") {
+        loadFromDropbox(request.metadata, function(responseMetadata) {
+          sendResponse(responseMetadata);
+        }, function() {
+          /* TODO handle failure */
+        });
       }
     });
