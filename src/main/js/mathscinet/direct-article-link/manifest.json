@@ -1,0 +1,43 @@
+{
+  "name": "Add direct article links to MathSciNet",
+  "version": "0.1.2",
+  "manifest_version": 2,
+  "description": "Add direct article links to MathSciNet",
+  "icons" : {
+      "128" : "library.png"
+    },
+  "page_action": {
+    "default_icon": "library.png",
+    "default_title": "MathScinet article links",      // optional; shown in tooltip
+    "default_popup": "Settings.html"
+  },
+  "options_page": "Settings.html",
+  "background": { "scripts": ["lib/dropbox-0.9.2.min.js", "background.js"] },
+  "content_scripts": [
+  // inject the main script on any mathscinet page, or mirrors or proxies
+  {
+    "matches": [
+    "http://www.ams.org/mathscinet*",
+    "http://ams.rice.edu/mathscinet*",
+    "http://ams.impa.br/mathscinet*",
+    "http://ams.math.uni-bielefeld.de/mathscinet*",
+    "http://ams.mpim-bonn.mpg.de/mathscinet*",
+    "http://ams.u-strasbg.fr/mathscinet*",
+    "http://www.ams.org.proxy.library.emory.edu/mathscinet*",
+    "http://www.ams.org.libproxy.mit.edu/mathscinet*",
+    "http://www.ams.org.virtual.anu.edu.au/mathscinet*"
+    ],
+    "js": ["lib/jquery-1.9.1.min.js", "lib/FileSaver.min.js", "FileSystem.js", "Load.js", "lib/JSZip.js", "direct-article-link.user.js"]
+    },
+    // and an extra snippet for euclid, so we can get the referer right.
+    {
+     "matches": [ "http://projecteuclid.org/DPubS?*&page=record" ], "js": [  "lib/jquery-1.9.1.min.js", "euclid.js" ], "all_frames": true
+   }
+   ],
+    "permissions": [
+    "http://*/*", // we need this to access publishers web pages
+    "storage",
+    "tabs"
+    ],
+    "web_accessible_resources": [ "download.svg", "PDFViewer.html", "lib/dropbox-0.9.2.min.js", "oauth/chrome_oauth_receiver.coffee " ]
+  }
