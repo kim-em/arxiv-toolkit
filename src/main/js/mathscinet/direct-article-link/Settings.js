@@ -1,4 +1,4 @@
-var ids = ["#berserk","#inline","#download","#download-zip", "#store","#store-synchronized","#dropbox","#drive","#mega","#mega-account"];
+var ids = ["#berserk","#inline","#filename","#download","#download-zip", "#store","#store-synchronized","#dropbox","#drive","#mega","#mega-account"];
 
 function save_options() {
   console.log("saving options");
@@ -28,7 +28,6 @@ function restore_options() {
       var id = ids[i];
       if(typeof items[id] !== "undefined") {
         var select = $(id);
-        console.log(id, " ", select, " ", items[id], " ", select.is(":checkbox"));
         if(select.is(":checkbox")) {
           select.prop('checked', items[id]);
         } else {

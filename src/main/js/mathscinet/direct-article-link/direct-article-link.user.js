@@ -1,4 +1,5 @@
-var settingsKeys = ["#berserk","#inline","#download","#download-zip", "#store","#store-synchronized","#dropbox","#drive","#mega","#mega-account"];
+// These keys also appear in Settings.js
+var settingsKeys = ["#berserk","#inline","#filename", "#download","#download-zip", "#store","#store-synchronized","#dropbox","#drive","#mega","#mega-account"];
 var settings = {};
 
 var onSearchPage = false;
@@ -75,8 +76,8 @@ function switchToPDFViewer() {
         });
       });
     });
-    showFiles("");
-  }));
+showFiles("");
+}));
 }
 
 function switchBack() {
@@ -118,11 +119,15 @@ function verifyBlob(blob, success, failure) {
 }
 
 function filename(metadata) {
-  if(metadata.citation) {
-    return metadata.citation + ".pdf";
-  } else {
-    return metadata.MRNUMBER + ".pdf";
+  var template = settings["#filename"];
+  if(typeof template === "undefined" || template.indexOf("$MRNUMBER") === -1) {
+    template = "$MRNUMBER - $AUTHORS - $TITLE - $JOURNALREF.pdf"
   }
+  template = template.replace(/\$MRNUMBER/gi, metadata.MRNUMBER);
+  template = template.replace(/\$AUTHORS/gi, metadata.authors);
+  template = template.replace(/\$TITLE/gi, metadata.title);
+  template = template.replace(/\$JOURNALREF/gi, metadata.journalRef);
+  return template;
 }
 
 function packMetadata(metadata, callback) {
@@ -194,7 +199,7 @@ function generateDownload(metadata) {
 function showInIFrame(metadata) {
   if(settings["#inline"]) {
     var url
-    if(metadata.PDF.indexOf("filesystem:") === 0) {
+    if(metadata.PDF.indexOf("filesystem:") === 0 || !(metadata.blob)) {
       url = metadata.PDF;
     } else {
       url = window.URL.createObjectURL(metadata.blob);
@@ -253,7 +258,11 @@ function findPDF(metadata, callback, allowScraping) {
               if(allowScraping) {
                 loadAsync(metadata.URL, function(response) {
                   var regex = /<a href="([^"]*)"\s*title="View PDF" class="article-pdf">/;
-                  doCallback("http://journals.cambridge.org/action/" + regex.exec(response)[1].trim());
+                  /*
+                  http://journals.cambridge.org/action/displayFulltext?type=1&fid=8143111&jid=EJM&volumeId=22&issueId=02&aid=8143109&bodyId=&membershipNumber=&societyETOCSession=
+                  http://journals.cambridge.org/action/displayFulltext?type=1&fid=8143111&jid=EJM&volumeId=22&issueId=02&aid=8143109&newWindow=Y
+                  */
+                  doCallback("http://journals.cambridge.org/action/" + regex.exec(response)[1].trim() + "&newWindow=Y");
                   return; 
                 });
               }
@@ -278,6 +287,8 @@ function findPDF(metadata, callback, allowScraping) {
             } else if(metadata.URL.startsWith("http://www.numdam.org/item?id=")) {
               doCallback(metadata.URL.replace("http://www.numdam.org/item?id=", "http://archive.numdam.org/article/") + ".pdf");
               return;
+            } else if(metadata.URL.startsWith("http://aif.cedram.org/item?id=")) {
+              doCallback(metadata.URL.replace("http://aif.cedram.org/item?id=", "http://aif.cedram.org/cedram-bin/article/") + ".pdf")
             }
           }
         }
@@ -309,9 +320,9 @@ function findPDF(metadata, callback, allowScraping) {
             h.find(".sfx").nextAll().remove();
             h.find(".sfx").remove();
             // insert dashes
-            h.find("a.mrnum").after(" - ");
-            h.find("span.title").before(" - ");
-            h.find("span.title").after(" - ");
+            h.find("a.mrnum").after(" %%%% ");
+            h.find("span.title").before(" %%%% ");
+            h.find("span.title").after(" %%%% ");
           } else {
             // we're on an article page
             // chuck stuff away
@@ -321,21 +332,26 @@ function findPDF(metadata, callback, allowScraping) {
             h.find("br").eq(3).nextAll().remove();
             h.find("br").eq(3).remove();
             // insert dashes
-            h.find("br").replaceWith(" - ");
+            h.find("br").replaceWith(" %%%% ");
           }
           // cleanup
           h.contents().filter(function() { return this.nodeType === 3 && this.textContent === "; "; }).replaceWith(" and ");
           var citation = h.text().replace(/\(Reviewer: .*\)/, '').replace(/\s+/g, ' ').trim();
-          return { URL: URL, MRNUMBER: MRNUMBER, div: div, link: link, citation: citation }
+          var cs = citation.split("%%%%");
+          var authors = cs[1].trim();
+          var title = cs[2].trim().replace(/\(English summary\)/, '');
+          var journalRef = cs[3].trim();
+          citation = MRNUMBER + " - " + authors + " - " + title + " - " + journalRef;
+          return { URL: URL, MRNUMBER: MRNUMBER, div: div, link: link, citation: citation, authors: authors, title: title, journalRef: journalRef }
         }
 
         var eventually = function(metadata) { };
         if(!onSearchPage || settings["#berserk"]) {
           eventually = function(metadata) {
             var href = metadata.link.attr('href');
-            if(href.indexOf("http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=euclid.dmj/") == 0) {
+            if(href.indexOf("http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=euclid.") == 0) {
               if(settings["#inline"]) {
-                showInIFrame(href);
+                showInIFrame({ PDF: href });
               }
             } else if(href.indexOf("pdf") !== -1 || href.indexOf("displayFulltext") !== -1 /* CUP */) {
               processPDF(metadata);

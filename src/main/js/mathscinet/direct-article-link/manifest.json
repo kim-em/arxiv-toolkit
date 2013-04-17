@@ -29,9 +29,9 @@
     ],
     "js": ["lib/jquery-1.9.1.min.js", "lib/FileSaver.min.js", "FileSystem.js", "Load.js", "lib/JSZip.js", "direct-article-link.user.js"]
     },
-    // and an extra snippet for Duke, so we can get the referer right.
+    // and an extra snippet for euclid, so we can get the referer right.
     {
-     "matches": [ "http://projecteuclid.org/DPubS?*&page=record" ], "js": [  "lib/jquery-1.9.1.min.js", "duke.js" ], "all_frames": true
+     "matches": [ "http://projecteuclid.org/DPubS?*&page=record" ], "js": [  "lib/jquery-1.9.1.min.js", "euclid.js" ], "all_frames": true
    }
    ],
     "permissions": [
