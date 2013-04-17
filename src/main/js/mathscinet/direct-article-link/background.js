@@ -1,3 +1,12 @@
+// These keys also appear in Settings.js
+var settingsKeys = ["#berserk","#inline","#filename", "#download","#download-zip", "#store","#store-synchronized","#dropbox","#drive","#mega","#mega-account"];
+var settings = {};
+
+  chrome.storage.sync.get(settingsKeys, function(items) {
+    settings = items;
+  });
+
+
 // Called when the url of a tab changes.
 function checkForMathSciNet(tabId, changeInfo, tab) {
  if (tab.url.indexOf('mathscinet') > -1) {
@@ -11,10 +20,11 @@ chrome.tabs.onUpdated.addListener(checkForMathSciNet);
 
 var dropboxClient
 var dropboxClientStarting = false;
-var papersSavedInDropbox = [];
+var papersSavedInDropbox = {}; // a map, MRNUMBERs to filenames
 
 
 function startDropboxClient() {
+  if(settings["#dropbox"]) {
   if(typeof dropboxClient === "undefined") {
     dropboxClientStarting = true;
     console.log("Starting dropbox client.");
@@ -26,11 +36,20 @@ function startDropboxClient() {
        return false;
      } else {
        console.log("Successfully authenticated Dropbox!");
-       /* TODO populate papersSavedInDropbox */
+       client.readdir("", null, function(status, filenames) {
+        var regex = /MR[0-9]*/;
+        for (var i = 0; i < filenames.length; i++) {
+          /* make this more robust; what if there's no MRNUMBER? */
+          papersSavedInDropbox[regex.exec(filenames[i])[0]] = filenames[i];
+    }
+       });
        dropboxClient = client;
      }
    });
   }
+} else {
+  log.console("Warning, someone tried to start the dropbox client, but dropbox isn't turned on.");
+}
 }
 
 function waitForDropboxClient(callback) {
@@ -48,11 +67,15 @@ function waitForDropboxClient(callback) {
 }
 
 function saveToDropbox(metadata) {
+  if(settings["#dropbox"]) {
   waitForDropboxClient(function() {
     console.log("Writing file to dropbox.");
     dropboxClient.writeFile(metadata.filename, metadata.blob);
     console.log("Finished writing file to dropbox.");
   });
+} else {
+  console.log("Ignoring 'saveToDropbox' command.");
+}
 }
 
 function loadFromDropbox(metadata, callback, onerror) {
@@ -88,22 +111,23 @@ function loadFromDropbox(metadata, callback, onerror) {
 }
 }
 
-  function unpackMetadata(metadata) {
-    if(metadata.uri) {
-      metadata.blob = dataURItoBlob(metadata.uri);
-      delete metadata['uri'];
-      return metadata;
-    } else {
-      console.log("Warning: trying to unpack metadata without a uri key!");
-      return metadata
-    }
+var euclidHandles = {};
+
+function attachHandle(metadata) {
+  if(metadata.handle) {
+    var newMetadata = euclideHandles[metadata.handle];
+    newMetadata.blob = metadata.blob;
+    return newMetadata;
+  } else {
+    return metadata;
   }
+}
 
   chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
       console.log("Background page received a '" + request.cmd + "'' request.")
       if (request.cmd == "saveToDropbox") {
-        setTimeout(function() { saveToDropbox(unpackMetadata(request.metadata)) }, 0);
+        setTimeout(function() { saveToDropbox(attachHandle(unpackMetadata(request.metadata)) }, 0);
       } else if(request.cmd == "listPapersSavedInDropbox") {
         sendResponse(papersSavedInDropbox)
       } else if(request.cmd == "loadFromDropbox") {
@@ -112,5 +136,7 @@ function loadFromDropbox(metadata, callback, onerror) {
         }, function() {
           /* TODO handle failure */
         });
+      } else if(request.cmd == "mentionEuclidHandle") {
+        euclidHandles[request.handle] = request.metadata;
       }
     });

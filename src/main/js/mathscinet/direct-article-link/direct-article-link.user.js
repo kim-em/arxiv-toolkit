@@ -1,11 +1,14 @@
 // These keys also appear in Settings.js
 var settingsKeys = ["#berserk","#inline","#filename", "#download","#download-zip", "#store","#store-synchronized","#dropbox","#drive","#mega","#mega-account"];
 var settings = {};
+var papersSavedInDropbox = {}; // a map from MRNUMBERs to filenames
 
 var onSearchPage = false;
 
 // In berserk mode, we try to process all the PDFs on a search page.
 // It's actually not that insane, although authentication dialogs from the AMS pop up haphazardly.
+// TODO Move all the loadBlob requests to the background page, so those get ignored.
+// TODO In berserk mode, process all the euclid pages too?
 
 function main() {    
   console.log("direct-article-link.user.js starting up on " + location.href + " at " + new Date().getTime());
@@ -14,7 +17,14 @@ function main() {
 
   chrome.storage.sync.get(settingsKeys, function(items) {
     settings = items;
+    if(settings["#dropbox"]) {
+      chrome.runtime.sendMessage({cmd: "listPapersSavedInDropbox"}, function(response) {
+        papersSavedInDropbox = response;
     rewriteArticleLinks();
+      })
+    } else {
+    rewriteArticleLinks();
+  }
   });
 
 }
@@ -107,7 +117,7 @@ function forkCallback(callbacks) {
 }
 
 function verifyBlob(blob, success, failure) {
-  blob2Text(blob.slice(0, 10), function(text) {
+  readAsText(blob.slice(0, 10), function(text) {
     if(text.indexOf("%PDF") !== -1) {
       console.log("Successfully loaded PDF blob!");
       success(blob);
@@ -132,11 +142,8 @@ function filename(metadata) {
 
 function packMetadata(metadata, callback) {
   readAsDataURL(metadata.blob, function(uri) {
-   callback({ filename: filename(metadata), uri: uri });
+   callback({ MRNUMBER: metadata.MRNUMBER, filename: filename(metadata), uri: uri });
  });
- //  readAsArrayBuffer(metadata.blob, function(buffer) {
- //   callback({ filename: filename(metadata), packedBuffer: { data: Array.apply(null, new Uint8Array(buffer)) } });
- // });
 }
 
 function saveToDropbox(metadata) {
@@ -227,9 +234,17 @@ function findPDF(metadata, callback, allowScraping) {
     callback(metadata);
   }
 
-  // First, check the chrome file system, in case we've collected it previously.
+  // First, check the chrome file system and dropbox, in case we've collected it previously.
   if(metadata.MRNUMBER) {
+    if(papersSavedInDropbox[metadata.MRNUMBER]) {
+      /* Here we get back a data URI from the background page. */
+      /* An alternative strategy might have been to obtain a Dropbox download link from the background page. */
+      chrome.runtime.sendMessage({cmd: "loadFromDropbox", metadata: metadata }, function(responseMetadata) {
+      doCallback(responseMetadata.uri);
+      });
+    } else {
     findFilesByName(function(name) { return name.indexOf(metadata.MRNUMBER) !== -1; }, continuation);
+  }
   } else {
     continuation([]);
   }
@@ -308,7 +323,6 @@ function findPDF(metadata, callback, allowScraping) {
           var URL = link.attr('href');
           var MRNUMBER = $(div).find("strong").first().text();
           var h = $(div).clone();
-          // TODO parse citation further, and have file name customizable.
           h.find(".item_status").remove();
           h.find("span.MathTeX").remove();
           if(h.find("div.checkbox").length !== 0) {
