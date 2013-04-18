@@ -11,12 +11,14 @@ case class BIBTEX(documentType: String, identifier: String, data: List[(String, 
     "@" + documentType + " {" + identifier + ",\n" +
       data.map(p => ("          " + p._1).takeRight(10) + " = {" + p._2 + "},\n").mkString + "}\n"
   }
-  
+
   def save = BIBTEX.save(this)
 }
 
 object BIBTEX extends Logging {
   lazy val cache = AnonymousS3("LoM-bibtex")
+  lazy val DOI2mathscinet = AnonymousS3("DOI2mathscinet")
+
   lazy val cachedKeys = {
     info("Fetching key set for LoM-bibtex")
     val result = cache.keySet
@@ -27,17 +29,20 @@ object BIBTEX extends Logging {
     if (!cachedKeys.contains(item.identifier)) {
       info("Storing BIBTEX for " + item.identifier + " to S3")
       cache.putIfAbsent(item.identifier, item.toBIBTEXString)
+      item.data.find(_._1 == "DOI").map({ case ("DOI", doi) =>
+        DOI2mathscinet.put(doi, item.identifier)
+      })
     } else {
       false
     }
   }
 
-// this is just parses mathscinet BIBTEX, which is particularly easy.
+  // this is just parses mathscinet BIBTEX, which is particularly easy.
   def parse(bibtexString: String): Option[BIBTEX] = {
     if (bibtexString.startsWith("@preamble")) {
       None
     } else {
-      val lines = bibtexString.split("\n").filterNot(_.trim.startsWith("</") /* sometimes DOIs look like they contain a tag, and browsers sometimes insert spurious close tags when reporting the source */)
+      val lines = bibtexString.split("\n").filterNot(_.trim.startsWith("</") /* sometimes DOIs look like they contain a tag, and browsers sometimes insert spurious close tags when reporting the source */ )
       val DocumentTypePattern = """@([a-z ]*)\{[A-Za-z0-9]*,""".r
       val documentType = lines.head match {
         case DocumentTypePattern(t) => t.trim

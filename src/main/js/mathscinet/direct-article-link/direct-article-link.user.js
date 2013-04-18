@@ -1,14 +1,13 @@
 // These keys also appear in Settings.js
 var settingsKeys = ["#berserk","#inline","#filename", "#download","#download-zip", "#store","#store-synchronized","#dropbox","#drive","#mega","#mega-account"];
 var settings = {};
-var papersSavedInDropbox = {}; // a map from MRNUMBERs to filenames
+var papersSavedInDropbox = {}; // a map from MRNUMBERs to filenames // Filenames are being encoding-mangled, don't trust them...
 
 var onSearchPage = false;
 
 // In berserk mode, we try to process all the PDFs on a search page.
 // It's actually not that insane, although authentication dialogs from the AMS pop up haphazardly.
 // TODO Move all the loadBlob requests to the background page, so those get ignored.
-// TODO In berserk mode, process all the euclid pages too?
 
 function main() {    
   console.log("direct-article-link.user.js starting up on " + location.href + " at " + new Date().getTime());
@@ -16,15 +15,23 @@ function main() {
   insertMenuItem();
 
   chrome.storage.sync.get(settingsKeys, function(items) {
+    if(Object.keys(items).length == 0) {
+      alert("Welcome to the 'MathSciNet direct links' extension." + "\n" +
+        "Click the 'library' icon in the address bar to adjust your settings." + "\n" +
+        "Click 'PDFs' in the MathSciNet toolbar to view and manage cached PDFs.");
+      items = { "#inline": true, "#store": true, "#dropbox": true };
+      chrome.storage.sync.set(items);
+    }
     settings = items;
     if(settings["#dropbox"]) {
       chrome.runtime.sendMessage({cmd: "listPapersSavedInDropbox"}, function(response) {
-        papersSavedInDropbox = response;
-    rewriteArticleLinks();
+        // Warning: somehow chrome is mangled the character encoding here, so don't trust the filenames in papersSavedInDropbox
+        papersSavedInDropbox = response.papersSavedInDropbox;
+        rewriteArticleLinks();
       })
     } else {
-    rewriteArticleLinks();
-  }
+      rewriteArticleLinks();
+    }
   });
 
 }
@@ -99,6 +106,7 @@ function switchBack() {
 
 
 function processPDF(metadata) {
+  console.log("Beginning processPDF on " + metadata.MRNUMBER);
   if(settings["#inline"] || settings["#store"] || settings["#download"] || settings["#dropbox"]) {
     metadata.link.after($('<span/>').attr({id: 'loading' + metadata.MRNUMBER}).text('…'))                
     loadBlob(metadata.PDF, function(blob) {
@@ -140,19 +148,17 @@ function filename(metadata) {
   return template;
 }
 
-function packMetadata(metadata, callback) {
-  readAsDataURL(metadata.blob, function(uri) {
-   callback({ MRNUMBER: metadata.MRNUMBER, filename: filename(metadata), uri: uri });
- });
-}
-
 function saveToDropbox(metadata) {
   if(settings["#dropbox"]) {
-    console.log("Packing metadata to send to the background page.")
-    packMetadata(metadata, function(packedMetadata) {
-      console.log("Sending a 'saveToDropbox' request to the background page.")
-      chrome.runtime.sendMessage({cmd: "saveToDropbox", metadata: packedMetadata });
-    });
+    if(papersSavedInDropbox[metadata.MRNUMBER]) {
+      console.log("... already saved in dropbox.");
+    } else {
+      console.log("Packing metadata to send to the background page.")
+      packMetadata(metadata, function(packedMetadata) {
+        console.log("Sending a 'saveToDropbox' request to the background page.")
+        chrome.runtime.sendMessage({cmd: "saveToDropbox", metadata: packedMetadata });
+      });
+    }
   }
 }
 
@@ -184,7 +190,7 @@ function saveToFileSystem(metadata) {
       console.log("PDF is already in the chrome file system");
       return;
     } else {
-      saveBlobToFileSystem(metadata.blob, filename(metadata));
+      saveBlobToFileSystem(metadata.blob, metadata.filename);
     }
   }
 }
@@ -194,11 +200,11 @@ function generateDownload(metadata) {
     if(settings["#download-zip"]) {
       var zip = new JSZip();
       readAsArrayBuffer(metadata.blob, function(buffer) {
-        zip.file(filename(metadata), buffer, { binary: true });
-        window.saveAs(zip.generate({type:"blob", compression:"STORE"}), filename(metadata) + ".zip");
+        zip.file(metadata.filename, buffer, { binary: true });
+        window.saveAs(zip.generate({type:"blob", compression:"STORE"}), metadata.filename + ".zip");
       });
     } else {
-      window.saveAs(metadata.blob, filename(metadata));
+      window.saveAs(metadata.blob, metadata.filename);
     }
   }
 }
@@ -212,10 +218,13 @@ function showInIFrame(metadata) {
       url = window.URL.createObjectURL(metadata.blob);
     }
     if(!onSearchPage) {
-      var iframe = $('<iframe/>').attr({id: 'pdf-iframe', src:url, width:'100%', height: $(window).height(), border:'none' }).appendTo('div#content');
+      $('<iframe/>').attr({id: 'pdf-iframe', src:url, width:'100%', height: $(window).height(), border:'none' }).appendTo('div#content');
+    }
+    if(onSearchPage && metadata.PDF.indexOf("http://projecteuclid.org/") === 0 && settings["#berserk"]) {
+      $('<iframe/>').attr({id: 'pdf-iframe-' + metadata.handle, src:url, width:'100%', height: 0, frameborder: 0, style:"border:none; display:none;" }).appendTo('div#content');      
     }
   }
-  $("#loading" + metadata.MRNUMBER).text('').append($("<a/>").attr({ href: url, download: filename(metadata) }).append(downloadIcon));
+  $("#loading" + metadata.MRNUMBER).text('').append($("<a/>").attr({ href: url, download: metadata.filename }).append(downloadIcon));
 }
 
 function downloadIcon() {
@@ -236,15 +245,29 @@ function findPDF(metadata, callback, allowScraping) {
 
   // First, check the chrome file system and dropbox, in case we've collected it previously.
   if(metadata.MRNUMBER) {
-    if(papersSavedInDropbox[metadata.MRNUMBER]) {
-      /* Here we get back a data URI from the background page. */
-      /* An alternative strategy might have been to obtain a Dropbox download link from the background page. */
-      chrome.runtime.sendMessage({cmd: "loadFromDropbox", metadata: metadata }, function(responseMetadata) {
-      doCallback(responseMetadata.uri);
-      });
-    } else {
-    findFilesByName(function(name) { return name.indexOf(metadata.MRNUMBER) !== -1; }, continuation);
-  }
+    findFilesByName(function(name) { return name.indexOf(metadata.MRNUMBER) !== -1; }, function(files) {
+      if(files.length > 0) {
+        continuation(files);
+      } else {
+        if(papersSavedInDropbox[metadata.MRNUMBER]) {
+          /* Here we get back a data URI from the background page. */
+          /* An alternative strategy might have been to obtain a Dropbox download link from the background page. */
+          var cmd = {
+            cmd: "loadFromDropbox", 
+            metadata: { 
+              MRNUMBER: metadata.MRNUMBER, 
+              filename: metadata.filename 
+            } 
+          };
+          console.log("Sending request: " + JSON.stringify(cmd));
+          chrome.runtime.sendMessage(cmd, function(responseMetadata) {
+            doCallback(responseMetadata.uri);
+          });
+        } else {
+          continuation([]);
+        }
+      }
+    });
   } else {
     continuation([]);
   }
@@ -259,20 +282,26 @@ function findPDF(metadata, callback, allowScraping) {
       console.log("Strange, I found multiple PDFs for " + JSON.stringify({ MRNUMBER: metadata.MRNUMBER }));
     }
     if(metadata.URL) {
-      if(metadata.URL.startsWith("http://dx.doi.org/10.1006") || metadata.URL.startsWith("http://dx.doi.org/10.1016")) {
-              // handle Elsevier separately
-              if(allowScraping) {
-                loadAsync(metadata.URL, function(response) {
-                  var regex = /pdfurl="([^"]*)"/;
-                  doCallback(regex.exec(response)[1]);
-                  return;
-                });
-              }
-            } else if(metadata.URL.startsWith("http://dx.doi.org/10.1017/S") || metadata.URL.startsWith("http://dx.doi.org/10.1017/is") || metadata.URL.startsWith("http://dx.doi.org/10.1051/S") || metadata.URL.startsWith("http://dx.doi.org/10.1112/S0010437X") || metadata.URL.startsWith("http://dx.doi.org/10.1112/S14611570") || metadata.URL.startsWith("http://dx.doi.org/10.1112/S00255793")) {
-              // Cambridge University Press
-              if(allowScraping) {
-                loadAsync(metadata.URL, function(response) {
-                  var regex = /<a href="([^"]*)"\s*title="View PDF" class="article-pdf">/;
+      if( // handle Elsevier separately
+        metadata.URL.startsWith("http://dx.doi.org/10.1006") || 
+        metadata.URL.startsWith("http://dx.doi.org/10.1016")) {
+        if(allowScraping) {
+          loadAsync(metadata.URL, function(response) {
+            var regex = /pdfurl="([^"]*)"/;
+            doCallback(regex.exec(response)[1]);
+            return;
+          });
+        }
+      } else if( // Cambridge University Press
+        metadata.URL.startsWith("http://dx.doi.org/10.1017/S") ||
+        metadata.URL.startsWith("http://dx.doi.org/10.1017/is") || 
+        metadata.URL.startsWith("http://dx.doi.org/10.1051/S") || 
+        metadata.URL.startsWith("http://dx.doi.org/10.1112/S0010437X") || 
+        metadata.URL.startsWith("http://dx.doi.org/10.1112/S14611570") || 
+        metadata.URL.startsWith("http://dx.doi.org/10.1112/S00255793")) {
+        if(allowScraping) {
+          loadAsync(metadata.URL, function(response) {
+            var regex = /<a href="([^"]*)"\s*title="View PDF" class="article-pdf">/;
                   /*
                   http://journals.cambridge.org/action/displayFulltext?type=1&fid=8143111&jid=EJM&volumeId=22&issueId=02&aid=8143109&bodyId=&membershipNumber=&societyETOCSession=
                   http://journals.cambridge.org/action/displayFulltext?type=1&fid=8143111&jid=EJM&volumeId=22&issueId=02&aid=8143109&newWindow=Y
@@ -280,47 +309,46 @@ function findPDF(metadata, callback, allowScraping) {
                   doCallback("http://journals.cambridge.org/action/" + regex.exec(response)[1].trim() + "&newWindow=Y");
                   return; 
                 });
-              }
-            } else if(metadata.URL.startsWith("http://dx.doi.org/10.1002/")) {
-              // Wiley
-              if(allowScraping) {
-                loadAsync("http://onlinelibrary.wiley.com/doi/" + metadata.URL.slice(18) + "/pdf", function(response) {
-                  var regex = /id="pdfDocument" src="([^"]*)/;
-                  doCallback(regex.exec(response)[1]);
-                  return;
-                });
-              }
-            } else if(metadata.URL.startsWith("http://dx.doi.org/10.1145/")) {
-              // ACM
-              if(allowScraping) {
-                loadAsync("http://dl.acm.org/citation.cfm?doid=" + metadata.URL.slice(18), function(response) {
-                  var regex = /title="FullText Pdf" href="(ft_gateway\.cfm\?id=[0-9]*&type=pdf&CFID=[0-9]*&CFTOKEN=[0-9]*)"/;
-                  doCallback(regex.exec(response)[1]);
-                  return;
-                });
-              }
-            } else if(metadata.URL.startsWith("http://dx.doi.org/")) {
-              loadJSON(
-               metadata.URL.replace("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/"),
-               function (data) { if(data.redirect) doCallback(data.redirect); }
-               );
-              return;
-            } else if(metadata.URL.startsWith("http://projecteuclid.org/getRecord?id=")) {
-              doCallback(metadata.URL.replace("http://projecteuclid.org/getRecord?id=", "http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle="));
-              return;
-            } else if(metadata.URL.startsWith("http://www.numdam.org/item?id=")) {
-              doCallback(metadata.URL.replace("http://www.numdam.org/item?id=", "http://archive.numdam.org/article/") + ".pdf");
-              return;
-            } else if(metadata.URL.startsWith("http://aif.cedram.org/item?id=")) {
-              doCallback(metadata.URL.replace("http://aif.cedram.org/item?id=", "http://aif.cedram.org/cedram-bin/article/") + ".pdf")
-            }
-          }
         }
+      } else if(metadata.URL.startsWith("http://dx.doi.org/10.1002/")) { // Wiley
+        if(allowScraping) {
+          loadAsync("http://onlinelibrary.wiley.com/doi/" + metadata.URL.slice(18) + "/pdf", function(response) {
+            var regex = /id="pdfDocument" src="([^"]*)/;
+            doCallback(regex.exec(response)[1]);
+            return;
+          });
+        }
+      } else if(metadata.URL.startsWith("http://dx.doi.org/10.1145/")) { // ACM
+        if(allowScraping) {
+          loadAsync("http://dl.acm.org/citation.cfm?doid=" + metadata.URL.slice(26), function(response) {
+            console.log(response);
+            var regex = /title="FullText Pdf" href="(ft_gateway\.cfm\?id=[0-9]*&type=pdf&CFID=[0-9]*&CFTOKEN=[0-9]*)"/;
+            doCallback("http://dl.acm.org/" + regex.exec(response)[1]);
+            return;
+          });
+        }
+      } else if(metadata.URL.startsWith("http://dx.doi.org/")) {
+        loadJSON(
+         metadata.URL.replace("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/"),
+         function (data) { if(data.redirect) doCallback(data.redirect); }
+         );
+        return;
+      } else if(metadata.URL.startsWith("http://projecteuclid.org/getRecord?id=")) {
+        doCallback(metadata.URL.replace("http://projecteuclid.org/getRecord?id=", "http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle="));
+        return;
+      } else if(metadata.URL.startsWith("http://www.numdam.org/item?id=")) {
+        doCallback(metadata.URL.replace("http://www.numdam.org/item?id=", "http://archive.numdam.org/article/") + ".pdf");
+        return;
+      } else if(metadata.URL.startsWith("http://aif.cedram.org/item?id=")) {
+        doCallback(metadata.URL.replace("http://aif.cedram.org/item?id=", "http://aif.cedram.org/cedram-bin/article/") + ".pdf")
       }
+    }
+  }
+}
 
-      function rewriteArticleLinks() {
-        var metadataDivs = $("div.headline");
-        console.log("Found " + metadataDivs.length + " metadata divs.");
+function rewriteArticleLinks() {
+  var metadataDivs = $("div.headline");
+  console.log("Found " + metadataDivs.length + " metadata divs.");
 
         // First, strip out all the "leavingmsn" prefixes
         metadataDivs.find("a").attr('href', function() { return this.href.replace(/http:\/\/[^\/]*\/leavingmsn\?url=/,""); });
@@ -365,7 +393,9 @@ function findPDF(metadata, callback, allowScraping) {
           var title = cs[2].trim().replace(/\(English summary\)/, '');
           var journalRef = cs[3].trim();
           citation = MRNUMBER + " - " + authors + " - " + title + " - " + journalRef;
-          return { URL: URL, MRNUMBER: MRNUMBER, div: div, link: link, citation: citation, authors: authors, title: title, journalRef: journalRef }
+          var m = { URL: URL, MRNUMBER: MRNUMBER, div: div, link: link, citation: citation, authors: authors, title: title, journalRef: journalRef };
+          m.filename = filename(m);
+          return m;
         }
 
         var eventually = function(metadata) { };
@@ -374,7 +404,21 @@ function findPDF(metadata, callback, allowScraping) {
             var href = metadata.link.attr('href');
             if(href.indexOf("http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=euclid.") == 0) {
               if(settings["#inline"]) {
-                showInIFrame({ PDF: href });
+                var cmd = {
+                  cmd: "mentionEuclidHandle",
+                  handle: href.replace("http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=", ""),
+                  metadata: {
+                    MRNUMBER: metadata.MRNUMBER,
+                    filename: metadata.filename
+                  }
+                }
+                console.log("Sending a request: " + JSON.stringify(cmd));
+                chrome.runtime.sendMessage(cmd, function(response) {
+                  console.log("Incredible, a PDF arrived back via the iframe and background page.");
+                  metadata.PDF = response.uri;
+                  processPDF(metadata);
+                });
+                showInIFrame({ PDF: href, handle: cmd.handle });
               }
             } else if(href.indexOf("pdf") !== -1 || href.indexOf("displayFulltext") !== -1 /* CUP */) {
               processPDF(metadata);
@@ -385,10 +429,11 @@ function findPDF(metadata, callback, allowScraping) {
           var metadata = extractMetadata(this);
           findPDF(metadata, function(metadata) {
             if(metadata.PDF) {
-             metadata.link.attr('href', metadata.PDF);
-             eventually(metadata);
-           }
-         }, metadataDivs.length == 1 || settings["#berserk"]);
+              console.log("Found PDF link: " + metadata.PDF);
+              metadata.link.attr('href', metadata.PDF);
+              eventually(metadata);
+            }
+          }, metadataDivs.length == 1 || settings["#berserk"]);
         });
       }
 
