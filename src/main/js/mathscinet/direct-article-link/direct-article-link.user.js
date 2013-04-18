@@ -290,6 +290,15 @@ function findPDF(metadata, callback, allowScraping) {
                   return;
                 });
               }
+            } else if(metadata.URL.startsWith("http://dx.doi.org/10.1145/")) {
+              // ACM
+              if(allowScraping) {
+                loadAsync("http://dl.acm.org/citation.cfm?doid=" + metadata.URL.slice(18), function(response) {
+                  var regex = /title="FullText Pdf" href="(ft_gateway\.cfm\?id=[0-9]*&type=pdf&CFID=[0-9]*&CFTOKEN=[0-9]*)"/;
+                  doCallback(regex.exec(response)[1]);
+                  return;
+                });
+              }
             } else if(metadata.URL.startsWith("http://dx.doi.org/")) {
               loadJSON(
                metadata.URL.replace("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/"),
