@@ -8,13 +8,12 @@
     },
   "page_action": {
     "default_icon": "library.png",
-    "default_title": "MathScinet article links",      // optional; shown in tooltip
+    "default_title": "MathScinet article links",      
     "default_popup": "Settings.html"
   },
   "options_page": "Settings.html",
   "background": { "scripts": ["Load.js", "lib/dropbox-0.9.2.min.js", "background.js"] },
   "content_scripts": [
-  // inject the main script on any mathscinet page, or mirrors or proxies
   {
     "matches": [
     "http://www.ams.org/mathscinet*",
@@ -29,13 +28,12 @@
     ],
     "js": ["lib/jquery-1.9.1.min.js", "lib/FileSaver.min.js", "FileSystem.js", "Load.js", "lib/JSZip.js", "direct-article-link.user.js"]
     },
-    // and an extra snippet for euclid, so we can get the referer right.
     {
      "matches": [ "http://projecteuclid.org/DPubS?*&page=record" ], "js": [  "lib/jquery-1.9.1.min.js", "euclid.js" ], "all_frames": true
    }
    ],
     "permissions": [
-    "http://*/*", // we need this to access publishers web pages
+    "http://*/*", 
     "storage",
     "tabs"
     ],
