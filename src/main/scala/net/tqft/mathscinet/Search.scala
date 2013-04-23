@@ -15,7 +15,7 @@ object Search extends Logging {
     def queries = Iterator.from(0).map(queryString).map(Slurp.attempt).takeWhile(_.isLeft).map(_.left.get).flatten
 
     def truncatedQueries = {
-      val smallMatches = """<strong>Matches:</strong> [0-9]{1,2}$""".r
+      val smallMatches = """<strong>Matches:</strong> ([0-9]{1,2}|100)$""".r
 
       queries
         .takeWhile(_ != "<title>500 Internal Server Error</title>")
