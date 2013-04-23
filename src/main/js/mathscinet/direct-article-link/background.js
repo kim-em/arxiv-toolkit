@@ -59,13 +59,13 @@ function waitForDropboxClient(callback) {
   if(dropboxClientStarting) {
     if(typeof dropboxClient === "undefined") {
       console.log("waiting on dropbox client");
-      setTimeout(function() { waitForDropboxClient(callback); }, 500);
+      window.setTimeout(function() { waitForDropboxClient(callback); }, 500);
     } else {
       callback();
     }
   } else {
     startDropboxClient();
-    setTimeout(function() { waitForDropboxClient(callback); }, 500);
+    window.setTimeout(function() { waitForDropboxClient(callback); }, 500);
   }
 }
 
