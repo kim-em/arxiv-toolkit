@@ -7,10 +7,6 @@
     {
       "matches": ["http://www.ams.org/mathscinet*", "http://ams.rice.edu/mathscinet*", "http://ams.impa.br/mathscinet*", "http://ams.math.uni-bielefeld.de/mathscinet*", "http://ams.mpim-bonn.mpg.de/mathscinet*", "http://ams.u-strasbg.fr/mathscinet*", "http://www.ams.org.libproxy.mit.edu/mathscinet*"],
       "js": ["mathscinet.user.js"]
-    },
-    {
-      "matches": ["http://arxiv.org/*"],
-      "js": ["arxiv.user.js"]
     }
   ],
   "permissions": [
