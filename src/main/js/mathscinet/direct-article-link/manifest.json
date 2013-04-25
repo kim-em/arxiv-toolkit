@@ -1,8 +1,8 @@
 {
-  "name": "Add direct article links to MathSciNet",
+  "name": "MathSciNet direct links",
   "version": "0.1.2",
   "manifest_version": 2,
-  "description": "Add direct article links to MathSciNet",
+  "description": "Add direct article links to MathSciNet, and cache local copies.",
   "icons" : {
       "128" : "library.png"
     },
