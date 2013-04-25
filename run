@@ -1,0 +1,2 @@
+hg fetch
+./sbt update "test:run-main net.tqft.mathscinet.SearchApp"
