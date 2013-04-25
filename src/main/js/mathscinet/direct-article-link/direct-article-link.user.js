@@ -20,17 +20,21 @@ function main() {
         "Click the 'library' icon in the address bar to adjust your settings." + "\n" +
         "Click 'PDFs' in the MathSciNet toolbar to view and manage cached PDFs.");
       items = { "#inline": true, "#store": true, "#dropbox": true };
-      chrome.storage.sync.set(items);
+      chrome.storage.sync.set(items, continuation);
+    } else {
+      continuation();
     }
-    settings = items;
-    if(settings["#dropbox"]) {
-      chrome.runtime.sendMessage({cmd: "listPapersSavedInDropbox"}, function(response) {
+    function continuation() {
+      settings = items;
+      if(settings["#dropbox"]) {
+        chrome.runtime.sendMessage({cmd: "listPapersSavedInDropbox"}, function(response) {
         // Warning: somehow chrome is mangled the character encoding here, so don't trust the filenames in papersSavedInDropbox
         papersSavedInDropbox = response.papersSavedInDropbox;
         rewriteArticleLinks();
       })
-    } else {
-      rewriteArticleLinks();
+      } else {
+        rewriteArticleLinks();
+      }
     }
   });
 
@@ -139,7 +143,7 @@ function verifyBlob(blob, success, failure) {
 function filename(metadata) {
   var template = settings["#filename"];
   if(typeof template === "undefined" || template.indexOf("$MRNUMBER") === -1) {
-    template = "$MRNUMBER - $AUTHORS - $TITLE - $JOURNALREF.pdf"
+    template = "$TITLE - $AUTHORS - $JOURNALREF - $MRNUMBER.pdf"
   }
   template = template.replace(/\$MRNUMBER/gi, metadata.MRNUMBER);
   template = template.replace(/\$AUTHORS/gi, metadata.authors);

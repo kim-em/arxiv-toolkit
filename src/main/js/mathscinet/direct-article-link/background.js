@@ -51,7 +51,7 @@ function startDropboxClient() {
      });
     }
   } else {
-    log.console("Warning, someone tried to start the dropbox client, but dropbox isn't turned on.");
+    console.log("Warning, someone tried to start the dropbox client, but dropbox isn't turned on.");
   }
 }
 
