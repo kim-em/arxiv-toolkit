@@ -1,0 +1,17 @@
+{
+  "name": "Add arXiv links to mathscinet",
+  "version": "0.1.4",
+  "manifest_version": 2,
+  "description": "Add arXiv links to mathscinet",
+  "content_scripts": [
+    {
+      "matches": ["http://www.ams.org/mathscinet*", "http://ams.rice.edu/mathscinet*", "http://ams.impa.br/mathscinet*", "http://ams.math.uni-bielefeld.de/mathscinet*", "http://ams.mpim-bonn.mpg.de/mathscinet*", "http://ams.u-strasbg.fr/mathscinet*", "http://www.ams.org.libproxy.mit.edu/mathscinet*"],
+      "js": ["mathscinet.user.js"]
+    }
+  ],
+  "permissions": [
+    "http://arxiv.org/",
+    "http://export.arxiv.org/*",
+    "http://ams.org/*"
+  ]
+}
