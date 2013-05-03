@@ -55,6 +55,8 @@ trait Slurp {
       }
     }
   }
+  
+  def getString(url: String) = apply(url).mkString("\n")
 }
 
 trait HttpClientSlurp extends Slurp {

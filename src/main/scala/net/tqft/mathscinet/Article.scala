@@ -18,6 +18,7 @@ import org.apache.commons.io.FileUtils
 import java.io.InputStream
 import net.tqft.util.Html
 import scala.collection.parallel.ForkJoinTaskSupport
+import net.tqft.util.Accents
 
 trait Article {
   def identifier: Int
@@ -62,8 +63,15 @@ trait Article {
       bibtex.get("TITLE").get
     }
   }
+  
+  def authors: List[Author] = {
+    if(endnoteData.nonEmpty) {
+      endnote("%A").map(Author(_))
+    } else {
+      bibtex.get("AUTHOR").get.split(" and ").toList.map(a => Author(Accents.LaTeXToUnicode(a).filterNot(c => c == '{' || c == '}')))
+    }
+  }
   // FIXME load from endnote or bibtex
-  def authors: List[Author] = endnote("%A").map(Author(_))
   def journalReference: String = endnote("%J").head + " " + endnote("%V").head + " (" + endnote("%D").head + "), no. " + endnote("%N").head + ", " + endnote("%P").head
 
   def year: Int = {
@@ -133,7 +141,6 @@ trait Article {
           val regex = """pdfurl="([^"]*)"""".r
           regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => m.group(1))
         }
-        // TODO imitate this in direct-article-link
         // Cambridge University Press
         // 10.1017 10.1051
         // 10.1017/S0022112010001734 ---resolves to---> http://journals.cambridge.org/action/displayAbstract?fromPage=online&aid=7829674
@@ -145,7 +152,6 @@ trait Article {
           regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
         }
 
-        // TODO imitate this in direct-article-link
         // Wiley
         // 10.1002/(SICI)1097-0312(199602)49:2<85::AID-CPA1>3.0.CO;2-2 ---resolves to---> http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/abstract
         // 															 ---links to--->    http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/pdf
@@ -159,6 +165,12 @@ trait Article {
           regex.findFirstMatchIn(slurped).map(m => m.group(1))
         }
 
+        // ACM
+        case url if url.startsWith("http://dx.doi.org/10.1145/") => {
+          val regex = """title="FullText Pdf" href="(ft_gateway\.cfm\?id=[0-9]*&type=pdf&CFID=[0-9]*&CFTOKEN=[0-9]*)"""".r
+          regex.findFirstMatchIn(HttpClientSlurp.getString("http://dl.acm.org/citation.cfm?doid=" + url.drop(26))).map(m => m.group(1)).map("http://dl.acm.org/" + _)
+        }
+        
         // otherwise, try using DOI-direct
         case url if url.startsWith("http://dx.doi.org/") => {
           Http.findRedirect(url.replaceAllLiterally("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/")) match {
@@ -176,6 +188,10 @@ trait Article {
         case url if url.startsWith("http://www.numdam.org/item?id=") => {
           Some(url.replaceAllLiterally("http://www.numdam.org/item?id=", "http://archive.numdam.org/article/") + ".pdf")
         }
+        case url if url.startsWith("http://aif.cedram.org/item?id=") => {
+          Some(url.replaceAllLiterally("http://aif.cedram.org/item?id=", "http://aif.cedram.org/cedram-bin/article/") + ".pdf")
+        }        
+        case url if url.startsWith("http://muse.jhu.edu/journals/american_journal_of_mathematics/") => Some(url)
       }
     }
   }
