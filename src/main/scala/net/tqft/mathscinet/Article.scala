@@ -57,10 +57,17 @@ trait Article {
   }
 
   def title: String = {
-    if (endnoteData.nonEmpty) {
+    val roughTitle = if (endnoteData.nonEmpty) {
       endnote("%T").head
     } else {
       bibtex.get("TITLE").get
+    }
+    
+    val roughTitle2 = roughTitle.replaceAllLiterally("{", "").replaceAllLiterally("}", "")
+    if(roughTitle2.endsWith("]")) {
+      roughTitle2.take(roughTitle2.lastIndexOf("["))
+    } else {
+      roughTitle2
     }
   }
   
@@ -75,7 +82,7 @@ trait Article {
   def journal = bibtex.get("JOURNAL").get
   
   def journalReference: String = {
-    journal + " " + volume + " (" + year + "), no. " + number + ", " + pages
+    journal + " " + volume + " (" + year + "), " + numberOption.map("no. " + _ + ", ").getOrElse("") + pages
   }
 
   def yearOption: Option[Int] = {
@@ -88,8 +95,12 @@ trait Article {
   def volume: Int = {
     bibtex.get("VOLUME").get.toInt
   }
+  def numberOption = bibtex.get("NUMBER").flatMap({
+    case Int(n) => Some(n)
+    case _ => None
+  })
   def number: Int = {
-    bibtex.get("NUMBER").get.toInt
+    numberOption.get
   }
     
   def ISSNOption = bibtex.get("ISSN")
@@ -241,7 +252,9 @@ trait Article {
       mimetype match {
         case "application/pdf" => {
           Logging.info("Obtained bytes for PDF for " + identifierString)
-          Some(IOUtils.toByteArray(bis))
+          val result = Some(IOUtils.toByteArray(bis))
+          bis.close
+          result
         }
         case t => {
           Logging.warn("Content does not appear to be a PDF! (File begins with " + prefixString + " and MIME type detected as " + t + ".)")
@@ -258,9 +271,9 @@ trait Article {
     		.replaceAllLiterally("$TITLE", title)
     		.replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
     		.replaceAllLiterally("$JOURNALREF", journalReference)
-    		.replaceAllLiterally("$MRNUMBER", identifierString)
-    		
+    		.replaceAllLiterally("$MRNUMBER", identifierString)    		
     val file = new File(directory, filename)
+    // TODO check for any file containing the MR number
     if (file.exists()) {
       Logging.info("PDF for " + identifierString + " already exists in " + directory)
     } else {
