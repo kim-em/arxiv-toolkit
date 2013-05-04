@@ -26,6 +26,9 @@ import org.openqa.selenium.htmlunit.HtmlUnitDriver
 import com.gargoylesoftware.htmlunit.BrowserVersion
 import org.apache.http.impl.conn.PoolingClientConnectionManager
 import org.apache.http.impl.conn.SchemeRegistryFactory
+import org.apache.http.params.HttpConnectionParams
+import org.apache.http.impl.conn.BasicClientConnectionManager
+import java.io.FilterInputStream
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -41,7 +44,21 @@ trait Slurp {
       val reader = cm.getReader();
       val charset = cm.getName();
       //      Logging.info("reading stream in charset " + charset)
-      Source.fromInputStream(bis, charset).getLines
+      
+      class ClosingIterator[A](i: Iterator[A]) extends Iterator[A] {
+        override def hasNext = {
+          i.hasNext match {
+            case true => true
+            case false => {
+              bis.close
+              false
+            }
+          }
+        }
+        override def next = i.next
+      }
+      
+      new ClosingIterator(Source.fromInputStream(bis, charset).getLines): Iterator[String]
     } else {
       throw new UnsupportedCharsetException("")
     }
@@ -55,7 +72,7 @@ trait Slurp {
       }
     }
   }
-  
+
   def getString(url: String) = apply(url).mkString("\n")
 }
 
@@ -64,11 +81,15 @@ trait HttpClientSlurp extends Slurp {
   cxMgr.setMaxTotal(100);
   cxMgr.setDefaultMaxPerRoute(20);
 
-  val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(cxMgr))
-  client.getParams().setBooleanParameter("http.protocol.handle-redirects", true)
+  val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(/*cxMgr*/))
+  
+  val params = client.getParams()
+  params.setBooleanParameter("http.protocol.handle-redirects", true)
+  HttpConnectionParams.setConnectionTimeout(params, 10000);
+  HttpConnectionParams.setSoTimeout(params, 10000);
 
   def useragent = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)"
-  HttpProtocolParams.setUserAgent(client.getParams(), useragent);
+  HttpProtocolParams.setUserAgent(params, useragent);
 
   override def getStream(url: String) = getStream(url, None)
   def getStream(url: String, referer: Option[String]) = {
@@ -77,8 +98,16 @@ trait HttpClientSlurp extends Slurp {
     referer.map(r => get.setHeader("Referer", r))
 
     val response = client.execute(get);
-    response.getEntity.getContent()
-  }  
+    
+    class ReleasingInputStream(is: InputStream) extends FilterInputStream(is) {
+      override def close() {
+        get.releaseConnection()
+        is.close()
+      }
+    }
+    
+    new ReleasingInputStream(response.getEntity.getContent())
+  }
 }
 
 object HttpClientSlurp extends HttpClientSlurp

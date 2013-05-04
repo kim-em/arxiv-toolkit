@@ -9,10 +9,10 @@ object SavePDFApp extends App {
   FirefoxSlurp.disable
   Article.disableBibtexSaving
 
-//  val dir = new File(System.getProperty("user.home") + "/scratch/pdfs/")
-//
-//  val visitedHosts = scala.collection.mutable.Set[String]()
-//  val visitedPrefixes = scala.collection.mutable.Set[String]()
+  //  val dir = new File(System.getProperty("user.home") + "/scratch/pdfs/")
+  //
+  //  val visitedHosts = scala.collection.mutable.Set[String]()
+  //  val visitedPrefixes = scala.collection.mutable.Set[String]()
 
   // Springer
   //  // mysteriously not working... perhaps springer would like a cookie?
@@ -46,17 +46,21 @@ object SavePDFApp extends App {
   //    article.savePDF(dir)
   //  }
 
-  val articles = Articles.fromBibtexFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/20.bib")
+  val articles = Articles.fromBibtexFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/50.bib")
 
-//  val articles2 = Search.inJournalsJumbled(ISSNs.Elsevier)
-  
+  //  val articles2 = Search.inJournalsJumbled(ISSNs.Elsevier)
+
   val openAccessElsevierArticles = for (a <- articles; issn <- a.ISSNOption; if ISSNs.Elsevier.contains(issn); y <- a.yearOption; if y <= 2008) yield a
 
   val dir = new File(System.getProperty("user.home") + "/scratch/elsevier-oa/")
 
-  
-  for (article <- openAccessElsevierArticles) {
-    article.savePDF(dir)
+  for (article <- openAccessElsevierArticles; if article.URL.nonEmpty) {
+    try {
+      println(article.bibtex.toBIBTEXString)
+      article.savePDF(dir)
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
   }
 
 }
