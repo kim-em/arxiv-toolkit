@@ -159,7 +159,7 @@ trait Article {
         // 10.1017/S0022112010001734 ---resolves to---> http://journals.cambridge.org/action/displayAbstract?fromPage=online&aid=7829674
         //						   ---follow "View PDF (" (or jQuery for "a.article-pdf")---> http://journals.cambridge.org/action/displayFulltext?type=1&fid=7829676&jid=FLM&volumeId=655&issueId=-1&aid=7829674&bodyId=&membershipNumber=&societyETOCSession=
         //						   ---resolves to something like---> http://journals.cambridge.org/download.php?file=%2FFLM%2FFLM655%2FS0022112010001734a.pdf&code=ac265aacb742b93fa69d566e33aeaf5e
-        // We also need to grab some 10.1112 DOIs, for LMS journals run by CMP
+        // We also need to grab some 10.1112 DOIs, for LMS journals run by CMP e.g. 10.1112/S0010437X04001034
         case url if url.startsWith("http://dx.doi.org/10.1017/S") || url.startsWith("http://dx.doi.org/10.1017/is") || url.startsWith("http://dx.doi.org/10.1051/S") || url.startsWith("http://dx.doi.org/10.1112/S0010437X") || url.startsWith("http://dx.doi.org/10.1112/S14611570") || url.startsWith("http://dx.doi.org/10.1112/S00255793") => {
           val regex = """<a href="([^"]*)"[ \t\n]*title="View PDF" class="article-pdf">""".r
           regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
