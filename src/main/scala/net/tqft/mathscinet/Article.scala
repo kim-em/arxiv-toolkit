@@ -71,19 +71,32 @@ trait Article {
       bibtex.get("AUTHOR").get.split(" and ").toList.map(a => Author(Accents.LaTeXToUnicode(a).filterNot(c => c == '{' || c == '}')))
     }
   }
-  // FIXME load from endnote or bibtex
-  def journalReference: String = endnote("%J").head + " " + endnote("%V").head + " (" + endnote("%D").head + "), no. " + endnote("%N").head + ", " + endnote("%P").head
-
-  def year: Int = {
-    bibtex.get("YEAR").get.toInt
+  
+  def journal = bibtex.get("JOURNAL").get
+  
+  def journalReference: String = {
+    journal + " " + volume + " (" + year + "), no. " + number + ", " + pages
   }
+
+  def yearOption: Option[Int] = {
+    bibtex.get("YEAR").flatMap({ 
+    	case Int(year) => Some(year)
+    	case _ => None
+    })
+  }
+  def year = yearOption.get
   def volume: Int = {
     bibtex.get("VOLUME").get.toInt
   }
   def number: Int = {
     bibtex.get("NUMBER").get.toInt
   }
+    
+  def ISSNOption = bibtex.get("ISSN")
+  def ISSN = ISSNOption.get
 
+  def pages = bibtex.get("PAGES").get
+  
   def pageStart: Option[Int] = {
     val pages = bibtex.get("PAGES")
     pages flatMap { p =>
@@ -240,9 +253,14 @@ trait Article {
     })
   }
 
-  def savePDF(directory: File) {
-    // FIXME Better filename? "MRXXX - Author A and Author B - A Great Paper - Journal of Everything 12 13 14.pdf"
-    val file = new File(directory, identifierString + ".pdf")
+  def savePDF(directory: File, filenameTemplate: String = "$TITLE - $AUTHOR - $JOURNALREF - $MRNUMBER.pdf") {
+    val filename = filenameTemplate
+    		.replaceAllLiterally("$TITLE", title)
+    		.replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
+    		.replaceAllLiterally("$JOURNALREF", journalReference)
+    		.replaceAllLiterally("$MRNUMBER", identifierString)
+    		
+    val file = new File(directory, filename)
     if (file.exists()) {
       Logging.info("PDF for " + identifierString + " already exists in " + directory)
     } else {
