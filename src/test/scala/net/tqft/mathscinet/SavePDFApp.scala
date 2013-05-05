@@ -51,6 +51,8 @@ object SavePDFApp extends App {
   //  val articles2 = Search.inJournalsJumbled(ISSNs.Elsevier)
 
   val openAccessElsevierArticles = for (a <- articles; issn <- a.ISSNOption; if ISSNs.Elsevier.contains(issn); y <- a.yearOption; if y <= 2008) yield a
+  val openAccessAdvancesArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Advances in Mathematics`; y <- a.yearOption; if y <= 2008) yield a
+  val openAccessTopologyArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Topology`; y <- a.yearOption; if y <= 2008) yield a
 
   val dir = new File(System.getProperty("user.home") + "/scratch/elsevier-oa/")
 
