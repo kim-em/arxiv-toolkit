@@ -19,6 +19,11 @@ import java.io.InputStream
 import net.tqft.util.Html
 import scala.collection.parallel.ForkJoinTaskSupport
 import net.tqft.util.Accents
+import java.io.FilenameFilter
+import org.apache.commons.lang3.StringUtils
+import net.tqft.journals.ISSNs
+import java.util.zip.GZIPInputStream
+import java.io.FileInputStream
 
 trait Article {
   def identifier: Int
@@ -62,52 +67,55 @@ trait Article {
     } else {
       bibtex.get("TITLE").get
     }
+
+    def stripBraces(t: String) = t.replaceAll("\\{([A-Z])\\}", "$1").replaceAllLiterally("{$", "$").replaceAllLiterally("$}", "$")
     
-    val roughTitle2 = roughTitle.replaceAllLiterally("{", "").replaceAllLiterally("}", "")
-    if(roughTitle2.endsWith("]")) {
+    val roughTitle2 = stripBraces(Accents.LaTeXToUnicode(roughTitle))
+    val roughTitle3 = if (roughTitle2.endsWith("]")) {
       roughTitle2.take(roughTitle2.lastIndexOf("["))
     } else {
       roughTitle2
     }
+    roughTitle3.replace("; MR[0-9]* \\([:0-9a-z]*\\)]", "]")
   }
-  
+
   def authors: List[Author] = {
-    if(endnoteData.nonEmpty) {
+    if (endnoteData.nonEmpty) {
       endnote("%A").map(Author(_))
     } else {
-      bibtex.get("AUTHOR").get.split(" and ").toList.map(a => Author(Accents.LaTeXToUnicode(a).filterNot(c => c == '{' || c == '}')))
+      bibtex.get("AUTHOR") match {
+        case None => List()
+        case Some(a) => a.split(" and ").toList.map(a => Author(Accents.LaTeXToUnicode(a)))
+      }
     }
   }
-  
+
   def journal = bibtex.get("JOURNAL").get
-  
+
   def journalReference: String = {
     journal + " " + volume + " (" + year + "), " + numberOption.map("no. " + _ + ", ").getOrElse("") + pages
   }
 
   def yearOption: Option[Int] = {
-    bibtex.get("YEAR").flatMap({ 
-    	case Int(year) => Some(year)
-    	case _ => None
+    bibtex.get("YEAR").flatMap({
+      case Int(year) => Some(year)
+      case _ => None
     })
   }
   def year = yearOption.get
   def volume: Int = {
     bibtex.get("VOLUME").get.toInt
   }
-  def numberOption = bibtex.get("NUMBER").flatMap({
-    case Int(n) => Some(n)
-    case _ => None
-  })
-  def number: Int = {
-    numberOption.get
-  }
-    
+
+  // Numbers are not always integers, e.g. "fasc. 1" in Advances
+  def numberOption = bibtex.get("NUMBER")
+  def number: String = numberOption.get
+
   def ISSNOption = bibtex.get("ISSN")
   def ISSN = ISSNOption.get
 
   def pages = bibtex.get("PAGES").get
-  
+
   def pageStart: Option[Int] = {
     val pages = bibtex.get("PAGES")
     pages flatMap { p =>
@@ -149,6 +157,64 @@ trait Article {
 
   lazy val pdfURL: Option[String] = {
     // This mimics the logic of direct-article-link.user.js 
+
+    if (ISSNs.Elsevier.contains(ISSN) && URL.isEmpty) {
+      // Old Elsevier articles, that MathSciNet doesn't know about
+
+      val numbers = {
+        // Topology, special cases
+        if (ISSN == "0040-9383" && volume == 2) {
+          Iterator("1-2", "3", "4")
+        } else if (ISSN == "0040-9383" && volume == 3) {
+          Iterator("supp/S1", "supp/S2", "1", "2", "3", "4")
+        } else if (ISSN == ISSNs.`Advances in Mathematics` && volume == 24 && number == "2") {
+          Iterator("1", "2")
+        } else {
+          numberOption match {
+            case Some(number) => Iterator(number.split(" ").last)
+            case _ => Iterator.from(1).map(_.toString)
+          }
+        }
+      }
+      val pages = numbers.map(n => Article.ElsevierSlurpCache("http://www.sciencedirect.com/science/journal/" + ISSN.replaceAllLiterally("-", "") + "/" + volume + "/" + n.ensuring(_ != "10")).toList).takeWhile({ page =>
+        val titleLine =  page.find(_.contains("<title>")).get
+        titleLine.contains("| Vol " + volume) &&
+        !titleLine.contains("In Progress") &&
+          !titleLine.contains("Topology | Vol 48, Isss 2–4, Pgs 41-224, (June–December, 2009)")
+      }).toSeq
+
+      val regex1 = """<span style="font-weight : bold ;">(.*)</span></a></h3>""".r
+      val regex2 = """<a href="(http://www.sciencedirect.com/science\?_ob=MiamiImageURL.*.pdf) " target="newPdfWin"""".r
+
+      val matches = (for (p <- pages; l <- p; if l.contains("newPdfWin"); titleFound <- regex1.findFirstMatchIn(l); urlFound <- regex2.findFirstMatchIn(l)) yield {
+        (titleFound.group(1), urlFound.group(1), StringUtils.getLevenshteinDistance(titleFound.group(1).replaceAll("<[^>]*>", ""), title).toDouble / title.length())
+      }).sortBy(_._3)
+
+      val chosenMatch = if (matches.filter(_._3 == 0.0).size == 1
+        || matches.filter(_._3 <= 0.4).size == 1
+        || (matches.filter(_._3 <= 0.4).size > 1 && matches(0)._3 < matches(1)._3 / 2)) {
+        Some(matches.head._2)
+      } else if (title.startsWith("Erratum") && matches.count(_._1.startsWith("Erratum")) == 1) {
+        matches.find(_._1.startsWith("Erratum")).map(_._2)
+      } else if (title.startsWith("Errata") && matches.count(_._1.startsWith("Errata")) == 1) {
+        matches.find(_._1.startsWith("Errata")).map(_._2)
+      } else if (title.startsWith("Correction to") && matches.count(_._1.startsWith("Correction to")) == 1) {
+        matches.find(_._1.startsWith("Correction to")).map(_._2)
+      } else if (title.startsWith("Addendum") && matches.count(_._1.startsWith("Addendum")) == 1) {
+        matches.find(_._1.startsWith("Addendum")).map(_._2)
+      } else if (title.startsWith("Obituary") && matches.count(_._1.startsWith("Obituary")) == 1) {
+        matches.find(_._1.startsWith("Obituary")).map(_._2)
+      } else if (title.startsWith("Corrigendum") && matches.count(_._1.contains("orrigendum")) == 1) {
+        matches.find(_._1.contains("orrigendum")).map(_._2)
+      } else {
+        None
+      }
+
+//      require(chosenMatch.nonEmpty, "\n" + title + matches.map(t => t._1 -> t._3).mkString("\n", "\n", ""))
+      for(c <- chosenMatch) println("Found URL for old Elsevier article: " + c)
+
+      return chosenMatch
+    }
 
     URL flatMap { url =>
       url match {
@@ -194,7 +260,7 @@ trait Article {
           val regex = """title="FullText Pdf" href="(ft_gateway\.cfm\?id=[0-9]*&type=pdf&CFID=[0-9]*&CFTOKEN=[0-9]*)"""".r
           regex.findFirstMatchIn(HttpClientSlurp.getString("http://dl.acm.org/citation.cfm?doid=" + url.drop(26))).map(m => m.group(1)).map("http://dl.acm.org/" + _)
         }
-        
+
         // otherwise, try using DOI-direct
         case url if url.startsWith("http://dx.doi.org/") => {
           Http.findRedirect(url.replaceAllLiterally("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/")) match {
@@ -214,25 +280,20 @@ trait Article {
         }
         case url if url.startsWith("http://aif.cedram.org/item?id=") => {
           Some(url.replaceAllLiterally("http://aif.cedram.org/item?id=", "http://aif.cedram.org/cedram-bin/article/") + ".pdf")
-        }        
+        }
         case url if url.startsWith("http://muse.jhu.edu/journals/american_journal_of_mathematics/") => Some(url)
       }
     }
   }
 
   def pdfInputStream: Option[InputStream] = {
-    DOI flatMap { doi =>
-      doi match {
-        case doi if doi.startsWith("10.1215") => {
-          // Duke expects to see a Referer field.
-          pdfURL.map({ u =>
-            HttpClientSlurp.getStream(u, referer = Some(u))
-          })
-        }
-        case _ => {
-          pdfURL.map(HttpClientSlurp.getStream)
-        }
-      }
+    if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
+      // Duke expects to see a Referer field.
+      pdfURL.map({ u =>
+        HttpClientSlurp.getStream(u, referer = Some(u))
+      })
+    } else {
+      pdfURL.map(HttpClientSlurp.getStream)
     }
   }
 
@@ -266,18 +327,47 @@ trait Article {
     })
   }
 
-  def savePDF(directory: File, filenameTemplate: String = "$TITLE - $AUTHOR - $JOURNALREF - $MRNUMBER.pdf") {
-    val filename = filenameTemplate
-    		.replaceAllLiterally("$TITLE", title)
-    		.replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
-    		.replaceAllLiterally("$JOURNALREF", journalReference)
-    		.replaceAllLiterally("$MRNUMBER", identifierString)    		
-    val file = new File(directory, filename)
+  val defaultFilenameTemplate = "$TITLE - $AUTHOR - $JOURNALREF - $MRNUMBER.pdf"
+
+  def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
+    ({
+      val attempt = filenameTemplate
+        .replaceAllLiterally("$TITLE", title)
+        .replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
+        .replaceAllLiterally("$JOURNALREF", journalReference)
+        .replaceAllLiterally("$MRNUMBER", identifierString)
+      if (attempt.length > 255) {
+        val shortAuthors = if (authors.size > 4) {
+          authors.head.name + " et al."
+        } else {
+          authors.map(_.name).mkString(" and ")
+        }
+        val partialReplacement = filenameTemplate
+          .replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
+          .replaceAllLiterally("$JOURNALREF", journalReference)
+          .replaceAllLiterally("$MRNUMBER", identifierString)
+        val maxTitleLength = 250 - (partialReplacement.length - 6)
+        val shortTitle = if (title.length > maxTitleLength) {
+          title.take(maxTitleLength - 3) + "..."
+        } else {
+          title
+        }
+        partialReplacement.replaceAllLiterally("$TITLE", shortTitle)
+      } else {
+        attempt
+      }
+    }).replaceAllLiterally("/", "∕") // scary UTF-8 character that just *looks* like a forward slash
+  }
+
+  def savePDF(directory: File, filenameTemplate: String = defaultFilenameTemplate) {
+    val fileName = constructFilename(filenameTemplate)
+    val file = new File(directory, fileName)
     // TODO check for any file containing the MR number
-    if (file.exists()) {
+    if (directory.listFiles(new FilenameFilter { override def accept(dir: File, name: String) = name.contains(identifierString) }).nonEmpty) {
       Logging.info("PDF for " + identifierString + " already exists in " + directory)
     } else {
       for (bytes <- pdf) {
+        println("Saving PDF to " + fileName)
         FileUtils.writeByteArrayToFile(file, bytes)
       }
     }
@@ -322,6 +412,11 @@ object Article {
     })
   }
 
+  val ElsevierSlurpCache = {
+    import net.tqft.toolkit.functions.Memo._
+    { url: String => HttpClientSlurp.apply(url).toList }.memo
+  }
+
   private var saving_? = true
   def disableBibtexSaving { saving_? = false }
 }
@@ -344,6 +439,11 @@ object Articles {
   def fromBibtexFile(file: String): Iterator[Article] = {
     import net.tqft.toolkit.collections.Split._
     Source.fromFile(file).getLines.splitOn(_.isEmpty).map(_.mkString("\n")).grouped(100).flatMap(_.par.flatMap(Article.fromBibtex))
+  }
+
+  def fromBibtexGzipFile(file: String): Iterator[Article] = {
+    import net.tqft.toolkit.collections.Split._
+    Source.fromInputStream(new GZIPInputStream(new FileInputStream(file))).getLines.splitOn(_.isEmpty).map(_.mkString("\n")).grouped(100).flatMap(_.par.flatMap(Article.fromBibtex))
   }
 
   def withDOIPrefix(prefix: String): Iterator[Article] = {
