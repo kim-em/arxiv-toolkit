@@ -33,7 +33,7 @@ import java.io.FilterInputStream
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
   final def getBytes(url: String) = IOUtils.toByteArray(getStream(url))
-
+  
   final def apply(url: String) = {
     val bis = new BufferedInputStream(getStream(url));
     val cd = new CharsetDetector();
@@ -81,7 +81,7 @@ trait HttpClientSlurp extends Slurp {
   cxMgr.setMaxTotal(100);
   cxMgr.setDefaultMaxPerRoute(20);
 
-  val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(/*cxMgr*/))
+  val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(cxMgr))
   
   val params = client.getParams()
   params.setBooleanParameter("http.protocol.handle-redirects", true)
