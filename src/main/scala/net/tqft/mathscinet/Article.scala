@@ -84,9 +84,10 @@ trait Article {
       bibtex.get("TITLE").getOrElse("Untitled")
     }
 
-    def stripBraces(t: String) = t.replaceAll("\\{([A-Z]*)\\}", "$1").replaceAllLiterally("{$", "$").replaceAllLiterally("$}", "$")
+//    def stripBraces(t: String) = t.replaceAll("\\{([A-Z]*)\\}", "$1").replaceAllLiterally("{$", "$").replaceAllLiterally("$}", "$")
 
-    val roughTitle2 = stripBraces(Accents.LaTeXToUnicode(roughTitle))
+//    val roughTitle2 = stripBraces(Accents.LaTeXToUnicode(roughTitle))
+    val roughTitle2 = roughTitle
     val roughTitle3 = if (roughTitle2.endsWith("]")) {
       roughTitle2.take(roughTitle2.lastIndexOf("["))
     } else {
@@ -101,7 +102,7 @@ trait Article {
     } else {
       bibtex.get("AUTHOR") match {
         case None => List()
-        case Some(a) => a.split(" and ").toList.map(a => Author(Accents.LaTeXToUnicode(a)))
+        case Some(a) => a.split(" and ").toList.map(a => Author(a /*Accents.LaTeXToUnicode(a)*/))
       }
     }
   }
