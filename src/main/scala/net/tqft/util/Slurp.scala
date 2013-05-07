@@ -46,10 +46,13 @@ trait Slurp {
       //      Logging.info("reading stream in charset " + charset)
       
       class ClosingIterator[A](i: Iterator[A]) extends Iterator[A] {
+        var open = true
+        
         override def hasNext = {
-          i.hasNext match {
+          open && i.hasNext match {
             case true => true
             case false => {
+              open = false
               bis.close
               false
             }
