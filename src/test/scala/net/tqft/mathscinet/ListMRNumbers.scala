@@ -6,6 +6,8 @@ import net.tqft.util.FirefoxSlurp
 import net.tqft.journals.ISSNs
 import java.io.File
 import java.io.FilenameFilter
+import java.io.PrintWriter
+import java.io.FileOutputStream
 
 object ListMRNumbers extends App {
   FirefoxSlurp.disable
@@ -15,9 +17,11 @@ object ListMRNumbers extends App {
 
   val directory = new File(System.getProperty("user.home") + "/scratch/elsevier-oa/")
 
+  val pw = new PrintWriter(new FileOutputStream(new File(directory, "advances.bib")))
+  
   val `Advances, open access` = Search.query("arg3=&co4=AND&co5=NOT&co6=AND&co7=AND&dr=pubyear&extend=1&pg4=TI&pg5=JOUR&pg6=JOUR&pg7=ALLF&pg8=ET&review_format=html&s4=&s5=0001-8708&s6=Advancement&s7=&s8=All&vfpref=html&yearRangeFirst=&yearRangeSecond=2008&yrop=eq").toStream
   for(a <- `Advances, open access`) {
-    println(a.identifierString)
+    pw.println(a.bibtex.toBIBTEXString)
   }
   
   
