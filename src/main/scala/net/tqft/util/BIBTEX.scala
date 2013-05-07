@@ -29,8 +29,9 @@ object BIBTEX extends Logging {
     if (!cachedKeys.contains(item.identifier)) {
       info("Storing BIBTEX for " + item.identifier + " to S3")
       cache.putIfAbsent(item.identifier, item.toBIBTEXString)
-      item.data.find(_._1 == "DOI").map({ case ("DOI", doi) =>
-        DOI2mathscinet.put(doi, item.identifier)
+      item.data.find(_._1 == "DOI").map({
+        case ("DOI", doi) =>
+          DOI2mathscinet.put(doi, item.identifier)
       })
     } else {
       false
@@ -39,22 +40,28 @@ object BIBTEX extends Logging {
 
   // this is just parses mathscinet BIBTEX, which is particularly easy.
   def parse(bibtexString: String): Option[BIBTEX] = {
-    if (bibtexString.startsWith("@preamble")) {
-      None
-    } else {
-      val lines = bibtexString.split("\n").filterNot(_.trim.startsWith("</") /* sometimes DOIs look like they contain a tag, and browsers sometimes insert spurious close tags when reporting the source */ )
-      val DocumentTypePattern = """@([a-z ]*)\{[A-Za-z0-9]*,""".r
-      val documentType = lines.head match {
-        case DocumentTypePattern(t) => t.trim
+    val allLines = bibtexString.split("\n").toList
+    def discardPreamble(lines: List[String]): List[String] = {
+      lines match {
+        case Nil => Nil
+        case h :: t if h.trim.startsWith("@preamble") => discardPreamble(t.dropWhile(!_.trim.startsWith("@")))
+        case lines => lines
       }
-      val IdentifierPattern = """@[a-z ]*\{([A-Za-z0-9]*),""".r
-      val identifier = lines.head match {
-        case IdentifierPattern(id) => id
-      }
-      require(lines.last == "}", "Failed while parsing BIBTEX: " + bibtexString)
-      val data = lines.tail.init.mkString("\n").replaceAll("\n             ", "").split("\n").map(line => line.replaceAllLiterally("&gt;", ">").replaceAllLiterally("&lt;", "<").replaceAllLiterally("&amp;", "&")).map(line => line.take(10).trim -> line.drop(14).dropRight(2)).toList
-
-      Some(BIBTEX(documentType, identifier, data))
     }
+
+    val lines = discardPreamble(allLines).filterNot(_.trim.startsWith("</") /* sometimes DOIs look like they contain a tag, and browsers sometimes insert spurious close tags when reporting the source */ )
+    val DocumentTypePattern = """@([a-z ]*)\{[A-Za-z0-9]*,""".r
+    val documentType = lines.head match {
+      case DocumentTypePattern(t) => t.trim
+    }
+    val IdentifierPattern = """@[a-z ]*\{([A-Za-z0-9]*),""".r
+    val identifier = lines.head match {
+      case IdentifierPattern(id) => id
+    }
+    require(lines.last == "}", "Failed while parsing BIBTEX: " + bibtexString)
+    val data = lines.tail.init.mkString("\n").replaceAll("\n             ", "").split("\n").map(line => line.replaceAllLiterally("&gt;", ">").replaceAllLiterally("&lt;", "<").replaceAllLiterally("&amp;", "&")).map(line => line.take(10).trim -> line.drop(14).dropRight(2)).toList
+
+    Some(BIBTEX(documentType, identifier, data))
+
   }
 }
