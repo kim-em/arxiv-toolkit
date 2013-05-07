@@ -28,7 +28,7 @@ import java.io.FileInputStream
 trait Article {
   def identifier: Int
   def identifierString = "MR" + ("0000000" + identifier.toString).takeRight(7)
-  def shortIdentifierString = "MR" + identifier.toString
+  //  def shortIdentifierString = "MR" + identifier.toString
 
   def MathSciNetURL = "http://www.ams.org/mathscinet-getitem?mr=" + identifier
   def bibtexURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=bibtex&pg1=MR&s1=" + identifier
@@ -50,13 +50,29 @@ trait Article {
   }
   def bibtex = {
     if (bibtexData.isEmpty) {
-      val text = BIBTEX.cache.get(shortIdentifierString).getOrElse(BIBTEX.cache.getOrElseUpdate(identifierString, {
+      val text = BIBTEX.cache.getOrElseUpdate(identifierString, {
         val lines = Slurp(bibtexURL).toList
-        val start = lines.indexWhere(_.trim == "<pre>")
+        val start = lines.indexWhere(_.trim.startsWith("<pre>"))
         val finish = lines.indexWhere(_.trim == "</pre>")
-        lines.slice(start + 1, finish).mkString("\n")
-      }))
-      bibtexData = BIBTEX.parse(text)
+        if (start == -1 || finish <= start) {
+          Logging.warn("Did not find BIBTEX block in: \n" + lines.mkString("\n"))
+          ???
+        }
+        (lines(start).trim.stripPrefix("<pre>") +: lines.slice(start + 1, finish)).mkString("\n").trim
+      })
+      try {
+        bibtexData = BIBTEX.parse(text)
+      } catch {
+        case e: Exception => {
+          Logging.error("Exception while parsing BIBTEX for " + identifierString + ": \n" + text, e)
+          try {
+            BIBTEX.cache -= identifierString
+          } catch {
+            case e: Exception => Logging.warn("Failed to clean BIBTEX database.")
+          }
+          ???
+        }
+      }
     }
     bibtexData.get
   }
@@ -65,11 +81,11 @@ trait Article {
     val roughTitle = if (endnoteData.nonEmpty) {
       endnote("%T").head
     } else {
-      bibtex.get("TITLE").get
+      bibtex.get("TITLE").getOrElse("Untitled")
     }
 
-    def stripBraces(t: String) = t.replaceAll("\\{([A-Z])\\}", "$1").replaceAllLiterally("{$", "$").replaceAllLiterally("$}", "$")
-    
+    def stripBraces(t: String) = t.replaceAll("\\{([A-Z]*)\\}", "$1").replaceAllLiterally("{$", "$").replaceAllLiterally("$}", "$")
+
     val roughTitle2 = stripBraces(Accents.LaTeXToUnicode(roughTitle))
     val roughTitle3 = if (roughTitle2.endsWith("]")) {
       roughTitle2.take(roughTitle2.lastIndexOf("["))
@@ -90,10 +106,33 @@ trait Article {
     }
   }
 
-  def journal = bibtex.get("JOURNAL").get
+  def journalOption = bibtex.get("JOURNAL")
+  def journal = journalOption.get
 
-  def journalReference: String = {
-    journal + " " + volume + " (" + year + "), " + numberOption.map("no. " + _ + ", ").getOrElse("") + pages
+  def citation: String = {
+    def restOfCitation = volumeOption.map(" " + _).getOrElse("") + yearOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("") + pagesOption.getOrElse("")
+    
+    bibtex.documentType match {
+      case "article" => {
+        journal + restOfCitation
+      }
+      case "book" => {
+        bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+      }
+      case "inproceedings" => {
+        bibtex.get("BOOKTITLE").map(" " + _).getOrElse("") + journalOption.getOrElse("") + restOfCitation
+      }
+      case "proceedings" => {
+        bibtex.get("NOTE").getOrElse("")
+      }
+      case "incollection" => {
+        bibtex.get("BOOKTITLE").map(_ + " ").getOrElse("") + pages 
+      }
+      case otherwise => {
+        Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)
+        ???
+      }
+    }
   }
 
   def yearOption: Option[Int] = {
@@ -103,9 +142,13 @@ trait Article {
     })
   }
   def year = yearOption.get
-  def volume: Int = {
-    bibtex.get("VOLUME").get.toInt
+  def volumeOption: Option[Int] = {
+    bibtex.get("VOLUME").flatMap({
+      case Int(v) => Some(v)
+      case _ => None
+    })
   }
+  def volume: Int = volumeOption.get
 
   // Numbers are not always integers, e.g. "fasc. 1" in Advances
   def numberOption = bibtex.get("NUMBER")
@@ -114,7 +157,8 @@ trait Article {
   def ISSNOption = bibtex.get("ISSN")
   def ISSN = ISSNOption.get
 
-  def pages = bibtex.get("PAGES").get
+  def pagesOption = bibtex.get("PAGES")
+  def pages = pagesOption.get
 
   def pageStart: Option[Int] = {
     val pages = bibtex.get("PAGES")
@@ -177,9 +221,9 @@ trait Article {
         }
       }
       val pages = numbers.map(n => Article.ElsevierSlurpCache("http://www.sciencedirect.com/science/journal/" + ISSN.replaceAllLiterally("-", "") + "/" + volume + "/" + n.ensuring(_ != "10")).toList).takeWhile({ page =>
-        val titleLine =  page.find(_.contains("<title>")).get
+        val titleLine = page.find(_.contains("<title>")).get
         titleLine.contains("| Vol " + volume) &&
-        !titleLine.contains("In Progress") &&
+          !titleLine.contains("In Progress") &&
           !titleLine.contains("Topology | Vol 48, Isss 2–4, Pgs 41-224, (June–December, 2009)")
       }).toSeq
 
@@ -210,78 +254,79 @@ trait Article {
         None
       }
 
-//      require(chosenMatch.nonEmpty, "\n" + title + matches.map(t => t._1 -> t._3).mkString("\n", "\n", ""))
-      for(c <- chosenMatch) println("Found URL for old Elsevier article: " + c)
+      //      require(chosenMatch.nonEmpty, "\n" + title + matches.map(t => t._1 -> t._3).mkString("\n", "\n", ""))
+      for (c <- chosenMatch) println("Found URL for old Elsevier article: " + c)
 
-      return chosenMatch
-    }
+      chosenMatch
+    } else {
 
-    URL flatMap { url =>
-      url match {
-        // Elsevier
-        // 10.1006 10.1016, Elsevier, has complicated URLs, e.g.
-        // 10.1006/jabr.1996.0306 ---resolves to---> http://www.sciencedirect.com/science/article/pii/S0021869396903063
-        //						  ---follow link---> http://pdn.sciencedirect.com/science?_ob=MiamiImageURL&_cid=272332&_user=10&_pii=S0021869396903063&_check=y&_origin=article&_zone=toolbar&_coverDate=1996--15&view=c&originContentFamily=serial&wchp=dGLbVlt-zSkWz&md5=fb951ad4ff13953e97dc2afd6fd16d4a&pid=1-s2.0-S0021869396903063-main.pdf
-        //                        ---resolves to---> http://ac.els-cdn.com/S0021869396903063/1-s2.0-S0021869396903063-main.pdf?_tid=756d984e-a048-11e2-8b82-00000aab0f02&acdnat=1365424565_666b1bf7394bbc91c15fac27d45952a0
-        // 10.1016/0167-6687(83)90020-3 ---resolves to---> http://www.sciencedirect.com/science/article/pii/0167668783900203#
-        //                              ---follow link (from campus)---> http://pdn.sciencedirect.com/science?_ob=MiamiImageURL&_cid=271685&_user=554534&_pii=0167668783900203&_check=y&_origin=article&_zone=toolbar&_coverDate=30-Apr-1983&view=c&originContentFamily=serial&wchp=dGLbVlt-zSkzS&md5=729643f534e9cc7abe5882e10cca9e40&pid=1-s2.0-0167668783900203-main.pdf
-        // 								---follow link (off campus)----> http://pdn.sciencedirect.com/science?_ob=ShoppingCartURL&_method=add&_eid=1-s2.0-0167668783900203&originContentFamily=serial&_origin=article&_acct=C000228598&_version=1&_userid=10&_ts=1365482216&md5=ecfe2869e3c92d58e7f05c5762d02d90
-        case url if url.startsWith("http://dx.doi.org/10.1006") || url.startsWith("http://dx.doi.org/10.1016") => {
-          // If we're not logged in, it's not going to work. Just use the HttpClientSlurp, and don't make any attempt to save the answer.
-          val regex = """pdfurl="([^"]*)"""".r
-          regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => m.group(1))
-        }
-        // Cambridge University Press
-        // 10.1017 10.1051
-        // 10.1017/S0022112010001734 ---resolves to---> http://journals.cambridge.org/action/displayAbstract?fromPage=online&aid=7829674
-        //						   ---follow "View PDF (" (or jQuery for "a.article-pdf")---> http://journals.cambridge.org/action/displayFulltext?type=1&fid=7829676&jid=FLM&volumeId=655&issueId=-1&aid=7829674&bodyId=&membershipNumber=&societyETOCSession=
-        //						   ---resolves to something like---> http://journals.cambridge.org/download.php?file=%2FFLM%2FFLM655%2FS0022112010001734a.pdf&code=ac265aacb742b93fa69d566e33aeaf5e
-        // We also need to grab some 10.1112 DOIs, for LMS journals run by CMP e.g. 10.1112/S0010437X04001034
-        case url if url.startsWith("http://dx.doi.org/10.1017/S") || url.startsWith("http://dx.doi.org/10.1017/is") || url.startsWith("http://dx.doi.org/10.1051/S") || url.startsWith("http://dx.doi.org/10.1112/S0010437X") || url.startsWith("http://dx.doi.org/10.1112/S14611570") || url.startsWith("http://dx.doi.org/10.1112/S00255793") => {
-          val regex = """<a href="([^"]*)"[ \t\n]*title="View PDF" class="article-pdf">""".r
-          regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
-        }
-
-        // Wiley
-        // 10.1002/(SICI)1097-0312(199602)49:2<85::AID-CPA1>3.0.CO;2-2 ---resolves to---> http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/abstract
-        // 															 ---links to--->    http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/pdf
-        //															 ---???---> http://onlinelibrary.wiley.com/store/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/asset/1_ftp.pdf?v=1&t=hfc3fjoo&s=dc6fad69f11cfc2ff2f302f5d1386c553d48f47c
-        // the mystery step here is somewhat strange; it looks like it contains an iframe, but then redirects (via javascript) to the contents of the iframe?
-        // anyway, the following scraping seems to work
-        case url if url.startsWith("http://dx.doi.org/10.1002/") => {
-          val regex = """id="pdfDocument" src="([^"]*)"""".r
-          val url2 = "http://onlinelibrary.wiley.com/doi/" + url.stripPrefix("http://dx.doi.org/") + "/pdf"
-          val slurped = HttpClientSlurp(url2).mkString("\n")
-          regex.findFirstMatchIn(slurped).map(m => m.group(1))
-        }
-
-        // ACM
-        case url if url.startsWith("http://dx.doi.org/10.1145/") => {
-          val regex = """title="FullText Pdf" href="(ft_gateway\.cfm\?id=[0-9]*&type=pdf&CFID=[0-9]*&CFTOKEN=[0-9]*)"""".r
-          regex.findFirstMatchIn(HttpClientSlurp.getString("http://dl.acm.org/citation.cfm?doid=" + url.drop(26))).map(m => m.group(1)).map("http://dl.acm.org/" + _)
-        }
-
-        // otherwise, try using DOI-direct
-        case url if url.startsWith("http://dx.doi.org/") => {
-          Http.findRedirect(url.replaceAllLiterally("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/")) match {
-            case None => None
-            case Some(redirect) if redirect.startsWith("http://dx.doi.org/") => {
-              // didn't learn anything
-              None
-            }
-            case Some(redirect) => Some(redirect)
+      URL flatMap { url =>
+        url match {
+          // Elsevier
+          // 10.1006 10.1016, Elsevier, has complicated URLs, e.g.
+          // 10.1006/jabr.1996.0306 ---resolves to---> http://www.sciencedirect.com/science/article/pii/S0021869396903063
+          //						  ---follow link---> http://pdn.sciencedirect.com/science?_ob=MiamiImageURL&_cid=272332&_user=10&_pii=S0021869396903063&_check=y&_origin=article&_zone=toolbar&_coverDate=1996--15&view=c&originContentFamily=serial&wchp=dGLbVlt-zSkWz&md5=fb951ad4ff13953e97dc2afd6fd16d4a&pid=1-s2.0-S0021869396903063-main.pdf
+          //                        ---resolves to---> http://ac.els-cdn.com/S0021869396903063/1-s2.0-S0021869396903063-main.pdf?_tid=756d984e-a048-11e2-8b82-00000aab0f02&acdnat=1365424565_666b1bf7394bbc91c15fac27d45952a0
+          // 10.1016/0167-6687(83)90020-3 ---resolves to---> http://www.sciencedirect.com/science/article/pii/0167668783900203#
+          //                              ---follow link (from campus)---> http://pdn.sciencedirect.com/science?_ob=MiamiImageURL&_cid=271685&_user=554534&_pii=0167668783900203&_check=y&_origin=article&_zone=toolbar&_coverDate=30-Apr-1983&view=c&originContentFamily=serial&wchp=dGLbVlt-zSkzS&md5=729643f534e9cc7abe5882e10cca9e40&pid=1-s2.0-0167668783900203-main.pdf
+          // 								---follow link (off campus)----> http://pdn.sciencedirect.com/science?_ob=ShoppingCartURL&_method=add&_eid=1-s2.0-0167668783900203&originContentFamily=serial&_origin=article&_acct=C000228598&_version=1&_userid=10&_ts=1365482216&md5=ecfe2869e3c92d58e7f05c5762d02d90
+          case url if url.startsWith("http://dx.doi.org/10.1006") || url.startsWith("http://dx.doi.org/10.1016") => {
+            // If we're not logged in, it's not going to work. Just use the HttpClientSlurp, and don't make any attempt to save the answer.
+            val regex = """pdfurl="([^"]*)"""".r
+            regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => m.group(1))
           }
+          // Cambridge University Press
+          // 10.1017 10.1051
+          // 10.1017/S0022112010001734 ---resolves to---> http://journals.cambridge.org/action/displayAbstract?fromPage=online&aid=7829674
+          //						   ---follow "View PDF (" (or jQuery for "a.article-pdf")---> http://journals.cambridge.org/action/displayFulltext?type=1&fid=7829676&jid=FLM&volumeId=655&issueId=-1&aid=7829674&bodyId=&membershipNumber=&societyETOCSession=
+          //						   ---resolves to something like---> http://journals.cambridge.org/download.php?file=%2FFLM%2FFLM655%2FS0022112010001734a.pdf&code=ac265aacb742b93fa69d566e33aeaf5e
+          // We also need to grab some 10.1112 DOIs, for LMS journals run by CMP e.g. 10.1112/S0010437X04001034
+          case url if url.startsWith("http://dx.doi.org/10.1017/S") || url.startsWith("http://dx.doi.org/10.1017/is") || url.startsWith("http://dx.doi.org/10.1051/S") || url.startsWith("http://dx.doi.org/10.1112/S0010437X") || url.startsWith("http://dx.doi.org/10.1112/S14611570") || url.startsWith("http://dx.doi.org/10.1112/S00255793") => {
+            val regex = """<a href="([^"]*)"[ \t\n]*title="View PDF" class="article-pdf">""".r
+            regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
+          }
+
+          // Wiley
+          // 10.1002/(SICI)1097-0312(199602)49:2<85::AID-CPA1>3.0.CO;2-2 ---resolves to---> http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/abstract
+          // 															 ---links to--->    http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/pdf
+          //															 ---???---> http://onlinelibrary.wiley.com/store/10.1002/(SICI)1097-0312(199602)49:2%3C85::AID-CPA1%3E3.0.CO;2-2/asset/1_ftp.pdf?v=1&t=hfc3fjoo&s=dc6fad69f11cfc2ff2f302f5d1386c553d48f47c
+          // the mystery step here is somewhat strange; it looks like it contains an iframe, but then redirects (via javascript) to the contents of the iframe?
+          // anyway, the following scraping seems to work
+          case url if url.startsWith("http://dx.doi.org/10.1002/") => {
+            val regex = """id="pdfDocument" src="([^"]*)"""".r
+            val url2 = "http://onlinelibrary.wiley.com/doi/" + url.stripPrefix("http://dx.doi.org/") + "/pdf"
+            val slurped = HttpClientSlurp(url2).mkString("\n")
+            regex.findFirstMatchIn(slurped).map(m => m.group(1))
+          }
+
+          // ACM
+          case url if url.startsWith("http://dx.doi.org/10.1145/") => {
+            val regex = """title="FullText Pdf" href="(ft_gateway\.cfm\?id=[0-9]*&type=pdf&CFID=[0-9]*&CFTOKEN=[0-9]*)"""".r
+            regex.findFirstMatchIn(HttpClientSlurp.getString("http://dl.acm.org/citation.cfm?doid=" + url.drop(26))).map(m => m.group(1)).map("http://dl.acm.org/" + _)
+          }
+
+          // otherwise, try using DOI-direct
+          case url if url.startsWith("http://dx.doi.org/") => {
+            Http.findRedirect(url.replaceAllLiterally("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/")) match {
+              case None => None
+              case Some(redirect) if redirect.startsWith("http://dx.doi.org/") => {
+                // didn't learn anything
+                None
+              }
+              case Some(redirect) => Some(redirect)
+            }
+          }
+          case url if url.startsWith("http://projecteuclid.org/getRecord?id=") => {
+            Some(url.replaceAllLiterally("http://projecteuclid.org/getRecord?id=", "http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle="))
+          }
+          case url if url.startsWith("http://www.numdam.org/item?id=") => {
+            Some(url.replaceAllLiterally("http://www.numdam.org/item?id=", "http://archive.numdam.org/article/") + ".pdf")
+          }
+          case url if url.startsWith("http://aif.cedram.org/item?id=") => {
+            Some(url.replaceAllLiterally("http://aif.cedram.org/item?id=", "http://aif.cedram.org/cedram-bin/article/") + ".pdf")
+          }
+          case url if url.startsWith("http://muse.jhu.edu/journals/american_journal_of_mathematics/") => Some(url)
         }
-        case url if url.startsWith("http://projecteuclid.org/getRecord?id=") => {
-          Some(url.replaceAllLiterally("http://projecteuclid.org/getRecord?id=", "http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle="))
-        }
-        case url if url.startsWith("http://www.numdam.org/item?id=") => {
-          Some(url.replaceAllLiterally("http://www.numdam.org/item?id=", "http://archive.numdam.org/article/") + ".pdf")
-        }
-        case url if url.startsWith("http://aif.cedram.org/item?id=") => {
-          Some(url.replaceAllLiterally("http://aif.cedram.org/item?id=", "http://aif.cedram.org/cedram-bin/article/") + ".pdf")
-        }
-        case url if url.startsWith("http://muse.jhu.edu/journals/american_journal_of_mathematics/") => Some(url)
       }
     }
   }
@@ -334,7 +379,7 @@ trait Article {
       val attempt = filenameTemplate
         .replaceAllLiterally("$TITLE", title)
         .replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
-        .replaceAllLiterally("$JOURNALREF", journalReference)
+        .replaceAllLiterally("$JOURNALREF", citation)
         .replaceAllLiterally("$MRNUMBER", identifierString)
       if (attempt.length > 255) {
         val shortAuthors = if (authors.size > 4) {
@@ -344,7 +389,7 @@ trait Article {
         }
         val partialReplacement = filenameTemplate
           .replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
-          .replaceAllLiterally("$JOURNALREF", journalReference)
+          .replaceAllLiterally("$JOURNALREF", citation)
           .replaceAllLiterally("$MRNUMBER", identifierString)
         val maxTitleLength = 250 - (partialReplacement.length - 6)
         val shortTitle = if (title.length > maxTitleLength) {
@@ -357,6 +402,8 @@ trait Article {
         attempt
       }
     }).replaceAllLiterally("/", "∕") // scary UTF-8 character that just *looks* like a forward slash
+    .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+    
   }
 
   def savePDF(directory: File, filenameTemplate: String = defaultFilenameTemplate) {
