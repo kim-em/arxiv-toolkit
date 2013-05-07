@@ -173,15 +173,16 @@ trait HtmlUnitSlurp extends Slurp {
         }
         new ByteArrayInputStream(driver.getPageSource.getBytes("UTF-8"))
       } catch {
-        case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException) => {
-          Logging.warn("Browser window closed, trying to restart Firefox/webdriver")
-          FirefoxSlurp.quit
+        case e: Exception => {
+          e.printStackTrace()
+          Logging.warn("Browser window closed, trying to restart HtmlUnit")
+          HtmlUnitSlurp.quit
           Logging.info("retrying ...")
           getStream(url)
         }
       }
     } else {
-      throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
+      throw new IllegalStateException("slurping via HtmlUnit has been disabled, but someone asked for a URL: " + url)
     }
   }
 
@@ -205,7 +206,7 @@ object HtmlUnitSlurp extends HtmlUnitSlurp {
   }
 
   private var enabled = true
-  def disable = enabled = false
+//  def disable = enabled = false
   def enabled_? = enabled
 }
 
@@ -227,7 +228,11 @@ object FirefoxSlurp extends FirefoxSlurp {
   }
 
   private var enabled = true
-  def disable = enabled = false
+  def disable = {
+    Logging.warn("Disabling FirefoxSlurp")
+    ???
+    enabled = false
+  }
   def enabled_? = enabled
 }
 
