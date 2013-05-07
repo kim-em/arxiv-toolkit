@@ -46,21 +46,25 @@ object SavePDFApp extends App {
   //    article.savePDF(dir)
   //  }
 
-  def articles = Articles.fromBibtexGzipFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/100_4.bib.gz")
-//    def articles = Search.inJournalsJumbled(ISSNs.Elsevier)
+  def articles = Articles.fromBibtexFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/100_4.bib")
+  //    def articles = Search.inJournalsJumbled(ISSNs.Elsevier)
 
-  def openAccessElsevierArticles = for (a <- articles; issn <- a.ISSNOption; if ISSNs.Elsevier.contains(issn); y <- a.yearOption; if y <= 2008) yield a
+  def openAccessElsevierArticles = for (a <- articles; issn <- a.ISSNOption; if ISSNs.Elsevier.contains(issn); y <- a.yearOption; if y <= 2008; doi <- a.DOI) yield a
   def openAccessAdvancesArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Advances in Mathematics`; if a.journal != "Advancement in Math."; y <- a.yearOption; if y <= 2008) yield a
   def openAccessTopologyArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Topology`; y <- a.yearOption; if y <= 2008) yield a
 
   val missingMRNumbers = Seq()
   val missing = articles.filter(a => missingMRNumbers.contains(a.identifierString))
-  
-//  println(openAccessAdvancesArticles.map(_.year).min)
-//  println(openAccessAdvancesArticles.filter(_.pdfURL.nonEmpty).map(_.year).min)
-//  println(openAccessAdvancesArticles.filter(_.pdfURL.isEmpty).map(_.year).max)
-  
+
+  //  println(openAccessAdvancesArticles.map(_.year).min)
+  //  println(openAccessAdvancesArticles.filter(_.pdfURL.nonEmpty).map(_.year).min)
+  //  println(openAccessAdvancesArticles.filter(_.pdfURL.isEmpty).map(_.year).max)
+
   val dir = new File(System.getProperty("user.home") + "/scratch/elsevier-oa/")
+
+  for (id <- Seq("MR0249542", "MR2458153")) {
+    Article(id).savePDF(dir)
+  }
 
   for (article <- openAccessElsevierArticles) {
     try {
