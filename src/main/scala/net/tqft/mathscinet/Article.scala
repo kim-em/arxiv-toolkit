@@ -388,8 +388,8 @@ trait Article {
         } else {
           authors.map(_.name).mkString(" and ")
         }
-        val shortCitation = if(citation.length > 125) {
-          citation.take(122) + "..."
+        val shortCitation = if(citation.length > 95) {
+          citation.take(92) + "..."
         } else {
           citation
         }
