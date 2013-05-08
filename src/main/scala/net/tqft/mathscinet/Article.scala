@@ -382,15 +382,20 @@ trait Article {
         .replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
         .replaceAllLiterally("$JOURNALREF", citation)
         .replaceAllLiterally("$MRNUMBER", identifierString)
-      if (attempt.length > 255) {
+      if (attempt.length > 250) {
         val shortAuthors = if (authors.size > 4) {
           authors.head.name + " et al."
         } else {
           authors.map(_.name).mkString(" and ")
         }
+        val shortCitation = if(citation.length > 125) {
+          citation.take(122) + "..."
+        } else {
+          citation
+        }
         val partialReplacement = filenameTemplate
           .replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
-          .replaceAllLiterally("$JOURNALREF", citation)
+          .replaceAllLiterally("$JOURNALREF", shortCitation)
           .replaceAllLiterally("$MRNUMBER", identifierString)
         val maxTitleLength = 250 - (partialReplacement.length - 6)
         val shortTitle = if (title.length > maxTitleLength) {
@@ -404,7 +409,6 @@ trait Article {
       }
     }).replaceAllLiterally("/", "∕") // scary UTF-8 character that just *looks* like a forward slash
     .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
-    
   }
 
   def savePDF(directory: File, filenameTemplate: String = defaultFilenameTemplate) {
