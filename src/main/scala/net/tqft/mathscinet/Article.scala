@@ -394,7 +394,7 @@ trait Article {
           citation
         }
         val partialReplacement = filenameTemplate
-          .replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
+          .replaceAllLiterally("$AUTHOR", shortAuthors)
           .replaceAllLiterally("$JOURNALREF", shortCitation)
           .replaceAllLiterally("$MRNUMBER", identifierString)
         val maxTitleLength = 250 - (partialReplacement.length - 6)
