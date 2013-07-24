@@ -9,7 +9,7 @@ object CanonicalizePDFNamesApp extends App {
   //  FirefoxSlurp.disable
   Article.disableBibtexSaving
 
-  val directory = new File(System.getProperty("user.home") + "/scratch/elsevier-oa/")
+  val directory = new File("/Volumes/Repository Backups/elsevier-oa/")
 
   val identifierRegex = "MR[0-9]{7}".r
 
