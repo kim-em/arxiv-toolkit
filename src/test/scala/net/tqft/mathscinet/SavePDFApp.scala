@@ -60,13 +60,16 @@ object SavePDFApp extends App {
   //  println(openAccessAdvancesArticles.filter(_.pdfURL.nonEmpty).map(_.year).min)
   //  println(openAccessAdvancesArticles.filter(_.pdfURL.isEmpty).map(_.year).max)
 
-  val dir = new File(System.getProperty("user.home") + "/scratch/elsevier-oa/")
-
+//  val dir = new File(System.getProperty("user.home") + "/scratch/elsevier-oa/")
+  val dir = new File("/Volumes/Repository Backups/elsevier-oa/")
+  
   for (id <- Seq("MR0249542", "MR2458153")) {
     Article(id).savePDF(dir)
   }
 
-  for (article <- openAccessElsevierArticles) {
+  val alreadyDownloaded = dir.listFiles().iterator.map(_.getName().stripSuffix(".pdf").takeRight(9)).toSet
+  
+  for (article <- openAccessElsevierArticles; if !alreadyDownloaded.contains(article.identifierString)) {
     try {
       println(article.bibtex.toBIBTEXString)
       article.savePDF(dir)
