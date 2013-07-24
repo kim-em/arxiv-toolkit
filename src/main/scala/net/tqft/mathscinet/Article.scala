@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils
 import net.tqft.journals.ISSNs
 import java.util.zip.GZIPInputStream
 import java.io.FileInputStream
+import net.tqft.util.pandoc
 
 trait Article {
   def identifier: Int
@@ -376,22 +377,26 @@ trait Article {
   val defaultFilenameTemplate = "$TITLE - $AUTHOR - $JOURNALREF - $MRNUMBER.pdf"
 
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
+    val authorNames = authors.map(a => pandoc.latexToText(a.name))
+    val textCitation = pandoc.latexToText(citation)
+    val textTitle = pandoc.latexToText(title)
+    
     ({
       val attempt = filenameTemplate
-        .replaceAllLiterally("$TITLE", title)
-        .replaceAllLiterally("$AUTHOR", authors.map(_.name).mkString(" and "))
-        .replaceAllLiterally("$JOURNALREF", citation)
+        .replaceAllLiterally("$TITLE", textTitle)
+        .replaceAllLiterally("$AUTHOR", authorNames.mkString(" and "))
+        .replaceAllLiterally("$JOURNALREF", textCitation)
         .replaceAllLiterally("$MRNUMBER", identifierString)
       if (attempt.length > 250) {
         val shortAuthors = if (authors.size > 4) {
-          authors.head.name + " et al."
+          authorNames.head + " et al."
         } else {
-          authors.map(_.name).mkString(" and ")
+          authorNames.mkString(" and ")
         }
-        val shortCitation = if(citation.length > 95) {
-          citation.take(92) + "..."
+        val shortCitation = if(textCitation.length > 95) {
+          textCitation.take(92) + "..."
         } else {
-          citation
+          textCitation
         }
         val partialReplacement = filenameTemplate
           .replaceAllLiterally("$AUTHOR", shortAuthors)
@@ -399,11 +404,11 @@ trait Article {
           .replaceAllLiterally("$MRNUMBER", identifierString)
         val maxTitleLength = 250 - (partialReplacement.length - 6)
         val shortTitle = if (title.length > maxTitleLength) {
-          title.take(maxTitleLength - 3) + "..."
+          textTitle.take(maxTitleLength - 3) + "..."
         } else {
-          title
+          textTitle
         }
-        partialReplacement.replaceAllLiterally("$TITLE", shortTitle)
+        partialReplacement.replaceAllLiterally("$TITLE", shortTitle).ensuring(_.length <= 250)
       } else {
         attempt
       }
