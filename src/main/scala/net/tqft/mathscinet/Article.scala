@@ -403,7 +403,7 @@ trait Article {
           .replaceAllLiterally("$JOURNALREF", shortCitation)
           .replaceAllLiterally("$MRNUMBER", identifierString)
         val maxTitleLength = 250 - (partialReplacement.length - 6)
-        val shortTitle = if (title.length > maxTitleLength) {
+        val shortTitle = if (textTitle.length > maxTitleLength) {
           textTitle.take(maxTitleLength - 3) + "..."
         } else {
           textTitle
