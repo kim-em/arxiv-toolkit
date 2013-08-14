@@ -85,9 +85,9 @@ trait Article {
       bibtex.get("TITLE").getOrElse("Untitled")
     }
 
-//    def stripBraces(t: String) = t.replaceAll("\\{([A-Z]*)\\}", "$1").replaceAllLiterally("{$", "$").replaceAllLiterally("$}", "$")
+    //    def stripBraces(t: String) = t.replaceAll("\\{([A-Z]*)\\}", "$1").replaceAllLiterally("{$", "$").replaceAllLiterally("$}", "$")
 
-//    val roughTitle2 = stripBraces(Accents.LaTeXToUnicode(roughTitle))
+    //    val roughTitle2 = stripBraces(Accents.LaTeXToUnicode(roughTitle))
     val roughTitle2 = roughTitle
     val roughTitle3 = if (roughTitle2.endsWith("]")) {
       roughTitle2.take(roughTitle2.lastIndexOf("["))
@@ -103,7 +103,7 @@ trait Article {
     } else {
       bibtex.get("AUTHOR") match {
         case None => List()
-        case Some(a) => a.split(" and ").toList.map(a => Author(a /*Accents.LaTeXToUnicode(a)*/))
+        case Some(a) => a.split(" and ").toList.map(a => Author(a /*Accents.LaTeXToUnicode(a)*/ ))
       }
     }
   }
@@ -113,7 +113,7 @@ trait Article {
 
   def citation: String = {
     def restOfCitation = volumeOption.map(" " + _).getOrElse("") + yearOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("") + pagesOption.getOrElse("")
-    
+
     bibtex.documentType match {
       case "article" => {
         journal + restOfCitation
@@ -128,7 +128,7 @@ trait Article {
         bibtex.get("NOTE").getOrElse("")
       }
       case "incollection" => {
-        bibtex.get("BOOKTITLE").map(_ + " ").getOrElse("") + pages 
+        bibtex.get("BOOKTITLE").map(_ + " ").getOrElse("") + pages
       }
       case otherwise => {
         Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)
@@ -260,6 +260,18 @@ trait Article {
       for (c <- chosenMatch) println("Found URL for old Elsevier article: " + c)
 
       chosenMatch
+    } else if (ISSN == ISSNs.`K-Theory`) {
+      // K-Theory, have to get it from Portico for now
+      val toc = HttpClientSlurp.getString("http://www.portico.org/Portico/browse/access/toc.por?journalId=ISSN_09203036&issueId=ISSN_09203036v" + volume.toString + "i" + number)
+      println(toc)
+      val pagesPosition = toc.indexOf(pages.replaceAllLiterally("--", "-"))
+      val idPosition = toc.drop(pagesPosition).indexOf("articleId=")
+      val identifier = toc.drop(pagesPosition).drop(idPosition).drop("articleId=".length()).take(11)
+
+      println(identifier)
+      val result = "http://www.portico.org/Portico/article/access/DownloadPDF.por?journalId=ISSN_09203036&issueId=ISSN_09203036v" + volume.toString + "i" + number + "&articleId=" + identifier + "&fileType=pdf&fileValid=true"
+      println(result)
+      Some(result)
     } else {
 
       URL flatMap { url =>
@@ -379,8 +391,8 @@ trait Article {
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
     val authorNames = authors.map(a => pandoc.latexToText(a.name))
     val textCitation = pandoc.latexToText(citation)
-    val textTitle = pandoc.latexToText(title)
-    
+    val textTitle = pandoc.latexToText(title.replaceAll("""\[[^]]*MR[^]]*\]""", ""))
+
     ({
       val attempt = filenameTemplate
         .replaceAllLiterally("$TITLE", textTitle)
@@ -393,7 +405,7 @@ trait Article {
         } else {
           authorNames.mkString(" and ")
         }
-        val shortCitation = if(textCitation.length > 95) {
+        val shortCitation = if (textCitation.length > 95) {
           textCitation.take(92) + "..."
         } else {
           textCitation
@@ -413,7 +425,7 @@ trait Article {
         attempt
       }
     }).replaceAllLiterally("/", "∕") // scary UTF-8 character that just *looks* like a forward slash
-    .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+      .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
   }
 
   def savePDF(directory: File, filenameTemplate: String = defaultFilenameTemplate) {
