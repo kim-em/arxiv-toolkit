@@ -19,6 +19,8 @@ object BIBTEX extends Logging {
   lazy val cache = AnonymousS3("LoM-bibtex")
   lazy val DOI2mathscinet = AnonymousS3("DOI2mathscinet")
 
+  
+  
   lazy val cachedKeys = {
     info("Fetching key set for LoM-bibtex")
     val result = cache.keySet
@@ -56,7 +58,14 @@ object BIBTEX extends Logging {
     }
     val IdentifierPattern = """@[a-z ]*\{([A-Za-z0-9]*),""".r
     val identifier = lines.head match {
-      case IdentifierPattern(id) => id
+      case IdentifierPattern(id) => {
+        // MathSciNet ids are sometimes padded with zeroes, sometimes not. We try to enforce this.
+        if(id.startsWith("MR") && id.length < 9) {
+          "MR" + ("0000000" + id.drop(2)).takeRight(7)
+        } else {
+          id
+        }
+      }
     }
     require(lines.last == "}", "Failed while parsing BIBTEX: " + bibtexString)
     val data = lines.tail.init.mkString("\n").replaceAll("\n             ", "").split("\n").map(line => line.replaceAllLiterally("&gt;", ">").replaceAllLiterally("&lt;", "<").replaceAllLiterally("&amp;", "&")).map(line => line.take(10).trim -> line.drop(14).dropRight(2)).toList
