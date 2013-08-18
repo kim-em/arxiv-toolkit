@@ -6,8 +6,16 @@ import java.io.File
 import net.tqft.toolkit.Logging
 
 object pandoc {
-  val pandocPath: String = "/opt/local/bin/pandoc"
-  val pandocCommand = pandocPath + " -f latex -t plain --ascii --no-wrap"
+  val pandocPath: String = {
+    val devPath = System.getProperty("user.home") + "/.cabal/bin/pandoc"
+    if (new File(devPath).exists()) {
+      Logging.info("Using development version of pandoc.")
+      devPath
+    } else {
+      "/opt/local/bin/pandoc"
+    }
+  }
+  val pandocCommand = pandocPath + " -f latex -t plain --no-wrap"
 
   private val okay = new File(pandocPath).exists()
   if (!okay) {

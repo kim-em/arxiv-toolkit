@@ -79,22 +79,11 @@ trait Article {
   }
 
   def title: String = {
-    val roughTitle = if (endnoteData.nonEmpty) {
+    if (endnoteData.nonEmpty) {
       endnote("%T").head
     } else {
       bibtex.get("TITLE").getOrElse("Untitled")
     }
-
-    //    def stripBraces(t: String) = t.replaceAll("\\{([A-Z]*)\\}", "$1").replaceAllLiterally("{$", "$").replaceAllLiterally("$}", "$")
-
-    //    val roughTitle2 = stripBraces(Accents.LaTeXToUnicode(roughTitle))
-    val roughTitle2 = roughTitle
-    val roughTitle3 = if (roughTitle2.endsWith("]")) {
-      roughTitle2.take(roughTitle2.lastIndexOf("["))
-    } else {
-      roughTitle2
-    }
-    roughTitle3.replace("; MR[0-9]* \\([:0-9a-z]*\\)]", "]")
   }
 
   def authors: List[Author] = {
@@ -112,7 +101,7 @@ trait Article {
   def journal = journalOption.get
 
   def citation: String = {
-    def restOfCitation = volumeOption.map(" " + _).getOrElse("") + yearOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("") + pagesOption.getOrElse("")
+    def restOfCitation = volumeOption.map(" " + _).getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("") + pagesOption.getOrElse("")
 
     bibtex.documentType match {
       case "article" => {
@@ -137,6 +126,9 @@ trait Article {
     }
   }
 
+  def yearStringOption: Option[String] = {
+    bibtex.get("YEAR").map(y => y.replace("/", "-"))
+  }
   def yearOption: Option[Int] = {
     bibtex.get("YEAR").flatMap({
       case Int(year) => Some(year)
@@ -391,7 +383,29 @@ trait Article {
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
     val authorNames = authors.map(a => pandoc.latexToText(a.name))
     val textCitation = pandoc.latexToText(citation)
-    val textTitle = pandoc.latexToText(title.replaceAll("""\[[^]]*MR[^]]*\]""", ""))
+
+    def preprocessAccents(s: String) = {
+      s.replaceAllLiterally("""\Dbar""", "Đ")
+        .replaceAllLiterally("""\cfac""", """\~""")
+        .replaceAllLiterally("""\cftil{e}""", "ễ")
+        .replaceAllLiterally("""\cftil{o}""", "ỗ")
+        .replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
+        .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+    }
+
+    def stripMoreLaTeX(s: String) = {
+      val r = "\\{\\\\(rm|bf|scr|Bbb|bold) ([A-Za-z]*)\\}".r
+
+      r.replaceAllIn(s, m => m.group(2))
+      .replaceAllLiterally("""\ast""", "*")
+      .replaceAllLiterally("""\bold """, "")
+      .replaceAllLiterally("""\bf """, "")
+      .replaceAllLiterally("""\Bbb """, "")
+      .replaceAllLiterally("""\scr """, "")
+      .replaceAllLiterally("""\rm """, "")
+    }
+
+    val textTitle = stripMoreLaTeX(pandoc.latexToText(preprocessAccents(title).replaceAll("""\[[^]]*MR[^]]*\]""", "").replaceAll("""\[[^]]*refcno[^]]*\]""", "")))
 
     ({
       val attempt = filenameTemplate
@@ -424,8 +438,7 @@ trait Article {
       } else {
         attempt
       }
-    }).replaceAllLiterally("/", "∕") // scary UTF-8 character that just *looks* like a forward slash
-      .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+    })
   }
 
   def savePDF(directory: File, filenameTemplate: String = defaultFilenameTemplate) {
