@@ -7,6 +7,10 @@ import net.tqft.journals.ISSNs
 
 object SearchApp extends App {
 
+  for (article <- Search.inTopJournalsJumbled(200)) {
+    println(article.bibtex.toBIBTEXString)
+  }
+
   // K-Theory
   for (article <- Search.inJournalsJumbled(Seq(ISSNs.`K-Theory`))) {
     println(article.bibtex.toBIBTEXString)
