@@ -14,7 +14,7 @@ object SmallCachedPagesApp extends App {
       if (length < 1000) {
         println(k + " has length " + length)
         val text = bucket(k)
-        if(text.contains("<title>500 Internal Server Error</title>")) {
+        if(text.contains("<title>500 Internal Server Error</title>") || text.contains("<title>502 Bad Gateway</title>") || text.contains("<title>503 Service Temporarily Unavailable</title>")) {
           println("deleting error page...")
           S3("www.ams.org.cache") -= k
         }

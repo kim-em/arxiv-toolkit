@@ -59,7 +59,7 @@ object Search extends Logging {
   }
 
   def by(author: String) = query("pg4" -> "AUCN", "s4" -> author)
-  def inJournal(text: String) = query("pg4" -> "JOUR", "s4" -> text)
+  def inJournal(text: String) = inJournalsJumbled(Seq(text))
   def during(k: Int) = query("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
   def between(start: Int, end: Int) = query("yearRangeFirst" -> start.toString, "yearRangeSecond" -> end.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
 
@@ -69,7 +69,7 @@ object Search extends Logging {
   def inJournalYear(text: String, year: Int) = query("pg4" -> "JOUR", "s4" -> text, "arg3" -> year.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
   def inJournalBetween(text: String, start: Int, end: Int) = query("pg4" -> "JOUR", "s4" -> text, "yearRangeFirst" -> start.toString, "yearRangeSecond" -> end.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
   
-  def inJournalsJumbled(strings: Seq[String]) = {
+  def inJournalsJumbled(strings: Iterable[String]) = {
     val years = currentYear to 1980 by -1
     val ranges = (1810,1939) +: (1970 to 1940 by -10).map(y => (y, y+9)) 
         

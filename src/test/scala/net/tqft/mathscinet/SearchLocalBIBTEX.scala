@@ -11,11 +11,11 @@ object SearchLocalBIBTEX extends App {
   
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
- for (group <- Articles.fromBibtexFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/50.bib").grouped(1000); article <- { val p = group.par; p.tasksupport = pool; p }; bibtex = article.bibtex.toBIBTEXString;
+ for (group <- Articles.fromBibtexFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/100_4.bib").grouped(1000); article <- { val p = group.par; p.tasksupport = pool; p };
   	doi <- article.DOI;
   	if doi.startsWith("10.1090");
   	if article.bibtex.get("JOURNAL") == Some("Algebra i Analiz")
   	)  {
-    println(bibtex)
+    println(article.bibtex.toBIBTEXString)
   }
 }

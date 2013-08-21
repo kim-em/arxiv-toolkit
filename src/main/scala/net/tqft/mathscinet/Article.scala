@@ -386,6 +386,7 @@ trait Article {
 
     def preprocessAccents(s: String) = {
       s.replaceAllLiterally("""\Dbar""", "Đ")
+      .replaceAllLiterally("""\soft{L}""", "Ľ")
         .replaceAllLiterally("""\cfac""", """\~""")
         .replaceAllLiterally("""\cftil{e}""", "ễ")
         .replaceAllLiterally("""\cftil{o}""", "ỗ")
@@ -397,12 +398,12 @@ trait Article {
       val r = "\\{\\\\(rm|bf|scr|Bbb|bold) ([A-Za-z]*)\\}".r
 
       r.replaceAllIn(s, m => m.group(2))
-      .replaceAllLiterally("""\ast""", "*")
-      .replaceAllLiterally("""\bold """, "")
-      .replaceAllLiterally("""\bf """, "")
-      .replaceAllLiterally("""\Bbb """, "")
-      .replaceAllLiterally("""\scr """, "")
-      .replaceAllLiterally("""\rm """, "")
+        .replaceAllLiterally("""\ast""", "*")
+        .replaceAllLiterally("""\bold """, "")
+        .replaceAllLiterally("""\bf """, "")
+        .replaceAllLiterally("""\Bbb """, "")
+        .replaceAllLiterally("""\scr """, "")
+        .replaceAllLiterally("""\rm """, "")
     }
 
     val textTitle = stripMoreLaTeX(pandoc.latexToText(preprocessAccents(title).replaceAll("""\[[^]]*MR[^]]*\]""", "").replaceAll("""\[[^]]*refcno[^]]*\]""", "")))
@@ -448,9 +449,14 @@ trait Article {
     if (directory.listFiles(new FilenameFilter { override def accept(dir: File, name: String) = name.contains(identifierString) }).nonEmpty) {
       Logging.info("PDF for " + identifierString + " already exists in " + directory)
     } else {
-      for (bytes <- pdf) {
-        println("Saving PDF to " + fileName)
-        FileUtils.writeByteArrayToFile(file, bytes)
+      pdf match {
+        case Some(bytes) => {
+          println("Saving PDF to " + fileName)
+          FileUtils.writeByteArrayToFile(file, bytes)
+        }
+        case None => {
+          Logging.info("No PDF available for " + fileName)
+        }
       }
     }
   }

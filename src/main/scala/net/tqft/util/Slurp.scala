@@ -170,7 +170,7 @@ trait HtmlUnitSlurp extends Slurp {
 
         // TODO more validation we really arrived?
         driver.getTitle match {
-          case e @ ("502 Bad Gateway" | "500 Internal Server Error") => throw new HttpException(e)
+          case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => throw new HttpException(e)
           case e @ ("MathSciNet Access Error") => throw new HttpException("403 " + e)
           case _ =>
         }
