@@ -448,7 +448,7 @@ trait Article {
     if (directory.listFiles(new FilenameFilter { override def accept(dir: File, name: String) = name.contains(identifierString) }).nonEmpty) {
       Logging.info("PDF for " + identifierString + " already exists in " + directory)
       // TODO this shouldn't really be here:
-      CanonicalizePDFNamesApp.safeRename(identifierString, directory, fileName)
+//      CanonicalizePDFNamesApp.safeRename(identifierString, directory, fileName)
     } else {
       pdf match {
         case Some(bytes) => {
