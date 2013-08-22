@@ -255,7 +255,7 @@ trait Article {
     } else if (ISSN == ISSNs.`K-Theory`) {
       // K-Theory, have to get it from Portico for now
       val toc = HttpClientSlurp.getString("http://www.portico.org/Portico/browse/access/toc.por?journalId=ISSN_09203036&issueId=ISSN_09203036v" + volume.toString + "i" + number)
-      println(toc)
+//      println(toc)
       val pagesPosition = toc.indexOf(pages.replaceAllLiterally("--", "-"))
       val idPosition = toc.drop(pagesPosition).indexOf("articleId=")
       val identifier = toc.drop(pagesPosition).drop(idPosition).drop("articleId=".length()).take(11)
@@ -445,9 +445,10 @@ trait Article {
   def savePDF(directory: File, filenameTemplate: String = defaultFilenameTemplate) {
     val fileName = constructFilename(filenameTemplate)
     val file = new File(directory, fileName)
-    // TODO check for any file containing the MR number
     if (directory.listFiles(new FilenameFilter { override def accept(dir: File, name: String) = name.contains(identifierString) }).nonEmpty) {
       Logging.info("PDF for " + identifierString + " already exists in " + directory)
+      // TODO this shouldn't really be here:
+      CanonicalizePDFNamesApp.safeRename(identifierString, directory, fileName)
     } else {
       pdf match {
         case Some(bytes) => {
