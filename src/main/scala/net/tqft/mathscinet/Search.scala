@@ -80,7 +80,7 @@ object Search extends Logging {
     var completedSearches = 0
     def recordProgress(i: Iterator[Article]) = {
       completedSearches += 1
-      info("Beginning search " + completedSearches + " of " + totalSearches + (if(completedSearches > 1) (", estimated time remaining = " + (totalSearches - completedSearches - 1 + 0.0)/(completedSearches - 1) * (new Date().getTime - beginTime) / 1000) else ""))
+      info("Beginning search " + completedSearches + " of " + totalSearches + (if(completedSearches > 1) (", estimated time remaining = " + (totalSearches - completedSearches + 0.0)/(completedSearches - 1) * (new Date().getTime - beginTime) / 1000) else ""))
       i
     }
     

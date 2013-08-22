@@ -92,7 +92,7 @@ object CanonicalizePDFNamesApp extends App {
 //    group <- pdfs(dir).grouped(1000);
 //    file <- { val p = group.par; p.tasksupport = pool; p };
     file <- pdfs(dir);
-//    if file.getName().contains(" - Topology");
+//    if file.getName().contains(" - Adv.");
     identifier <- identifierRegex.findAllMatchIn(file.getName()).toSeq.lastOption.map(_.matched);
     article = articles.get(identifier).getOrElse(Article(identifier))
   ) {

@@ -15,6 +15,8 @@ object SavePDFApp extends App {
   def openAccessElsevierArticles = for (a <- articles; issn <- a.ISSNOption; if ISSNs.Elsevier.contains(issn); y <- a.yearOption; if y <= 2008) yield a
   def openAccessAdvancesArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Advances in Mathematics`; if a.journal != "Advancement in Math."; y <- a.yearOption; if y <= 2008) yield a
   def openAccessTopologyArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Topology`; y <- a.yearOption; if y <= 2008) yield a
+  def openAccessJAlgebraArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Journal of Algebra`; y <- a.yearOption; if y <= 2008) yield a
+  def openAccessDiscreteMathArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Discrete Mathematics`; y <- a.yearOption; if y <= 2008) yield a
   
 //  def KTheory = for (a <- articles; issn <- a.ISSNOption; if issn == "0920-3036") yield a
   def KTheory = Search.inJournalsJumbled(Seq(ISSNs.`K-Theory`))
@@ -32,7 +34,7 @@ object SavePDFApp extends App {
   
   val alreadyDownloaded = dir.listFiles().iterator.map(_.getName().stripSuffix(".pdf").takeRight(9)).toSet
   
-  for (article <- openAccessElsevierArticles /* KTheory */; if !alreadyDownloaded.contains(article.identifierString)) {
+  for (article <- openAccessJAlgebraArticles ++ openAccessDiscreteMathArticles ++ openAccessElsevierArticles /* KTheory */; if !alreadyDownloaded.contains(article.identifierString)) {
     try {
       println(article.bibtex.toBIBTEXString)
       article.savePDF(dir)
