@@ -14,9 +14,9 @@ object SavePDFApp extends App {
 
   def openAccessElsevierArticles = for (a <- articles; issn <- a.ISSNOption; if ISSNs.Elsevier.contains(issn); y <- a.yearOption; if y <= 2008) yield a
   def openAccessAdvancesArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Advances in Mathematics`; if a.journal != "Advancement in Math."; y <- a.yearOption; if y <= 2008) yield a
-  def openAccessTopologyArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Topology`; y <- a.yearOption; if y <= 2008) yield a
-  def openAccessJAlgebraArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Journal of Algebra`; y <- a.yearOption; if y <= 2008) yield a
-  def openAccessDiscreteMathArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Discrete Mathematics`; y <- a.yearOption; if y <= 2008) yield a
+  def openAccessTopologyArticles = for (a <- Search.inJournal(ISSNs.`Topology`); y <- a.yearOption; if y <= 2008) yield a
+  def openAccessJAlgebraArticles = for (a <- Search.inJournal(ISSNs.`Journal of Algebra`); y <- a.yearOption; if y <= 2008) yield a
+  def openAccessDiscreteMathArticles = for (a <- Search.inJournal(ISSNs.`Discrete Mathematics`); y <- a.yearOption; if y <= 2008) yield a
   
 //  def KTheory = for (a <- articles; issn <- a.ISSNOption; if issn == "0920-3036") yield a
   def KTheory = Search.inJournalsJumbled(Seq(ISSNs.`K-Theory`))
