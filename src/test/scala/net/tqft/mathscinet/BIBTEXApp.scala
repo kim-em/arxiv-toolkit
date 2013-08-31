@@ -11,7 +11,7 @@ import java.io.PrintStream
 import java.io.FileOutputStream
 
 object BIBTEXApp extends App {
-  FirefoxSlurp.disable
+  //  FirefoxSlurp.disable
 
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
@@ -25,11 +25,16 @@ object BIBTEXApp extends App {
 
   val repository = new File(System.getProperty("user.home") + "/Literature/mathscinet-data")
   val dir = new File(repository, "bibtex")
-  for (group <- Articles.withCachedBIBTEX.grouped(10000); groupPar = { val p = group.par; p.tasksupport = pool; p }; article <- groupPar) {
-    val file = new File(dir, article.identifierString)
-    if (!file.exists) {
-      println("Saving " + article.identifierString)
-      new PrintStream(new FileOutputStream(new File(dir, article.identifierString))).println(article.bibtex.toBIBTEXString)
+  //  for (group <- Articles.withCachedBIBTEX.grouped(10000); groupPar = { val p = group.par; p.tasksupport = pool; p }; article <- groupPar) {
+  for (article <- Articles.withCachedBIBTEX) {
+    try {
+      val file = new File(dir, article.identifierString + ".bib")
+      if (!file.exists) {
+        println("Saving " + article.identifierString)
+        new PrintStream(new FileOutputStream(file)).println(article.bibtex.toBIBTEXString)
+      }
+    } catch {
+      case e: Exception => println(e)
     }
   }
 }

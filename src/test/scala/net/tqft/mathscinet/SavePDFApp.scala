@@ -13,7 +13,7 @@ object SavePDFApp extends App {
   def articles = Search.inJournalsJumbled(ISSNs.Elsevier)
 
   def openAccessElsevierArticles = for (a <- articles; issn <- a.ISSNOption; if ISSNs.Elsevier.contains(issn); y <- a.yearOption; if y <= 2008) yield a
-  def openAccessAdvancesArticles = for (a <- articles; issn <- a.ISSNOption; if issn == ISSNs.`Advances in Mathematics`; if a.journal != "Advancement in Math."; y <- a.yearOption; if y <= 2008) yield a
+  def openAccessAdvancesArticles = for (a <- Search.inJournal(ISSNs.`Advances in Mathematics`); if a.journal != "Advancement in Math."; y <- a.yearOption; if y <= 2008) yield a
   def openAccessTopologyArticles = for (a <- Search.inJournal(ISSNs.`Topology`); y <- a.yearOption; if y <= 2008) yield a
   def openAccessJAlgebraArticles = for (a <- Search.inJournal(ISSNs.`Journal of Algebra`); y <- a.yearOption; if y <= 2008) yield a
   def openAccessDiscreteMathArticles = for (a <- Search.inJournal(ISSNs.`Discrete Mathematics`); y <- a.yearOption; if y <= 2008) yield a
