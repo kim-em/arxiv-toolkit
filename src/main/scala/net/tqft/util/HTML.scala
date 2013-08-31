@@ -23,6 +23,10 @@ trait Html {
 
   def jQuery(page: HtmlPage) = Doj.on(page)
   
+  def preloaded(url: String, content: String): HtmlPage = {
+    val response = new StringWebResponse(content, new URL(url));
+    HTMLParser.parseHtml(response, client.getCurrentWindow());
+  }
 }
 
 trait HtmlWithForeignSlurper extends Html {

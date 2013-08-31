@@ -70,7 +70,7 @@ trait Slurp {
     try {
       Left(apply(url))
     } catch {
-      case e @ (_: IOException | _: HttpException) => {
+      case e @ (_: IOException | _: HttpException | _: IllegalStateException) => {
         Right(e)
       }
     }

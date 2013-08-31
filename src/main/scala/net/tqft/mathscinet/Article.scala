@@ -199,38 +199,55 @@ trait Article {
     if (ISSNs.Elsevier.contains(ISSN) && URL.isEmpty) {
       // Old Elsevier articles, that MathSciNet doesn't know about
 
+      Logging.info("Attempting to find URL for Elsevier article.")
+      
       val numbers = {
         // Topology, special cases
         if (ISSN == "0040-9383" && volume == 2) {
-          Iterator("1-2", "3", "4")
+          Stream("1-2", "3", "4")
         } else if (ISSN == "0040-9383" && volume == 3) {
-          Iterator("supp/S1", "supp/S2", "1", "2", "3", "4")
+          Stream("supp/S1", "supp/S2", "1", "2", "3", "4")
         } else if (ISSN == ISSNs.`Advances in Mathematics` && volume == 24 && number == "2") {
-          Iterator("1", "2")
+          Stream("1", "2")
         } else {
           numberOption match {
-            case Some(number) => Iterator(number.split(" ").last)
-            case _ => Iterator.from(1).map(_.toString)
+            case Some(number) => Stream(number.split(" ").last)
+            case _ => Stream.from(1).map(_.toString)
           }
         }
       }
-      val pages = numbers.map(n => Article.ElsevierSlurpCache("http://www.sciencedirect.com/science/journal/" + ISSN.replaceAllLiterally("-", "") + "/" + volume + "/" + n.ensuring(_ != "10")).toList).takeWhile({ page =>
-        val titleLine = page.find(_.contains("<title>")).get
+      val pages = numbers.map({ n =>
+        if (n == "10") {
+          println("Something went wrong while looking up " + identifierString + " on the Elsevier website.")
+          return None
+        }
+        val url = "http://www.sciencedirect.com/science/journal/" + ISSN.replaceAllLiterally("-", "") + "/" + volume + "/" + n
+//        println("Scanning page: " + url)
+        (url, Article.ElsevierSlurpCache(url))
+      }).takeWhile({ p =>
+        val lines = p._2
+//        println(lines.mkString("\n"))
+        val titleLine = lines.find(_.contains("<title>")).get
+        println(titleLine)
         titleLine.contains("| Vol " + volume) &&
           !titleLine.contains("In Progress") &&
           !titleLine.contains("Topology | Vol 48, Isss 2–4, Pgs 41-224, (June–December, 2009)")
       }).toSeq
-
+      
       val regex1 = """<span style="font-weight : bold ;">(.*)</span></a></h3>""".r
       val regex2 = """<a href="(http://www.sciencedirect.com/science\?_ob=MiamiImageURL.*.pdf) " target="newPdfWin"""".r
+      val regex3 = """<a class="cLink" rel="nofollow" href="(http://www.sciencedirect.com/science/article/pii/.*.pdf)" queryStr="\?_origin=browseVolIssue&_zone=rslt_list_item" target="newPdfWin">""".r
 
-      val matches = (for (p <- pages; l <- p; if l.contains("newPdfWin"); titleFound <- regex1.findFirstMatchIn(l); urlFound <- regex2.findFirstMatchIn(l)) yield {
+      val matches = (for ((_, p) <- pages; l <- p; if l.contains("newPdfWin"); titleFound <- regex1.findFirstMatchIn(l); urlFound <- regex2.findFirstMatchIn(l).orElse(regex3.findFirstMatchIn(l))) yield {
         (titleFound.group(1), urlFound.group(1), StringUtils.getLevenshteinDistance(titleFound.group(1).replaceAll("<[^>]*>", ""), title).toDouble / title.length())
       }).sortBy(_._3)
-
+      
+      Logging.info("   found matches:")
+      for(m <- matches) Logging.info(m)
+      
       val chosenMatch = if (matches.filter(_._3 == 0.0).size == 1
-        || matches.filter(_._3 <= 0.4).size == 1
-        || (matches.filter(_._3 <= 0.4).size > 1 && matches(0)._3 < matches(1)._3 / 2)) {
+        || matches.filter(_._3 <= 0.425).size == 1
+        || (matches.filter(_._3 <= 0.425).size > 1 && matches(0)._3 < matches(1)._3 / 2)) {
         Some(matches.head._2)
       } else if (title.startsWith("Erratum") && matches.count(_._1.startsWith("Erratum")) == 1) {
         matches.find(_._1.startsWith("Erratum")).map(_._2)
@@ -255,7 +272,7 @@ trait Article {
     } else if (ISSN == ISSNs.`K-Theory`) {
       // K-Theory, have to get it from Portico for now
       val toc = HttpClientSlurp.getString("http://www.portico.org/Portico/browse/access/toc.por?journalId=ISSN_09203036&issueId=ISSN_09203036v" + volume.toString + "i" + number)
-//      println(toc)
+      //      println(toc)
       val pagesPosition = toc.indexOf(pages.replaceAllLiterally("--", "-"))
       val idPosition = toc.drop(pagesPosition).indexOf("articleId=")
       val identifier = toc.drop(pagesPosition).drop(idPosition).drop("articleId=".length()).take(11)
@@ -386,7 +403,7 @@ trait Article {
 
     def preprocessAccents(s: String) = {
       s.replaceAllLiterally("""\Dbar""", "Đ")
-      .replaceAllLiterally("""\soft{L}""", "Ľ")
+        .replaceAllLiterally("""\soft{L}""", "Ľ")
         .replaceAllLiterally("""\cfac""", """\~""")
         .replaceAllLiterally("""\cftil{e}""", "ễ")
         .replaceAllLiterally("""\cftil{o}""", "ỗ")
@@ -448,7 +465,7 @@ trait Article {
     if (directory.listFiles(new FilenameFilter { override def accept(dir: File, name: String) = name.contains(identifierString) }).nonEmpty) {
       Logging.info("PDF for " + identifierString + " already exists in " + directory)
       // TODO this shouldn't really be here:
-//      CanonicalizePDFNamesApp.safeRename(identifierString, directory, fileName)
+      //      CanonicalizePDFNamesApp.safeRename(identifierString, directory, fileName)
     } else {
       pdf match {
         case Some(bytes) => {
@@ -457,6 +474,7 @@ trait Article {
         }
         case None => {
           Logging.info("No PDF available for " + fileName)
+          ???
         }
       }
     }

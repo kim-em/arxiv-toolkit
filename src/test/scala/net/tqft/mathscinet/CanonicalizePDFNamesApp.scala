@@ -88,7 +88,7 @@ object CanonicalizePDFNamesApp extends App {
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
   for (
-    dir <- Seq(ktdirectory, directory);
+    dir <- Seq(ktdirectory, directory).filter(_.exists);
 //    group <- pdfs(dir).grouped(1000);
 //    file <- { val p = group.par; p.tasksupport = pool; p };
     file <- pdfs(dir);
