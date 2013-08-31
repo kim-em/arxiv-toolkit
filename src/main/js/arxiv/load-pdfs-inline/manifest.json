@@ -1,0 +1,15 @@
+{
+  "name": "Load arXiv PDFs inline",
+  "version": "0.1.7",
+  "manifest_version": 2,
+  "description": "Load arXiv PDFs inline",
+  "content_scripts": [
+    {
+      "matches": ["http://arxiv.org/*"],
+      "js": ["arxiv-load-pdfs-inline.user.js"]
+    }
+  ],
+  "permissions": [
+    "http://arxiv.org/",
+  ]
+}
