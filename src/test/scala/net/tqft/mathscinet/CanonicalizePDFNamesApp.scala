@@ -10,8 +10,8 @@ import java.io.FileOutputStream
 import scala.collection.parallel.ForkJoinTaskSupport
 
 object CanonicalizePDFNamesApp extends App {
-    FirefoxSlurp.disable
-  Article.disableBibtexSaving
+//    FirefoxSlurp.disable
+//  Article.disableBibtexSaving
 
   val directory = new File("/Volumes/Repository Backups/elsevier-oa/")
   val otherDirectory = new File("/Volumes/Repository Backups-1/elsevier-oa/")
