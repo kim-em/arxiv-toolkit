@@ -15,6 +15,7 @@ object CanonicalizePDFNamesApp extends App {
 
   val directory = new File("/Volumes/Repository Backups/elsevier-oa/")
   val ktdirectory = new File("/Volumes/Repository Backups/k-theory/")
+  val dropboxDirectory = new File(System.getProperty("user.home") + "/Dropbox/Apps/Papers from mathscinet")
 
   val identifierRegex = "MR[0-9]{7}".r
 
@@ -88,7 +89,7 @@ object CanonicalizePDFNamesApp extends App {
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
   for (
-    dir <- Seq(ktdirectory, directory).filter(_.exists);
+    dir <- Seq(dropboxDirectory, ktdirectory, directory).filter(_.exists);
 //    group <- pdfs(dir).grouped(1000);
 //    file <- { val p = group.par; p.tasksupport = pool; p };
     file <- pdfs(dir);
