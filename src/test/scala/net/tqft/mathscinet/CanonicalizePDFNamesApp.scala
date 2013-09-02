@@ -10,10 +10,11 @@ import java.io.FileOutputStream
 import scala.collection.parallel.ForkJoinTaskSupport
 
 object CanonicalizePDFNamesApp extends App {
-  //  FirefoxSlurp.disable
+    FirefoxSlurp.disable
   Article.disableBibtexSaving
 
   val directory = new File("/Volumes/Repository Backups/elsevier-oa/")
+  val otherDirectory = new File("/Volumes/Repository Backups-1/elsevier-oa/")
   val ktdirectory = new File("/Volumes/Repository Backups/k-theory/")
   val dropboxDirectory = new File(System.getProperty("user.home") + "/Dropbox/Apps/Papers from mathscinet")
 
@@ -89,7 +90,7 @@ object CanonicalizePDFNamesApp extends App {
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
   for (
-    dir <- Seq(dropboxDirectory, ktdirectory, directory).filter(_.exists);
+    dir <- Seq(dropboxDirectory, otherDirectory, ktdirectory, directory).filter(_.exists);
 //    group <- pdfs(dir).grouped(1000);
 //    file <- { val p = group.par; p.tasksupport = pool; p };
     file <- pdfs(dir);
