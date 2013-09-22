@@ -88,11 +88,11 @@ trait Article {
 
   def authors: List[Author] = {
     if (endnoteData.nonEmpty) {
-      endnote("%A").map(Author(_))
+      endnote("%A").map(n => Author(0, n))
     } else {
       bibtex.get("AUTHOR") match {
         case None => List()
-        case Some(a) => a.split(" and ").toList.map(a => Author(a /*Accents.LaTeXToUnicode(a)*/ ))
+        case Some(a) => a.split(" and ").toList.map(a => Author(0, a /*Accents.LaTeXToUnicode(a)*/ ))
       }
     }
   }
@@ -193,6 +193,12 @@ trait Article {
     bibtex.get("URL")
   }
 
+  def numberOfCitations: Int = {
+    val regex = "From References: ([0-9]*)".r 
+    slurp.flatMap(line => regex.findFirstMatchIn(line).map(_.group(1).toInt)).head
+  }
+  def citations: Iterator[Article] = Search.citing(identifier)
+  
   lazy val pdfURL: Option[String] = {
     // This mimics the logic of direct-article-link.user.js 
 

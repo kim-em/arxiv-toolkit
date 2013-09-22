@@ -63,6 +63,8 @@ object Search extends Logging {
   def during(k: Int) = query("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
   def between(start: Int, end: Int) = query("yearRangeFirst" -> start.toString, "yearRangeSecond" -> end.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
 
+  def citing(identifier: Int) = query("refcit" -> identifier.toString)
+  
   private def currentYear = Calendar.getInstance().get(Calendar.YEAR)
   private def allYears = (currentYear to 1810 by -1)
 
