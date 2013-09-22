@@ -29,11 +29,12 @@ import org.apache.http.impl.conn.SchemeRegistryFactory
 import org.apache.http.params.HttpConnectionParams
 import org.apache.http.impl.conn.BasicClientConnectionManager
 import java.io.FilterInputStream
+import org.openqa.selenium.firefox.FirefoxProfile
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
   final def getBytes(url: String) = IOUtils.toByteArray(getStream(url))
-  
+
   final def apply(url: String) = {
     val bis = new BufferedInputStream(getStream(url));
     val cd = new CharsetDetector();
@@ -44,10 +45,10 @@ trait Slurp {
       val reader = cm.getReader();
       val charset = cm.getName();
       //      Logging.info("reading stream in charset " + charset)
-      
+
       class ClosingIterator[A](i: Iterator[A]) extends Iterator[A] {
         var open = true
-        
+
         override def hasNext = {
           open && i.hasNext match {
             case true => true
@@ -60,7 +61,7 @@ trait Slurp {
         }
         override def next = i.next
       }
-      
+
       new ClosingIterator(Source.fromInputStream(bis, charset).getLines): Iterator[String]
     } else {
       throw new UnsupportedCharsetException("")
@@ -85,7 +86,7 @@ trait HttpClientSlurp extends Slurp {
   cxMgr.setDefaultMaxPerRoute(20);
 
   val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(cxMgr))
-  
+
   val params = client.getParams()
   params.setBooleanParameter("http.protocol.handle-redirects", true)
   HttpConnectionParams.setConnectionTimeout(params, 10000);
@@ -101,14 +102,14 @@ trait HttpClientSlurp extends Slurp {
     referer.map(r => get.setHeader("Referer", r))
 
     val response = client.execute(get);
-    
+
     class ReleasingInputStream(is: InputStream) extends FilterInputStream(is) {
       override def close() {
         get.releaseConnection()
         is.close()
       }
     }
-    
+
     new ReleasingInputStream(response.getEntity.getContent())
   }
 }
@@ -209,7 +210,7 @@ object HtmlUnitSlurp extends HtmlUnitSlurp {
   }
 
   private var enabled = true
-//  def disable = enabled = false
+  //  def disable = enabled = false
   def enabled_? = enabled
 }
 
@@ -219,7 +220,11 @@ object FirefoxSlurp extends FirefoxSlurp {
   def driverInstance = {
     if (driverOption.isEmpty) {
       Logging.info("Starting Firefox/webdriver")
-      driverOption = Some(new FirefoxDriver())
+      val profile = new FirefoxProfile();
+      profile.setPreference("network.proxy.socks", "localhost");
+      profile.setPreference("network.proxy.socks_port", "1081");
+      profile.setPreference("network.proxy.type", 1)
+      driverOption = Some(new FirefoxDriver(profile))
       Logging.info("   ... finished starting Firefox")
     }
     driverOption.get
@@ -298,7 +303,7 @@ trait ThrottledSlurp extends Slurp {
 
 object Throttle extends Logging {
   val defaultInterval = 1000
-  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 150000, "arxiv.org" -> 5000, "google.com" -> 500)
+  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 150, "arxiv.org" -> 5000, "google.com" -> 500)
   val lastThrottle = scala.collection.mutable.Map[String, Long]().withDefaultValue(0)
 
   // poisson distributed gaps
