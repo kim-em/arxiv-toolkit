@@ -220,11 +220,11 @@ object FirefoxSlurp extends FirefoxSlurp {
   def driverInstance = {
     if (driverOption.isEmpty) {
       Logging.info("Starting Firefox/webdriver")
-      val profile = new FirefoxProfile();
-      profile.setPreference("network.proxy.socks", "localhost");
-      profile.setPreference("network.proxy.socks_port", "1081");
-      profile.setPreference("network.proxy.type", 1)
-      driverOption = Some(new FirefoxDriver(profile))
+//      val profile = new FirefoxProfile();
+//      profile.setPreference("network.proxy.socks", "localhost");
+//      profile.setPreference("network.proxy.socks_port", "1081");
+//      profile.setPreference("network.proxy.type", 1)
+      driverOption = Some(new FirefoxDriver(/*profile*/))
       Logging.info("   ... finished starting Firefox")
     }
     driverOption.get
@@ -303,7 +303,7 @@ trait ThrottledSlurp extends Slurp {
 
 object Throttle extends Logging {
   val defaultInterval = 1000
-  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 150, "arxiv.org" -> 5000, "google.com" -> 500)
+  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 150000, "arxiv.org" -> 5000, "google.com" -> 500)
   val lastThrottle = scala.collection.mutable.Map[String, Long]().withDefaultValue(0)
 
   // poisson distributed gaps
