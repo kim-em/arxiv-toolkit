@@ -25,7 +25,8 @@ object Author {
   }
   
   private def hIndexImplementation(id: Int, years: Int = 200) = {
-    val citations = Author(id, "").articles.filter(_.year > Calendar.getInstance().get(Calendar.YEAR) - years).map(_.numberOfCitations).toList.sorted.reverse
+    val firstYear = Calendar.getInstance().get(Calendar.YEAR) - years
+    val citations = Author(id, "").articles.filter(article => article.yearOption.nonEmpty && article.year > firstYear).map(_.numberOfCitations).toList.sorted.reverse
     println("citations: " + citations)
 
     (0 +: citations).zipWithIndex.tail
