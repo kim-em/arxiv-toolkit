@@ -22,7 +22,7 @@ object BIBTEX extends Logging {
   
   
   lazy val cachedKeys = {
-    ???
+//    ???
     info("Fetching key set for LoM-bibtex")
     val result = cache.keySet
     info("   ... finished, found " + result.size + " keys")

@@ -134,13 +134,13 @@ trait FirefoxSlurp extends Slurp {
 
         // TODO more validation we really arrived?
         driver.getTitle match {
-          case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => throw new HttpException(e)
+          case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => throw new HttpException(e) 
           case e @ ("MathSciNet Access Error") => throw new HttpException("403 " + e)
           case _ =>
         }
         new ByteArrayInputStream(driver.getPageSource.getBytes("UTF-8"))
       } catch {
-        case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException) => {
+        case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException | _: org.openqa.selenium.remote.ErrorHandler$UnknownServerException ) => {
           Logging.warn("Browser window closed, trying to restart Firefox/webdriver")
           FirefoxSlurp.quit
           Logging.info("retrying ...")
@@ -249,8 +249,8 @@ trait MathSciNetMirrorSlurp extends Slurp {
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {
-    val newURL = if (url.startsWith("http://www.ams.org/mathscinet/")) {
-      "http://" + mirror + "/mathscinet/" + url.stripPrefix("http://www.ams.org/mathscinet/")
+    val newURL = if (url.startsWith("http://www.ams.org/mathscinet")) {
+      "http://" + mirror + "/mathscinet" + url.stripPrefix("http://www.ams.org/mathscinet")
     } else {
       url
     }

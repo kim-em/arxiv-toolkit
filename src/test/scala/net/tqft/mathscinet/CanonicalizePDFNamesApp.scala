@@ -8,10 +8,11 @@ import java.text.Normalizer
 import java.io.PrintStream
 import java.io.FileOutputStream
 import scala.collection.parallel.ForkJoinTaskSupport
+import java.text.SimpleDateFormat
 
 object CanonicalizePDFNamesApp extends App {
-//    FirefoxSlurp.disable
-//  Article.disableBibtexSaving
+  //    FirefoxSlurp.disable
+  //  Article.disableBibtexSaving
 
   val directory = new File("/Volumes/Repository Backups/elsevier-oa/")
   val otherDirectory = new File("/Volumes/Repository Backups-1/elsevier-oa/")
@@ -89,17 +90,23 @@ object CanonicalizePDFNamesApp extends App {
 
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
+  val formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+//  val directories = Seq(dropboxDirectory, otherDirectory, ktdirectory, directory)
+  val directories = Seq(directory)
+  
   for (
-    dir <- Seq(dropboxDirectory, otherDirectory, ktdirectory, directory).filter(_.exists);
-//    group <- pdfs(dir).grouped(1000);
-//    file <- { val p = group.par; p.tasksupport = pool; p };
+    dir <- directories.filter(_.exists);
+    //    group <- pdfs(dir).grouped(1000);
+    //    file <- { val p = group.par; p.tasksupport = pool; p };
     file <- pdfs(dir);
-//    if file.getName().contains(" - Adv.");
+    //    if file.getName().contains(" - Adv.");
     identifier <- identifierRegex.findAllMatchIn(file.getName()).toSeq.lastOption.map(_.matched);
     article = articles.get(identifier).getOrElse(Article(identifier))
   ) {
     val newName = article.constructFilename()
     if (file.getName != newName) {
+      println(formatter.format(new java.util.Date()))
       println("Renaming " + file.getName + " to " + newName)
       println("Original title: " + article.title)
       safeRename(identifier, dir, newName)
