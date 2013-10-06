@@ -195,7 +195,7 @@ trait Article {
 
   def numberOfCitations: Int = {
     val regex = "From References: ([0-9]*)".r 
-    slurp.flatMap(line => regex.findFirstMatchIn(line).map(_.group(1).toInt)).head
+    slurp.flatMap(line => regex.findFirstMatchIn(line).map(_.group(1).toInt)).headOption.getOrElse(0)
   }
   def citations: Iterator[Article] = Search.citing(identifier)
   

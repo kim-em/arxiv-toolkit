@@ -6,27 +6,33 @@ import net.tqft.toolkit.amazon.S3
 case class Author(id: Int, name: String) {
   def lastName = name.takeWhile(c => c != ',' && c != ' ')
   def articles = Search.query("pg1" -> "IID", "s1" -> id.toString)
-  def hIndex(years: Int = 200) = Author.hIndex(id, years)
+  def hIndex(firstYear: Int = 2008) = Author.hIndex(id, firstYear)
 }
 
 object Author {
-  val hIndexCache = {
+  val hIndexCache1996 = {
     import net.tqft.toolkit.collections.MapTransformer._
-    S3("hIndex").transformKeys({ k: String => k.toInt }, { k: Int => k.toString })
+    S3("hIndex1996").transformKeys({ k: String => k.toInt }, { k: Int => k.toString })
+      .transformValues({ v: String => v.toInt }, { v: Int => v.toString })
+  }
+val hIndexCache2008 = {
+    import net.tqft.toolkit.collections.MapTransformer._
+    S3("hIndex2008").transformKeys({ k: String => k.toInt }, { k: Int => k.toString })
       .transformValues({ v: String => v.toInt }, { v: Int => v.toString })
   }
 
-  def hIndex(id: Int, years: Int) = {
-    if(years == 200) {
-      hIndexCache.getOrElseUpdate(id, hIndexImplementation(id, 200))
+  def hIndex(id: Int, firstYear: Int) = {
+    if(firstYear == 1996) {
+      hIndexCache1996.getOrElseUpdate(id, hIndexImplementation(id, firstYear))
+    } else if(firstYear == 2008) {
+      hIndexCache2008.getOrElseUpdate(id, hIndexImplementation(id, firstYear))
     } else {
-      hIndexImplementation(id, years)
+      hIndexImplementation(id, firstYear)
     }
   }
   
-  private def hIndexImplementation(id: Int, years: Int = 200) = {
-    val firstYear = Calendar.getInstance().get(Calendar.YEAR) - years
-    val citations = Author(id, "").articles.filter(article => article.yearOption.nonEmpty && article.year > firstYear).map(_.numberOfCitations).toList.sorted.reverse
+  private def hIndexImplementation(id: Int, firstYear: Int) = {
+    val citations = Author(id, "").articles.filter(article => article.yearOption.nonEmpty && article.year >= firstYear).map(_.numberOfCitations).toList.sorted.reverse
     println("citations: " + citations)
 
     (0 +: citations).zipWithIndex.tail
