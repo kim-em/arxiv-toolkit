@@ -92,8 +92,11 @@ object CanonicalizePDFNamesApp extends App {
 
   val formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
+//  val directories = Seq(dropboxDirectory, otherDirectory, ktdirectory, directory)
+  val directories = Seq(directory)
+  
   for (
-    dir <- Seq(dropboxDirectory, otherDirectory, ktdirectory, directory).filter(_.exists);
+    dir <- directories.filter(_.exists);
     //    group <- pdfs(dir).grouped(1000);
     //    file <- { val p = group.par; p.tasksupport = pool; p };
     file <- pdfs(dir);
