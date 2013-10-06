@@ -480,7 +480,7 @@ trait Article {
         }
         case None => {
           Logging.info("No PDF available for " + fileName)
-          ???
+//          ???
         }
       }
     }
