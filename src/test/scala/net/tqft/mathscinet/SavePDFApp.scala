@@ -39,7 +39,7 @@ object SavePDFApp extends App {
   val targetArticles = if(commandLineArticles.nonEmpty) {
     commandLineArticles.iterator
   } else {
-    openAccessJAlgebraArticles.filterNot(a => alreadyDownloaded.contains(a.identifierString))
+    openAccessElsevierArticles.filterNot(a => alreadyDownloaded.contains(a.identifierString))
   }
   
   for (article <- targetArticles; if !Seq("MR1863897","MR1793590").contains(article.identifierString)  /* awaiting explication */) {
