@@ -222,12 +222,18 @@ trait Article {
           }
         }
       }
+      
+      val issn = ISSN match {
+        case "0890-5401" if yearOption.nonEmpty && year <= 1986 => "0019-9958"
+        case ow => ow
+      }
+      
       val pages = numbers.map({ n =>
         if (n == "10") {
           println("Something went wrong while looking up " + identifierString + " on the Elsevier website.")
           return None
         }
-        val url = "http://www.sciencedirect.com/science/journal/" + ISSN.replaceAllLiterally("-", "") + "/" + volume + "/" + n
+        val url = "http://www.sciencedirect.com/science/journal/" + issn.replaceAllLiterally("-", "") + "/" + volume + "/" + n
 //        println("Scanning page: " + url)
         (url, Article.ElsevierSlurpCache(url))
       }).takeWhile({ p =>
