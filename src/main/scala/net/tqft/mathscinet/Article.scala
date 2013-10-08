@@ -202,7 +202,7 @@ trait Article {
   lazy val pdfURL: Option[String] = {
     // This mimics the logic of direct-article-link.user.js 
 
-    if (ISSNs.Elsevier.contains(ISSN) && URL.isEmpty) {
+    if (ISSNs.Elsevier.contains(ISSN) && URL.isEmpty || URL.get.startsWith("http://www.sciencedirect.com/science?_ob=GatewayURL&_origin=MR&_method=citationSearch&_piikey=")) {
       // Old Elsevier articles, that MathSciNet doesn't know about
 
       Logging.info("Attempting to find URL for Elsevier article.")
