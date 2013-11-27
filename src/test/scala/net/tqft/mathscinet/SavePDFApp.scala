@@ -24,7 +24,8 @@ object SavePDFApp extends App {
       if issn != "0021-7824" || y >= 1997;
       if issn != "0723-0869" || y >= 2001;
       if issn != "0019-3577" || y >= 1990;
-      if issn != "0001-8708" || y >= 1965
+      if issn != "0001-8708" || y >= 1965;
+      if issn != "0195-6698" || y >= 1992
     ) yield a
   def openAccessAdvancesArticles = for (a <- Search.inJournal(ISSNs.`Advances in Mathematics`); if a.journal != "Advancement in Math."; y <- a.yearOption; if y <= 2008) yield a
   def openAccessTopologyArticles = for (a <- Search.inJournal(ISSNs.`Topology`); y <- a.yearOption; if y <= 2008) yield a
