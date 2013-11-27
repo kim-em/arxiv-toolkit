@@ -194,11 +194,11 @@ trait Article {
   }
 
   def numberOfCitations: Int = {
-    val regex = "From References: ([0-9]*)".r 
+    val regex = "From References: ([0-9]*)".r
     slurp.flatMap(line => regex.findFirstMatchIn(line).map(_.group(1).toInt)).headOption.getOrElse(0)
   }
   def citations: Iterator[Article] = Search.citing(identifier)
-  
+
   lazy val pdfURL: Option[String] = {
     // This mimics the logic of direct-article-link.user.js 
 
@@ -206,7 +206,7 @@ trait Article {
       // Old Elsevier articles, that MathSciNet doesn't know about
 
       Logging.info("Attempting to find URL for Elsevier article.")
-      
+
       val numbers = {
         // Topology, special cases
         if (ISSN == "0040-9383" && volume == 2) {
@@ -222,30 +222,30 @@ trait Article {
           }
         }
       }
-      
+
       val issn = ISSN match {
         case "0890-5401" if yearOption.nonEmpty && year <= 1986 => "0019-9958"
         case ow => ow
       }
-      
+
       val pages = numbers.map({ n =>
         if (n == "10") {
           println("Something went wrong while looking up " + identifierString + " on the Elsevier website.")
-          return None
+          ???
         }
         val url = "http://www.sciencedirect.com/science/journal/" + issn.replaceAllLiterally("-", "") + "/" + volume + "/" + n
-//        println("Scanning page: " + url)
+        //        println("Scanning page: " + url)
         (url, Article.ElsevierSlurpCache(url))
       }).takeWhile({ p =>
         val lines = p._2
-//        println(lines.mkString("\n"))
+        //        println(lines.mkString("\n"))
         val titleLine = lines.find(_.contains("<title>")).get
         println(titleLine)
         titleLine.contains("| Vol " + volume) &&
           !titleLine.contains("In Progress") &&
           !titleLine.contains("Topology | Vol 48, Isss 2–4, Pgs 41-224, (June–December, 2009)")
       }).toSeq
-      
+
       val regex1 = """<span style="font-weight : bold ;">(.*)</span></a></h3>""".r
       val regex2 = """<a href="(http://www.sciencedirect.com/science\?_ob=MiamiImageURL.*.pdf) " target="newPdfWin"""".r
       val regex3 = """<a class="cLink" rel="nofollow" href="(http://www.sciencedirect.com/science/article/pii/.*.pdf)" queryStr="\?_origin=browseVolIssue&_zone=rslt_list_item" target="newPdfWin">""".r
@@ -253,10 +253,10 @@ trait Article {
       val matches = (for ((_, p) <- pages; l <- p; if l.contains("newPdfWin"); titleFound <- regex1.findFirstMatchIn(l); urlFound <- regex2.findFirstMatchIn(l).orElse(regex3.findFirstMatchIn(l))) yield {
         (titleFound.group(1), urlFound.group(1), StringUtils.getLevenshteinDistance(titleFound.group(1).replaceAll("<[^>]*>", ""), title).toDouble / title.length())
       }).sortBy(_._3)
-      
+
       Logging.info("   found matches:")
-      for(m <- matches) Logging.info(m)
-      
+      for (m <- matches) Logging.info(m)
+
       val chosenMatch = if (matches.filter(_._3 == 0.0).size == 1
         || matches.filter(_._3 <= 0.425).size == 1
         || (matches.filter(_._3 <= 0.425).size > 1 && matches(0)._3 < matches(1)._3 / 2)) {
@@ -486,7 +486,7 @@ trait Article {
         }
         case None => {
           Logging.info("No PDF available for " + fileName)
-//          ???
+          //          ???
         }
       }
     }
@@ -558,6 +558,17 @@ object Articles {
   def fromBibtexFile(file: String): Iterator[Article] = {
     import net.tqft.toolkit.collections.Split._
     Source.fromFile(file).getLines.splitOn(_.isEmpty).map(_.mkString("\n")).grouped(100).flatMap(_.par.flatMap(Article.fromBibtex))
+  }
+
+  private def filesInDirectory(directory: String) = {
+    val process = Runtime.getRuntime().exec(List("ls", "-f", directory).toArray)
+    Source.fromInputStream(process.getInputStream()).getLines.filterNot(_.startsWith(".")).map(directory + _)
+  }
+
+  def fromBibtexDirectory(directory: String): Iterator[Article] = {
+    for (file <- filesInDirectory(directory); if file.endsWith(".bib"); article <- fromBibtexFile(file)) yield {
+      article
+    }
   }
 
   def fromBibtexGzipFile(file: String): Iterator[Article] = {
