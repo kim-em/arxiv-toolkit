@@ -253,7 +253,7 @@ trait MathSciNetMirrorSlurp extends Slurp {
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {
-    val newURL = if (url.startsWith("http://www.ams.org/mathscinet")) {
+    val newURL = if (url.startsWith("http://www.ams.org/mathscinet") && !url.startsWith("http://www.ams.org/mathscinet-mref")) {
       "http://" + mirror + "/mathscinet" + url.stripPrefix("http://www.ams.org/mathscinet")
     } else {
       url
