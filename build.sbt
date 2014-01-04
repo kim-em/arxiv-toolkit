@@ -19,6 +19,7 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "toolkit-base" % "0.1.16-SNAPSHOT",
 	"net.tqft" %% "toolkit-collections" % "0.1.16-SNAPSHOT",
 	"net.tqft" %% "toolkit-amazon" % "0.1.16-SNAPSHOT",
+	"net.tqft" %% "toolkit-wiki" % "0.1.16-SNAPSHOT",
 	"com.ibm.icu" % "icu4j" % "51.1",
 	"rome" % "rome" % "1.0",
 	"org.apache.httpcomponents" % "httpclient" % "4.2.1",
@@ -35,7 +36,7 @@ libraryDependencies ++= Seq(
 
 // lift-json
 libraryDependencies ++= {
-  val liftVersion = "2.5-RC2" // Put the current/latest lift version here
+  val liftVersion = "2.6-M2" // Put the current/latest lift version here
   Seq(
     "net.liftweb" %% "lift-util" % liftVersion,
     "net.liftweb" %% "lift-json" % liftVersion,
