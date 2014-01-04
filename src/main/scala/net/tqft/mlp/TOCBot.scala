@@ -17,8 +17,8 @@ object TOCBot extends App {
     b
   }
 
-  //  val journals = Eigenfactor.topJournals.take(1)
-  val journals = Iterator(ISSNs.`Advances in Mathematics`, ISSNs.`Discrete Mathematics`, ISSNs.`Annals of Mathematics`, ISSNs.`Algebraic & Geometric Topology`, ISSNs.`Geometric and Functional Analysis`)
+    val journals = Eigenfactor.topJournals.take(100)
+//  val journals = Iterator(ISSNs.`Advances in Mathematics`, ISSNs.`Discrete Mathematics`, ISSNs.`Annals of Mathematics`, ISSNs.`Algebraic & Geometric Topology`, ISSNs.`Geometric and Functional Analysis`)
   val years = 2013 to 2013
 
   val articles = for (j <- journals; y <- years; a <- Search.inJournalYear(j, y)) yield a
