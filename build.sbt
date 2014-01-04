@@ -4,7 +4,7 @@ organization := "net.tqft"
 
 version := "0.1.1-SNAPSHOT"
 
-scalaVersion := "2.10.1"
+scalaVersion := "2.10.3"
 
 resolvers ++= Seq(
 	"Java.net Maven2 Repository" at "http://download.java.net/maven/2/",
@@ -22,7 +22,7 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "toolkit-wiki" % "0.1.16-SNAPSHOT",
 	"com.ibm.icu" % "icu4j" % "51.1",
 	"rome" % "rome" % "1.0",
-	"org.apache.httpcomponents" % "httpclient" % "4.1.1", // typica can't cope with 4.2?
+	"org.apache.httpcomponents" % "httpclient" % "4.1.1", // jets3t can't cope with 4.2, but 4.3.2 should be okay again
 	"commons-io" % "commons-io" % "2.4",
 	"com.google.code.findbugs" % "jsr305" % "2.0.1",
 	"net.sourceforge.htmlunit" % "htmlunit" % "2.12",
@@ -34,7 +34,7 @@ libraryDependencies ++= Seq(
 	"eu.medsea.mimeutil" % "mime-util" % "2.1.3"
 )
 
-dependencyOverrides += "org.apache.httpcomponents" % "httpclient" % "4.1.1" // typica can't cope with 4.2
+dependencyOverrides += "org.apache.httpcomponents" % "httpclient" % "4.1.1" // jets3t can't cope with 4.2
 
 // lift-json
 libraryDependencies ++= {
