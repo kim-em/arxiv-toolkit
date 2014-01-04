@@ -7,11 +7,11 @@ import net.tqft.mathscinet.Article
 import net.tqft.util.pandoc
 import net.tqft.eigenfactor.Eigenfactor
 
-object TitleBot extends App {
+object DOIBot extends App {
 
-  lazy val titlebot = {
+  lazy val doibot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
-    b.login("titlebot", "zytopex")
+    b.login("doibot", "zytopex")
     b
   }
 
@@ -23,8 +23,11 @@ object TitleBot extends App {
   def articles = for (j <- journals; y <- years; a <- Search.inJournalYear(j, y)) yield a
 
   for (a <- articles) {
-    println("posting title for " + a.identifierString)
-    titlebot("Data:" + a.identifierString + "/Title") = a.textTitle
+    for (link <- a.DOI.map("http://dx.doi.org/" + _).orElse(a.URL)) {
+      println("posting link for " + a.identifierString)
+      doibot("Data:" + a.identifierString + "/PublishedURL") = link
+
+    }
   }
 
   net.tqft.wiki.FirefoxDriver.quit
