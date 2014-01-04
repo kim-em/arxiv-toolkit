@@ -21,24 +21,24 @@ object BIBTEX extends Logging {
 
   
   
-  lazy val cachedKeys = {
-//    ???
-    info("Fetching key set for LoM-bibtex")
-    val result = cache.keySet
-    info("   ... finished, found " + result.size + " keys")
-    result
-  }
+//  lazy val cachedKeys = {
+////    ???
+//    info("Fetching key set for LoM-bibtex")
+//    val result = cache.keySet
+//    info("   ... finished, found " + result.size + " keys")
+//    result
+//  }
   private def save(item: BIBTEX) = {
-    if (!cachedKeys.contains(item.identifier)) {
+//    if (!cachedKeys.contains(item.identifier)) {
       info("Storing BIBTEX for " + item.identifier + " to S3")
       cache.putIfAbsent(item.identifier, item.toBIBTEXString)
       item.data.find(_._1 == "DOI").map({
         case ("DOI", doi) =>
-          DOI2mathscinet.put(doi, item.identifier)
+          DOI2mathscinet.putIfAbsent(doi, item.identifier)
       })
-    } else {
-      false
-    }
+//    } else {
+//      false
+//    }
   }
 
   // this is just parses mathscinet BIBTEX, which is particularly easy.
