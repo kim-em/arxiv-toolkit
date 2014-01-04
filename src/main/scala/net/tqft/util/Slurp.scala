@@ -134,13 +134,13 @@ trait FirefoxSlurp extends Slurp {
 
         // TODO more validation we really arrived?
         driver.getTitle match {
-          case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => throw new HttpException(e) 
+          case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => throw new HttpException(e)
           case e @ ("MathSciNet Access Error") => throw new HttpException("403 " + e)
           case _ =>
         }
         new ByteArrayInputStream(driver.getPageSource.getBytes("UTF-8"))
       } catch {
-        case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException | _: org.openqa.selenium.remote.ErrorHandler$UnknownServerException ) => {
+        case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException | _: org.openqa.selenium.remote.ErrorHandler$UnknownServerException) => {
           Logging.warn("Browser window closed, trying to restart Firefox/webdriver")
           FirefoxSlurp.quit
           Logging.info("retrying ...")
@@ -220,18 +220,22 @@ object FirefoxSlurp extends FirefoxSlurp {
   def driverInstance = {
     if (driverOption.isEmpty) {
       Logging.info("Starting Firefox/webdriver")
-//      val profile = new FirefoxProfile();
-//      profile.setPreference("network.proxy.socks", "localhost");
-//      profile.setPreference("network.proxy.socks_port", "1081");
-//      profile.setPreference("network.proxy.type", 1)
-      driverOption = Some(new FirefoxDriver(/*profile*/))
+      //      val profile = new FirefoxProfile();
+      //      profile.setPreference("network.proxy.socks", "localhost");
+      //      profile.setPreference("network.proxy.socks_port", "1081");
+      //      profile.setPreference("network.proxy.type", 1)
+      driverOption = Some(new FirefoxDriver( /*profile*/ ))
       Logging.info("   ... finished starting Firefox")
     }
     driverOption.get
   }
 
   def quit = {
-    driverOption.map(_.quit)
+    try {
+      driverOption.map(_.quit)
+    } catch {
+      case e: Exception => Logging.warn("Exception occurred while trying to quit Firefox:", e)
+    }
     driverOption = None
   }
 
@@ -245,7 +249,7 @@ object FirefoxSlurp extends FirefoxSlurp {
 
 trait MathSciNetMirrorSlurp extends Slurp {
   val offset = Random.nextInt(10 * 60 * 1000)
-  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ "ams.rice.edu", /* "ams.impa.br", */ "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
+  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ "ams.rice.edu",  "ams.impa.br",  "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {

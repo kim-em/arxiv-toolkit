@@ -6,5 +6,8 @@ object ISSNs {
   val `Advances in Mathematics` = "0001-8708"
   val `Journal of Algebra` = "0021-8693"
   val `Discrete Mathematics` = "0012-365X"
-  val `K-Theory` = "0920-3036"
+  val `K-Theory` = "0920-3036"    
+  val `Annals of Mathematics` =  "0003-486X"
+  val `Algebraic & Geometric Topology` = "1472-2747"
+  val `Geometric and Functional Analysis` = "1016-443X"
 }

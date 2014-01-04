@@ -100,8 +100,12 @@ trait Article {
   def journalOption = bibtex.get("JOURNAL")
   def journal = journalOption.get
 
+  def volumeYearAndIssue: String = {
+    (volumeOption.getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim
+  }
+  
   def citation: String = {
-    def restOfCitation = volumeOption.map(" " + _).getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("") + pagesOption.getOrElse("")
+    def restOfCitation = " " + volumeYearAndIssue + pagesOption.map(", " + _).getOrElse("")
 
     bibtex.documentType match {
       case "article" => {
@@ -409,10 +413,7 @@ trait Article {
 
   val defaultFilenameTemplate = "$TITLE - $AUTHOR - $JOURNALREF - $MRNUMBER.pdf"
 
-  def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
-    val authorNames = authors.map(a => pandoc.latexToText(a.name))
-    val textCitation = pandoc.latexToText(citation)
-
+  def plainTitle: String = {
     def preprocessAccents(s: String) = {
       s.replaceAllLiterally("""\Dbar""", "Đ")
         .replaceAllLiterally("""\soft{L}""", "Ľ")
@@ -423,9 +424,12 @@ trait Article {
         .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
     }
 
+    preprocessAccents(title).replaceAll("""\[[^]]*MR[^]]*\]""", "").replaceAll("""\[[^]]*refcno[^]]*\]""", "")
+  }
+
+  def textTitle: String = {
     def stripMoreLaTeX(s: String) = {
       val r = "\\{\\\\(rm|bf|scr|Bbb|bold) ([A-Za-z]*)\\}".r
-
       r.replaceAllIn(s, m => m.group(2))
         .replaceAllLiterally("""\ast""", "*")
         .replaceAllLiterally("""\bold """, "")
@@ -434,8 +438,12 @@ trait Article {
         .replaceAllLiterally("""\scr """, "")
         .replaceAllLiterally("""\rm """, "")
     }
+    stripMoreLaTeX(pandoc.latexToText(plainTitle))
+  }
 
-    val textTitle = stripMoreLaTeX(pandoc.latexToText(preprocessAccents(title).replaceAll("""\[[^]]*MR[^]]*\]""", "").replaceAll("""\[[^]]*refcno[^]]*\]""", "")))
+  def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
+    val authorNames = authors.map(a => pandoc.latexToText(a.name))
+    val textCitation = pandoc.latexToText(citation)
 
     ({
       val attempt = filenameTemplate
@@ -536,8 +544,9 @@ object Article {
     { url: String => HttpClientSlurp.apply(url).toList }.memo
   }
 
-  private var saving_? = true
+  private var saving_? = false
   def disableBibtexSaving { saving_? = false }
+  def enableBibtexSaving { saving_? = true }
 }
 
 object MRIdentifier {
