@@ -27,14 +27,6 @@ object TitleBot extends App {
 
   //  Article.enableBibtexSaving
 
-//  def advancesArticles = for (a <- Search.inJournal(ISSNs.`Advances in Mathematics`); if a.journal != "Advancement in Math."; y <- a.yearOption; if y >= 2013) yield a
-//  def annalsArticles = for (a <- Search.inJournal(ISSNs.`Annals of Mathematics`); y <- a.yearOption; if y >= 2013) yield a
-//  def discreteMathArticles = for (a <- Search.inJournal(ISSNs.`Discrete Mathematics`); y <- a.yearOption; if y >= 2013) yield a
-//  def agtArticles = for (a <- Search.inJournal(ISSNs.`Algebraic & Geometric Topology`); y <- a.yearOption; if y >= 2013) yield a
-//  def gafaArticles = for (a <- Search.inJournal(ISSNs.`Geometric and Functional Analysis`); y <- a.yearOption; if y >= 2013) yield a
-//
-//  val articles = (advancesArticles ++ annalsArticles ++ discreteMathArticles ++ agtArticles ++ gafaArticles).toStream
-
   val journals = Eigenfactor.topJournals.take(100)
   val years = 2013 to 2013
 
@@ -45,7 +37,7 @@ object TitleBot extends App {
     authorbot("Data:" + a.identifierString + "/Authors") = a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and ")
   }
   for (a <- articles) {
-    for(link <- a.DOI.map("http://dx.doi.org/" + _).orElse(a.URL)) {
+    for (link <- a.DOI.map("http://dx.doi.org/" + _).orElse(a.URL)) {
       println("posting link for " + a.identifierString)
       doibot("Data:" + a.identifierString + "/PublishedURL") = link
 
@@ -56,4 +48,5 @@ object TitleBot extends App {
     titlebot("Data:" + a.identifierString + "/Title") = a.textTitle
   }
 
+  net.tqft.wiki.FirefoxDriver.quit
 }

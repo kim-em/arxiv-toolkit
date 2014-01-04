@@ -4,6 +4,11 @@ import net.tqft.mathscinet.Article
 import net.tqft.wiki.WikiMap
 import net.tqft.eigenfactor.Eigenfactor
 import net.tqft.mathscinet.Search
+import net.tqft.journals.ISSNs
+import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.TimeZone
+import java.util.Date
 
 object SummaryBot extends App {
 
@@ -29,13 +34,21 @@ object SummaryBot extends App {
   }
 
   def summaryText(articles: Iterator[Article]) = {
+    def now = {
+      val f = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss")
+      f.setTimeZone(TimeZone.getTimeZone("UTC"));
+      f.format(new Date()) + " UTC";
+    }
+
     val s = summarize(articles)
     "Of " + s.sum + " articles, " + s(2) + " are available on the arXiv, " +
       s(3) + " are available from other sources, and " + s(1) + " do not appear to be freely accessible. " +
-      "(The remaining " + s(0) + " have not yet been classified.)"
+      "(The remaining " + s(0) + " have not yet been classified.) " +
+      "This summary was prepared at " + now + "."
   }
 
-  val journals = Eigenfactor.topJournals.take(1)
+//    val journals = Eigenfactor.topJournals.take(1)
+  val journals = Iterator(ISSNs.`Advances in Mathematics`, ISSNs.`Discrete Mathematics`, ISSNs.`Annals of Mathematics`, ISSNs.`Algebraic & Geometric Topology`, ISSNs.`Geometric and Functional Analysis`)
   val years = 2013 to 2013
 
   def articles = for (j <- journals; y <- years; a <- Search.inJournalYear(j, y)) yield a
@@ -46,4 +59,5 @@ object SummaryBot extends App {
     bot("Data:" + journal + "/YearSummary/" + year) = summaryText(articles.iterator)
   }
 
+  net.tqft.wiki.FirefoxDriver.quit
 }
