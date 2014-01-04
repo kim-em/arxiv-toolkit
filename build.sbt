@@ -22,17 +22,19 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "toolkit-wiki" % "0.1.16-SNAPSHOT",
 	"com.ibm.icu" % "icu4j" % "51.1",
 	"rome" % "rome" % "1.0",
-	"org.apache.httpcomponents" % "httpclient" % "4.2.1",
+	"org.apache.httpcomponents" % "httpclient" % "4.1.1", // typica can't cope with 4.2?
 	"commons-io" % "commons-io" % "2.4",
 	"com.google.code.findbugs" % "jsr305" % "2.0.1",
 	"net.sourceforge.htmlunit" % "htmlunit" % "2.12",
-	"org.seleniumhq.selenium" % "selenium-support" % "2.31.0",
-	"org.seleniumhq.selenium" % "selenium-htmlunit-driver" % "2.31.0",
-	"org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.31.0",
-	"org.seleniumhq.selenium" % "selenium-chrome-driver" % "2.31.0",
+	"org.seleniumhq.selenium" % "selenium-support" % "2.39.0",
+	"org.seleniumhq.selenium" % "selenium-htmlunit-driver" % "2.39.0",
+	"org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.39.0",
+	"org.seleniumhq.selenium" % "selenium-chrome-driver" % "2.39.0",
 	"be.roam.hue" % "hue" % "1.1",
 	"eu.medsea.mimeutil" % "mime-util" % "2.1.3"
 )
+
+dependencyOverrides += "org.apache.httpcomponents" % "httpclient" % "4.1.1" // typica can't cope with 4.2
 
 // lift-json
 libraryDependencies ++= {
