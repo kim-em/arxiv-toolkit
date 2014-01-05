@@ -31,7 +31,9 @@ libraryDependencies ++= Seq(
 	"org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.39.0",
 	"org.seleniumhq.selenium" % "selenium-chrome-driver" % "2.39.0",
 	"be.roam.hue" % "hue" % "1.1",
-	"eu.medsea.mimeutil" % "mime-util" % "2.1.3"
+	"eu.medsea.mimeutil" % "mime-util" % "2.1.3",
+	"mysql" % "mysql-connector-java" % "5.1.24",
+	"com.typesafe.slick" %% "slick" % "2.0.0-RC1"
 )
 
 dependencyOverrides += "org.apache.httpcomponents" % "httpclient" % "4.1.1" // jets3t can't cope with 4.2

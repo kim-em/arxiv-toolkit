@@ -5,6 +5,7 @@ import java.io.File
 import net.tqft.mathscinet.MRef
 import net.tqft.toolkit.collections.Split.splittableIterator
 import net.tqft.wiki.WikiMap
+import net.tqft.wiki.FirefoxDriver
 
 object OAI2MRef extends App {
 
@@ -16,13 +17,20 @@ object OAI2MRef extends App {
     b
   }
 
-  val input: File = new File("/Users/scott/Downloads/sample.txt")
-  for (chunk <- Source.fromFile(input).getLines.splitOn(_.startsWith("---")); if chunk.nonEmpty) {
-    val id = chunk(0).stripPrefix("id: ")
-    val journalRef = chunk(1).stripPrefix("jr: ")
-    val doi = chunk(2).stripPrefix("doi: ")
-    val title = chunk(3).stripPrefix("title: ")
-    val authors = chunk(4).stripPrefix("aa: ")
+  var count = 0
+  val input: File = new File("/Users/scott/Downloads/arxiv.txt")
+  for (
+    chunk <- Source.fromFile(input).getLines.splitOn(_.startsWith("---"));
+    if chunk.nonEmpty;
+    id = chunk(0).stripPrefix("id: ");
+    journalRef = chunk(1).stripPrefix("jr: ");
+    doi = chunk(2).stripPrefix("doi: ");
+    title = chunk(3).stripPrefix("title: ");
+    authors = chunk(4).stripPrefix("aa: ");
+//    if (journalRef.contains("Discrete") || journalRef.contains("Adv") && journalRef.contains("Math") || journalRef.contains("Geom") && journalRef.contains("Fun") || journalRef.contains("Alg") && journalRef.contains("Geom") && journalRef.contains("Top"));
+    if journalRef.contains("2013")
+  ) {
+    println(chunk)
 
     // TODO if the DOI is there, use it
 
@@ -31,8 +39,11 @@ object OAI2MRef extends App {
     println(result.map(_.identifierString))
 
     if (result.size == 1) {
-    	arxivbot("Data:" + result(0).identifierString + "/FreeURL") = "http://arxiv.org/abs/" + id
+      arxivbot("Data:" + result(0).identifierString + "/FreeURL") = "http://arxiv.org/abs/" + id
     }
+    count += 1
   }
+  println(count)
 
+  FirefoxDriver.quit
 }
