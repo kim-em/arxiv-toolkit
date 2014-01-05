@@ -13,7 +13,7 @@ object PopulateDOI2mathscinet extends App {
 
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(50))
 
-  for (group <- Articles.fromBibtexFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/100.bib").grouped(1000); article <- { val p = group.par; p.tasksupport = pool; p }; doi <- article.DOI) {
+  for (group <- Articles.fromBibtexFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/100_4.bib").grouped(1000); article <- { val p = group.par; p.tasksupport = pool; p }; doi <- article.DOI) {
     println(doi -> article.identifierString)
     bucket.update(doi, article.identifierString)
   }

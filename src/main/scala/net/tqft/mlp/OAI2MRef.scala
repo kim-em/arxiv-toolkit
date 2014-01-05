@@ -9,13 +9,14 @@ import net.tqft.wiki.FirefoxDriver
 
 object OAI2MRef extends App {
 
-  import net.tqft.toolkit.collections.Split._
 
   lazy val arxivbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("arxivbot", "zytopex")
     b
   }
+
+  import net.tqft.toolkit.collections.Split._
 
   var count = 0
   val input: File = new File("/Users/scott/projects/arxiv-toolkit/arxiv.txt")
