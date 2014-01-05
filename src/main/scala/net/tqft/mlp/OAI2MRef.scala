@@ -18,7 +18,7 @@ object OAI2MRef extends App {
   }
 
   var count = 0
-  val input: File = new File("/Users/scott/Downloads/arxiv.txt")
+  val input: File = new File("/Users/scott/projects/arxiv-toolkit/arxiv.txt")
   for (
     chunk <- Source.fromFile(input).getLines.splitOn(_.startsWith("---"));
     if chunk.nonEmpty;
