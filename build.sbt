@@ -33,7 +33,8 @@ libraryDependencies ++= Seq(
 	"be.roam.hue" % "hue" % "1.1",
 	"eu.medsea.mimeutil" % "mime-util" % "2.1.3",
 	"mysql" % "mysql-connector-java" % "5.1.24",
-	"com.typesafe.slick" %% "slick" % "2.0.0-RC1"
+	"com.typesafe.slick" %% "slick" % "2.0.0-RC1",
+	"org.apache.pdfbox" % "pdfbox" % "1.8.3"
 )
 
 dependencyOverrides += "org.apache.httpcomponents" % "httpclient" % "4.1.1" // jets3t can't cope with 4.2
