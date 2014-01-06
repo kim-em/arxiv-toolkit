@@ -19,7 +19,7 @@ object Scholar extends App {
 
   def fromDOI(doi: String) = {
 
-    Thread.sleep(Throttle.logNormalDistribution(8000).toLong)
+    Thread.sleep(Throttle.logNormalDistribution(16000).toLong)
 
     def driver = FirefoxDriver.driverInstance
 
@@ -36,7 +36,7 @@ object Scholar extends App {
       System.exit(1)
     }
 
-    Thread.sleep(Throttle.logNormalDistribution(2000).toLong)
+    Thread.sleep(Throttle.logNormalDistribution(3000).toLong)
 
     import scala.collection.JavaConverters._
     val links = driver.findElements(By.partialLinkText("versions")).asScala
