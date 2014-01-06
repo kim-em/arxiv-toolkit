@@ -25,12 +25,12 @@ object SummaryBot extends App {
     var availableElsewhere = 0
     articles.map(a => bot.get("Data:" + a.identifierString + "/FreeURL")).foreach({
       case None => notClassified += 1
-      case Some("none available") => noneAvailable += 1
       case Some(content) if content.contains("arxiv") => availableAtArxiv += 1
-      case _ => availableElsewhere += 1
+      case Some(content) if content.contains("http") => availableElsewhere += 1
+      case _ => noneAvailable += 1
     })
 
-    List(notClassified, noneAvailable, availableAtArxiv, availableElsewhere)
+    List(availableAtArxiv, availableElsewhere, notClassified, noneAvailable)
   }
 
   def summaryText(articles: Iterator[Article]) = {
@@ -41,19 +41,13 @@ object SummaryBot extends App {
     }
 
     val s = summarize(articles)
-    "Of " + s.sum + " articles, " + s(2) + " are available on the arXiv, " +
-      s(3) + " are available from other sources, and " + s(1) + " do not appear to be freely accessible. " +
-      "(The remaining " + s(0) + " have not yet been classified.) " +
-      "This summary was prepared at " + now + "."
+      (now :: s.sum :: s).mkString("{{progress-text|", "|" , "}}")
   }
 
 //    val journals = Eigenfactor.topJournals.take(1)
-  val journals = Iterator(ISSNs.`Advances in Mathematics`, ISSNs.`Discrete Mathematics`, ISSNs.`Annals of Mathematics`, ISSNs.`Algebraic & Geometric Topology`, ISSNs.`Geometric and Functional Analysis`)
   val years = 2013 to 2013
 
-  def articles = for (j <- journals; y <- years; a <- Search.inJournalYear(j, y)) yield a
-
-  val arranged = articles.toSeq.groupBy(_.journalOption).mapValues(_.groupBy(_.yearOption))
+  val arranged = currentCoverage.toSeq.groupBy(_.journalOption).mapValues(_.groupBy(_.yearOption))
 
   for ((Some(journal), years) <- arranged; (Some(year), articles) <- years) {
     bot("Data:" + journal + "/YearSummary/" + year) = summaryText(articles.iterator)

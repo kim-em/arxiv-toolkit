@@ -311,15 +311,15 @@ object Throttle extends Logging {
   val lastThrottle = scala.collection.mutable.Map[String, Long]().withDefaultValue(0)
 
   // poisson distributed gaps
-  private def exponentialDistribution(mean: Int) = {
+   def exponentialDistribution(mean: Int) = {
     (-mean * (Math.log(1.0 - scala.util.Random.nextDouble())))
   }
-  private def normalDistribution = {
+   def normalDistribution = {
     import scala.math._
     import scala.util.Random.nextDouble
     sqrt(-2 * log(nextDouble)) * cos(2 * Pi * nextDouble)
   }
-  private def logNormalDistribution(mean: Double, shape: Double = 1) = {
+  def logNormalDistribution(mean: Double, shape: Double = 1) = {
     import scala.math._
     val sigma = sqrt(shape)
     val mu = log(mean) - shape / 2

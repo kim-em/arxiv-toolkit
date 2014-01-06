@@ -4,6 +4,7 @@ import net.tqft.wiki.WikiMap
 import java.io.File
 import scala.io.Source
 import net.tqft.mathscinet.Article
+import net.tqft.wiki.FirefoxDriver
 
 object OAIwithDOI extends App {
 
@@ -26,7 +27,7 @@ object OAIwithDOI extends App {
     journalRef = chunk(1).stripPrefix("jr: ");
     title = chunk(3).stripPrefix("title: ");
     authors = chunk(4).stripPrefix("aa: ")
-//    if journalRef.contains("2013")
+    if journalRef.contains("2013")
   ) {
     for (article <- Article.fromDOI(doi)) {
       count += 1
@@ -35,4 +36,6 @@ object OAIwithDOI extends App {
     println(count)
   }
 
+  FirefoxDriver.quit
+  
 }

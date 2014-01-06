@@ -7,42 +7,75 @@ import org.openqa.selenium.By
 import net.tqft.journals.ISSNs
 import net.tqft.mathscinet.Search
 import net.tqft.wiki.WikiMap
+import net.tqft.util.Throttle
 
 object Scholar extends App {
 
   private lazy val scholarbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
-    //    b.login("scholarbot", "zytopex")
+    b.login("scholarbot", "zytopex")
     b
   }
 
   def fromDOI(doi: String) = {
 
+    Thread.sleep(Throttle.logNormalDistribution(8000).toLong)
+
     def driver = FirefoxDriver.driverInstance
 
     driver.get("http://scholar.google.com/scholar?q=http://dx.doi.org/" + doi)
+
+    println(driver.getCurrentUrl())
+
+    if (driver.getCurrentUrl().contains("scholar.google.com/sorry/")) {
+      // Uhoh, we hit their captcha
+      println("Oops, hit google's robot detector!")
+      net.tqft.wiki.FirefoxDriver.quit
+      FirefoxDriver.quit
+
+      System.exit(1)
+    }
+
+    Thread.sleep(Throttle.logNormalDistribution(2000).toLong)
+
     import scala.collection.JavaConverters._
     val links = driver.findElements(By.partialLinkText("versions")).asScala
     links.headOption.map(_.click)
 
+    if (driver.getCurrentUrl().contains("scholar.google.com/sorry/")) {
+      // Uhoh, we hit their captcha
+      println("Oops, hit google's robot detector!")
+      net.tqft.wiki.FirefoxDriver.quit
+      FirefoxDriver.quit
+
+      System.exit(1)
+    }
+
     val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala
     val pdfLinks = driver.findElements(By.partialLinkText("[PDF]")).asScala
-    (arxivLinks ++ pdfLinks).map(_.getAttribute("href"))
+    (arxivLinks.map(_.getAttribute("href")),
+      pdfLinks.map(_.getAttribute("href")))
   }
 
-  val journals = Iterator(ISSNs.`Advances in Mathematics`, ISSNs.`Discrete Mathematics`, ISSNs.`Annals of Mathematics`, ISSNs.`Algebraic & Geometric Topology`, ISSNs.`Geometric and Functional Analysis`)
-  val years = 2013 to 2013
-
-  def articles = for (j <- journals; y <- years; a <- Search.inJournalYear(j, y)) yield a
-
-  for (a <- articles) {
+  for (a <- net.tqft.mlp.currentCoverage) {
     println(a.DOI)
     for (doi <- a.DOI) {
-      println(scholarbot.get("Data:" + a.identifierString + "/FreeURL"))
-      println(fromDOI(doi))
+      if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
+        val r = fromDOI(doi)
+        for (link <- r._1.headOption) {
+          println("posting link: " + link)
+          scholarbot("Data:" + a.identifierString + "/FreeURL") = link
+        }
+        if (r._1.isEmpty && r._2.isEmpty) {
+          println("none available")
+          scholarbot("Data:" + a.identifierString + "/FreeURL") = "none available, according to Google Scholar"
+        }
+        println("done")
+      }
     }
   }
 
+  net.tqft.wiki.FirefoxDriver.quit
   FirefoxDriver.quit
 }
 
