@@ -19,7 +19,7 @@ object Scholar extends App {
 
   def fromDOI(doi: String) = {
 
-    Thread.sleep(Throttle.logNormalDistribution(16000).toLong)
+    Thread.sleep(Throttle.logNormalDistribution(20000).toLong)
 
     def driver = FirefoxDriver.driverInstance
 
@@ -36,7 +36,7 @@ object Scholar extends App {
       System.exit(1)
     }
 
-    Thread.sleep(Throttle.logNormalDistribution(3000).toLong)
+    Thread.sleep(Throttle.logNormalDistribution(5000).toLong)
 
     import scala.collection.JavaConverters._
     val links = driver.findElements(By.partialLinkText("versions")).asScala
@@ -57,7 +57,7 @@ object Scholar extends App {
       pdfLinks.map(_.getAttribute("href")))
   }
 
-  for (a <- net.tqft.mlp.selectedCoverage) {
+  for (a <- net.tqft.mlp.extendedCoverage.toSeq.sortBy(x => scala.util.Random.nextDouble())) {
     println(a.DOI)
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
