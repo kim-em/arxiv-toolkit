@@ -57,7 +57,7 @@ object Scholar extends App {
       pdfLinks.map(_.getAttribute("href")))
   }
 
-  for (a <- net.tqft.mlp.currentCoverage) {
+  for (a <- net.tqft.mlp.selectedCoverage) {
     println(a.DOI)
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {

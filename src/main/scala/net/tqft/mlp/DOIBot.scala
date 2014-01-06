@@ -17,12 +17,7 @@ object DOIBot extends App {
 
   //  Article.enableBibtexSaving
 
-  val journals = selectedJournals //++ Eigenfactor.topJournals.take(100)
-  val years = 2013 to 2013
-
-  def articles = for (j <- journals; y <- years; a <- Search.inJournalYear(j, y)) yield a
-
-  for (a <- articles) {
+  for (a <- extendedCoverage) {
     for (link <- a.DOI.map("http://dx.doi.org/" + _).orElse(a.URL)) {
       println("posting link for " + a.identifierString)
       doibot("Data:" + a.identifierString + "/PublishedURL") = link

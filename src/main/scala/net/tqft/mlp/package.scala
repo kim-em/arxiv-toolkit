@@ -13,8 +13,13 @@ package object mlp {
     ISSNs.`Journal of Functional Analysis`,
     ISSNs.`Journal of Number Theory`)
 
-  val years = Seq(2010, 2013)
+  val selectedYears = Seq(2013)
 
-  def currentCoverage = for (j <- selectedJournals; y <- years; a <- Search.inJournalYear(j, y)) yield a
+  def selectedCoverage = for (j <- selectedJournals; y <- selectedYears; a <- Search.inJournalYear(j, y)) yield a
 
+  def extendedJournals = selectedJournals
+  def extendedYears = Seq(2010, 2013)
+  
+  def extendedCoverage = for (j <- extendedJournals; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
+  
 }

@@ -17,12 +17,7 @@ object AuthorBot extends App {
 
   //  Article.enableBibtexSaving
 
-  val journals = selectedJournals //++ Eigenfactor.topJournals.take(100)
-  val years = 2013 to 2013
-
-  def articles = for (j <- journals; y <- years; a <- Search.inJournalYear(j, y)) yield a
-
-  for (a <- articles) {
+  for (a <- extendedCoverage) {
     println("posting authors for " + a.identifierString)
     authorbot("Data:" + a.identifierString + "/Authors") = a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and ")
   }
