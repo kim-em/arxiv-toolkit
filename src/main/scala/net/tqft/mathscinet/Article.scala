@@ -103,7 +103,7 @@ trait Article {
   def volumeYearAndIssue: String = {
     (volumeOption.getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim
   }
-  
+
   def citation: String = {
     def restOfCitation = " " + volumeYearAndIssue + pagesOption.map(", " + _).getOrElse("")
 
@@ -420,8 +420,6 @@ trait Article {
         .replaceAllLiterally("""\cfac""", """\~""")
         .replaceAllLiterally("""\cftil{e}""", "ễ")
         .replaceAllLiterally("""\cftil{o}""", "ỗ")
-        .replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
-        .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
     }
 
     preprocessAccents(title).replaceAll("""\[[^]]*MR[^]]*\]""", "").replaceAll("""\[[^]]*refcno[^]]*\]""", "")
@@ -441,13 +439,16 @@ trait Article {
     stripMoreLaTeX(pandoc.latexToText(plainTitle))
   }
 
+  def sanitizedTitle = textTitle.replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
+    .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
     val authorNames = authors.map(a => pandoc.latexToText(a.name))
     val textCitation = pandoc.latexToText(citation)
 
     ({
       val attempt = filenameTemplate
-        .replaceAllLiterally("$TITLE", textTitle)
+        .replaceAllLiterally("$TITLE", sanitizedTitle)
         .replaceAllLiterally("$AUTHOR", authorNames.mkString(" and "))
         .replaceAllLiterally("$JOURNALREF", textCitation)
         .replaceAllLiterally("$MRNUMBER", identifierString)
@@ -468,9 +469,9 @@ trait Article {
           .replaceAllLiterally("$MRNUMBER", identifierString)
         val maxTitleLength = 250 - (partialReplacement.length - 6)
         val shortTitle = if (textTitle.length > maxTitleLength) {
-          textTitle.take(maxTitleLength - 3) + "..."
+          sanitizedTitle.take(maxTitleLength - 3) + "..."
         } else {
-          textTitle
+          sanitizedTitle
         }
         partialReplacement.replaceAllLiterally("$TITLE", shortTitle).ensuring(_.length <= 250)
       } else {
