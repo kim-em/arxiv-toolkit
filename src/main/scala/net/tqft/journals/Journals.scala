@@ -12,4 +12,6 @@ object ISSNs {
   val `Geometric and Functional Analysis` = "1016-443X"
   val `Journal of Functional Analysis` = "0022-1236"
   val `Journal of Number Theory` = "0022-314X"
+  val `Journal of Combinatorial Theory A` = "0097-3165"
+  val `Journal of Combinatorial Theory B` = "0095-8956"
 }
