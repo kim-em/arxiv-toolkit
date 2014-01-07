@@ -40,6 +40,30 @@ trait Article {
   var endnoteData: Option[Map[String, List[String]]] = None
   var bibtexData: Option[BIBTEX] = None
 
+  def sqlRow = (identifier,
+      bibtex.documentType, 
+      bibtex.get("title"),
+      bibtex.get("booktitle"),
+      bibtex.get("author"),
+      bibtex.get("editor"),
+      bibtex.get("doi"),
+      bibtex.get("url"),
+      bibtex.get("journal"),
+      bibtex.get("fjournal"),
+      bibtex.get("issn"),
+      bibtex.get("isbn"),
+      bibtex.get("volume"),
+      bibtex.get("issue"),
+      bibtex.get("year"),
+      bibtex.get("pages"),
+      bibtex.get("mrclass"),
+      bibtex.get("number"),
+      bibtex.get("address"),
+      bibtex.get("edition"),
+      bibtex.get("publisher"),
+      bibtex.get("series")
+      )
+  
   def endnote = {
     if (endnoteData.isEmpty) {
       val lines = Slurp(endnoteURL).toList

@@ -61,6 +61,7 @@ object Scholar extends App {
     println(a.DOI)
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
+        println("searching...")
         val r = fromDOI(doi)
         for (link <- r._1.headOption) {
           println("posting link: " + link)
