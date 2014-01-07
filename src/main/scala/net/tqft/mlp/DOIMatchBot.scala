@@ -3,8 +3,15 @@ package net.tqft.mlp
 import net.tqft.mlp.sql.SQLTables
 import scala.slick.driver.MySQLDriver.simple._
 import net.tqft.mlp.sql.SQL
+import net.tqft.wiki.WikiMap
 
 object DOIMatchBot extends App {
+
+  lazy val arxivbot = {
+    val b = WikiMap("http://tqft.net/mlp/index.php")
+    b.login("arxivbot", "zytopex")
+    b
+  }
 
   SQL { implicit session =>
     val matchingDOIs = for {
@@ -14,20 +21,16 @@ object DOIMatchBot extends App {
 
     println(matchingDOIs.selectStatement)
 
-    val matchingTitles = for {
-      a <- SQLTables.arxiv;
-      b <- SQLTables.mathscinet if a.title === b.title
-    } yield (a.arxivid, b.MRNumber)
-
-    println(matchingTitles.selectStatement)
-
     println("Matching DOIs:")
-    for ((arxivid, mrnumber) <- matchingDOIs.run) {
+
+    val results = matchingDOIs.run
+
+    for ((arxivid, mrnumber) <- results) {
+
       println(arxivid + " " + mrnumber)
+      arxivbot("Data:")
     }
-    println("Matching titles:")
-    for ((arxivid, mrnumber) <- matchingTitles.run) {
-      println(arxivid + " " + mrnumber)
-    }
+
+    println("total: " + results.size)
   }
 }
