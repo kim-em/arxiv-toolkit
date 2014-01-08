@@ -10,8 +10,6 @@ import net.tqft.toolkit.Extractors.Int
 import java.net.URL
 import net.tqft.toolkit.Logging
 import java.io.BufferedInputStream
-import org.apache.commons.io.IOUtils
-import eu.medsea.mimeutil.MimeUtil
 import net.tqft.util.Http
 import net.tqft.util.HttpClientSlurp
 import org.apache.commons.io.FileUtils
@@ -25,6 +23,7 @@ import net.tqft.journals.ISSNs
 import java.util.zip.GZIPInputStream
 import java.io.FileInputStream
 import net.tqft.util.pandoc
+import net.tqft.util.PDF
 
 trait Article {
   def identifier: Int
@@ -40,6 +39,30 @@ trait Article {
   var endnoteData: Option[Map[String, List[String]]] = None
   var bibtexData: Option[BIBTEX] = None
 
+  def sqlRow = (identifier,
+      bibtex.documentType, 
+      bibtex.get("title"),
+      bibtex.get("booktitle"),
+      bibtex.get("author"),
+      bibtex.get("editor"),
+      bibtex.get("doi"),
+      bibtex.get("url"),
+      bibtex.get("journal"),
+      bibtex.get("fjournal"),
+      bibtex.get("issn"),
+      bibtex.get("isbn"),
+      bibtex.get("volume"),
+      bibtex.get("issue"),
+      bibtex.get("year"),
+      bibtex.get("pages"),
+      bibtex.get("mrclass"),
+      bibtex.get("number"),
+      bibtex.get("address"),
+      bibtex.get("edition"),
+      bibtex.get("publisher"),
+      bibtex.get("series")
+      )
+  
   def endnote = {
     if (endnoteData.isEmpty) {
       val lines = Slurp(endnoteURL).toList
@@ -103,7 +126,7 @@ trait Article {
   def volumeYearAndIssue: String = {
     (volumeOption.getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim
   }
-  
+
   def citation: String = {
     def restOfCitation = " " + volumeYearAndIssue + pagesOption.map(", " + _).getOrElse("")
 
@@ -381,35 +404,7 @@ trait Article {
     }
   }
 
-  def pdf: Option[Array[Byte]] = {
-    pdfInputStream.flatMap(stream => {
-      val bis = new BufferedInputStream(stream)
-      bis.mark(20)
-      val prefix = new Array[Byte](10)
-      bis.read(prefix)
-      bis.reset
-      val prefixString = new String(prefix)
-      val mimetype = if (prefixString.contains("%PDF")) {
-        "application/pdf"
-      } else {
-        MimeUtil.getMimeTypes(bis).toString
-      }
-      mimetype match {
-        case "application/pdf" => {
-          Logging.info("Obtained bytes for PDF for " + identifierString)
-          val result = Some(IOUtils.toByteArray(bis))
-          bis.close
-          result
-        }
-        case t => {
-          Logging.warn("Content does not appear to be a PDF! (File begins with " + prefixString + " and MIME type detected as " + t + ".)")
-          Logging.warn(IOUtils.toString(bis))
-          bis.close
-          None
-        }
-      }
-    })
-  }
+  def pdf: Option[Array[Byte]] = pdfInputStream.flatMap(PDF.getBytes)
 
   val defaultFilenameTemplate = "$TITLE - $AUTHOR - $JOURNALREF - $MRNUMBER.pdf"
 
@@ -420,8 +415,6 @@ trait Article {
         .replaceAllLiterally("""\cfac""", """\~""")
         .replaceAllLiterally("""\cftil{e}""", "ễ")
         .replaceAllLiterally("""\cftil{o}""", "ỗ")
-        .replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
-        .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
     }
 
     preprocessAccents(title).replaceAll("""\[[^]]*MR[^]]*\]""", "").replaceAll("""\[[^]]*refcno[^]]*\]""", "")
@@ -441,13 +434,16 @@ trait Article {
     stripMoreLaTeX(pandoc.latexToText(plainTitle))
   }
 
+  def sanitizedTitle = textTitle.replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
+    .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
     val authorNames = authors.map(a => pandoc.latexToText(a.name))
     val textCitation = pandoc.latexToText(citation)
 
     ({
       val attempt = filenameTemplate
-        .replaceAllLiterally("$TITLE", textTitle)
+        .replaceAllLiterally("$TITLE", sanitizedTitle)
         .replaceAllLiterally("$AUTHOR", authorNames.mkString(" and "))
         .replaceAllLiterally("$JOURNALREF", textCitation)
         .replaceAllLiterally("$MRNUMBER", identifierString)
@@ -468,9 +464,9 @@ trait Article {
           .replaceAllLiterally("$MRNUMBER", identifierString)
         val maxTitleLength = 250 - (partialReplacement.length - 6)
         val shortTitle = if (textTitle.length > maxTitleLength) {
-          textTitle.take(maxTitleLength - 3) + "..."
+          sanitizedTitle.take(maxTitleLength - 3) + "..."
         } else {
-          textTitle
+          sanitizedTitle
         }
         partialReplacement.replaceAllLiterally("$TITLE", shortTitle).ensuring(_.length <= 250)
       } else {
