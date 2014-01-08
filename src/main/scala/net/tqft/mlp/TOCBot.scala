@@ -17,7 +17,8 @@ object TOCBot extends App {
   lazy val tocbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("tocbot", "zytopex")
-    b
+    import net.tqft.toolkit.collections.MapCaching._
+    b.caching()
   }
 
   def summarize(articles: Iterator[Article]) = {
@@ -35,13 +36,13 @@ object TOCBot extends App {
     List(availableAtArxiv, availableElsewhere, notClassified, noneAvailable)
   }
 
-  val arranged2 = selectedCoverage.toSeq.groupBy(_.journalOption).mapValues(_.groupBy(_.yearOption))
+  val arranged3 = selectedCoverage.toSeq.groupBy(_.journalOption)
+  val arranged2 = arranged3.mapValues(_.groupBy(_.yearOption))
   val arranged = arranged2.mapValues(_.mapValues(_.groupBy(_.volumeYearAndIssue)))
 
   val yearSummaries = arranged2.mapValues(_.mapValues(s => summarize(s.iterator)))
 
   def journalText(journal: String) = ""
-  def yearText(journal: String, year: Int) = "{{#ifexist:Data:" + journal + "/YearSummary/" + year + "|{{Data:" + journal + "/YearSummary/" + year + "}}}}\n\n"
 
   def tokenizeIssue(issue: String): Seq[Either[String, Int]] = {
     import net.tqft.toolkit.Extractors.Int
@@ -63,6 +64,10 @@ object TOCBot extends App {
     }
   }
 
+  for((Some(journal), articles) <- arranged3) {
+    tocbot("Data:" + journal + "/Progress") = summarize(articles.iterator).mkString("{{progress|", "|", "}}")
+  }
+  
   for ((Some(journal), years) <- arranged) {
     val j = pandoc.latexToText(journal)
     val text = journalText(journal) + (for ((Some(year), issues) <- years.toSeq.sortBy(y => y._1.map(0 - _))) yield {
@@ -70,7 +75,7 @@ object TOCBot extends App {
         summarize(issues(issue).iterator).mkString("{{progress|", "|", "}}")
       }
       val yearSummary = yearSummaries(Some(journal))(Some(year))
-      issues.keySet.toSeq.sortBy(tokenizeIssue).map(i => "* " + s(i) + " [[" + j + "/" + i + "]]").mkString("==" + year + " " + yearSummary.mkString("{{progress|", "|", "}}") + "==\n" + (now :: yearSummary.sum :: yearSummary).mkString("{{progress-text|", "|", "}}"), "\n", "\n")
+      issues.keySet.toSeq.sortBy(tokenizeIssue).map(i => "* " + s(i) + " [[" + j + "/" + i + "]]").mkString("==" + year + " " + yearSummary.mkString("{{progress|", "|", "}}") + "==\n" + (now :: yearSummary.sum :: yearSummary).mkString("{{progress-text|", "|", "}}\n"), "\n", "\n")
     }).toSeq.sorted.mkString("\n")
     tocbot(j) = text
 
