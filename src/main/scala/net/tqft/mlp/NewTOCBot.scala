@@ -20,7 +20,7 @@ object NewTOCBot extends App {
     b
   }
 
-  val arranged2 = selectedCoverage.toSeq.groupBy(_.journalOption).mapValues(_.groupBy(_.yearOption))
+  val arranged2 = extendedCoverage.toSeq.groupBy(_.journalOption).mapValues(_.groupBy(_.yearOption))
   val arranged = arranged2.mapValues(_.mapValues(_.groupBy(_.volumeYearAndIssue)))
 
   def tokenizeIssue(issue: String): Seq[Either[String, Int]] = {
@@ -54,8 +54,10 @@ object NewTOCBot extends App {
     }
     
     for ((issue, articles) <- years.values.flatten) {
-      tocbot("Data:" + j + "/" + issue + "/Progress") = "{{MeasureProgressFor|" + j + "/" + issue + "}}"
       tocbot("Data:" + j + "/" + issue + "/Contents") = articles.map(_.identifierString).sorted.mkString("/")
+      // TODO: maybe only write this next one if the page doesn't exist?
+      tocbot(j + "/" + issue) = "Back to [[{{#titleparts:{{PAGENAME}}|1|}}]]\n{{GenerateTOC}}"
+      tocbot("Data:" + j + "/" + issue + "/Progress") = "{{MeasureProgressFor|" + j + "/" + issue + "}}"
     }
   }
 
