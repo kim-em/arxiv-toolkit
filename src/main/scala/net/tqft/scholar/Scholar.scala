@@ -30,7 +30,7 @@ object Scholar extends App {
       driver.getCurrentUrl().contains("scholar.google.com/sorry/")
     }) {
       // Uhoh, we hit their captcha
-      println("Oops, we've hit google's robot detector. Please kill this job, or go do the captcha.")
+      println("Oops, we've hit google's robot detector. Please kill this job, or be a nice human and do the captcha.")
     }
 
     import scala.collection.JavaConverters._
@@ -42,7 +42,7 @@ object Scholar extends App {
       driver.getCurrentUrl().contains("scholar.google.com/sorry/")
     }) {
       // Uhoh, we hit their captcha
-      println("Oops, we've hit google's robot detector. Please kill this job, or go do the captcha.")
+      println("Oops, we've hit google's robot detector. Please kill this job, or be a nice human and do the captcha.")
     }
 
     val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala
@@ -51,7 +51,7 @@ object Scholar extends App {
       pdfLinks.map(_.getAttribute("href")))
   }
 
-  for (a <- net.tqft.mlp.extendedCoverage.toSeq.sortBy(x => scala.util.Random.nextDouble())) {
+  for (a <- scala.util.Random.shuffle(net.tqft.mlp.extendedCoverage.toSeq)) {
     println(a.DOI)
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
@@ -65,12 +65,12 @@ object Scholar extends App {
           println("none available")
           scholarbot("Data:" + a.identifierString + "/FreeURL") = "none available, according to Google Scholar"
         }
-        if (r._1.isEmpty && r._2.nonEmpty) {
-          for (link <- r._2.filter(PDF.getBytes(_).nonEmpty).headOption) {
-            println("posting PDF link: " + link)
-            scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
-          }
-        }
+//        if (r._1.isEmpty && r._2.nonEmpty) {
+//          for (link <- r._2.filter(PDF.getBytes(_).nonEmpty).headOption) {
+//            println("posting PDF link: " + link)
+//            scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
+//          }
+//        }
         println("done")
       }
     }
