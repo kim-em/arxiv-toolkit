@@ -4,6 +4,8 @@ package object mlp {
   import net.tqft.journals.ISSNs
   import net.tqft.mathscinet.Search
 
+  def experimentalCoverage = Search.inJournalYear(ISSNs.`Discrete Mathematics`, 2013)
+  
   def selectedJournals = Iterator(
     ISSNs.`Advances in Mathematics`,
     ISSNs.`Discrete Mathematics`,

@@ -37,7 +37,7 @@ libraryDependencies ++= Seq(
 	"org.apache.pdfbox" % "pdfbox" % "1.8.3"
 )
 
-// dependencyOverrides += "org.apache.httpcomponents" % "httpclient" % "4.1.1" // jets3t can't cope with 4.2
+ dependencyOverrides += "org.apache.httpcomponents" % "httpclient" % "4.1.1" // jets3t can't cope with 4.2
 
 // lift-json
 libraryDependencies ++= {
