@@ -10,8 +10,6 @@ import net.tqft.toolkit.Extractors.Int
 import java.net.URL
 import net.tqft.toolkit.Logging
 import java.io.BufferedInputStream
-import org.apache.commons.io.IOUtils
-import eu.medsea.mimeutil.MimeUtil
 import net.tqft.util.Http
 import net.tqft.util.HttpClientSlurp
 import org.apache.commons.io.FileUtils
@@ -25,6 +23,7 @@ import net.tqft.journals.ISSNs
 import java.util.zip.GZIPInputStream
 import java.io.FileInputStream
 import net.tqft.util.pandoc
+import net.tqft.util.PDF
 
 trait Article {
   def identifier: Int
@@ -405,35 +404,7 @@ trait Article {
     }
   }
 
-  def pdf: Option[Array[Byte]] = {
-    pdfInputStream.flatMap(stream => {
-      val bis = new BufferedInputStream(stream)
-      bis.mark(20)
-      val prefix = new Array[Byte](10)
-      bis.read(prefix)
-      bis.reset
-      val prefixString = new String(prefix)
-      val mimetype = if (prefixString.contains("%PDF")) {
-        "application/pdf"
-      } else {
-        MimeUtil.getMimeTypes(bis).toString
-      }
-      mimetype match {
-        case "application/pdf" => {
-          Logging.info("Obtained bytes for PDF for " + identifierString)
-          val result = Some(IOUtils.toByteArray(bis))
-          bis.close
-          result
-        }
-        case t => {
-          Logging.warn("Content does not appear to be a PDF! (File begins with " + prefixString + " and MIME type detected as " + t + ".)")
-          Logging.warn(IOUtils.toString(bis))
-          bis.close
-          None
-        }
-      }
-    })
-  }
+  def pdf: Option[Array[Byte]] = pdfInputStream.flatMap(PDF.getBytes)
 
   val defaultFilenameTemplate = "$TITLE - $AUTHOR - $JOURNALREF - $MRNUMBER.pdf"
 

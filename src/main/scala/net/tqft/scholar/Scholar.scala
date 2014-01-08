@@ -8,6 +8,7 @@ import net.tqft.journals.ISSNs
 import net.tqft.mathscinet.Search
 import net.tqft.wiki.WikiMap
 import net.tqft.util.Throttle
+import net.tqft.util.PDF
 
 object Scholar extends App {
 
@@ -18,37 +19,30 @@ object Scholar extends App {
   }
 
   def fromDOI(doi: String) = {
-
-    Thread.sleep(Throttle.logNormalDistribution(20000).toLong)
-
     def driver = FirefoxDriver.driverInstance
 
     driver.get("http://scholar.google.com/scholar?q=http://dx.doi.org/" + doi)
 
     println(driver.getCurrentUrl())
 
-    if (driver.getCurrentUrl().contains("scholar.google.com/sorry/")) {
+    while ({
+      Thread.sleep(Throttle.logNormalDistribution(20000).toLong);
+      driver.getCurrentUrl().contains("scholar.google.com/sorry/")
+    }) {
       // Uhoh, we hit their captcha
-      println("Oops, hit google's robot detector!")
-      net.tqft.wiki.FirefoxDriver.quit
-      FirefoxDriver.quit
-
-      System.exit(1)
+      println("Oops, we've hit google's robot detector. Please kill this job, or go do the captcha.")
     }
-
-    Thread.sleep(Throttle.logNormalDistribution(5000).toLong)
 
     import scala.collection.JavaConverters._
     val links = driver.findElements(By.partialLinkText("versions")).asScala
     links.headOption.map(_.click)
 
-    if (driver.getCurrentUrl().contains("scholar.google.com/sorry/")) {
+    while ({
+      Thread.sleep(Throttle.logNormalDistribution(5000).toLong);
+      driver.getCurrentUrl().contains("scholar.google.com/sorry/")
+    }) {
       // Uhoh, we hit their captcha
-      println("Oops, hit google's robot detector!")
-      net.tqft.wiki.FirefoxDriver.quit
-      FirefoxDriver.quit
-
-      System.exit(1)
+      println("Oops, we've hit google's robot detector. Please kill this job, or go do the captcha.")
     }
 
     val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala
@@ -64,12 +58,18 @@ object Scholar extends App {
         println("searching...")
         val r = fromDOI(doi)
         for (link <- r._1.headOption) {
-          println("posting link: " + link)
+          println("posting arxiv link: " + link)
           scholarbot("Data:" + a.identifierString + "/FreeURL") = link
         }
         if (r._1.isEmpty && r._2.isEmpty) {
           println("none available")
           scholarbot("Data:" + a.identifierString + "/FreeURL") = "none available, according to Google Scholar"
+        }
+        if (r._1.isEmpty && r._2.nonEmpty) {
+          for (link <- r._2.filter(PDF.getBytes(_).nonEmpty).headOption) {
+            println("posting PDF link: " + link)
+            scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
+          }
         }
         println("done")
       }
