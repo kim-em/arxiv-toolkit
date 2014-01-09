@@ -33,7 +33,7 @@ object SQLImportApp extends App {
           case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {}
           case e: Exception => {
             Logging.error("Exception while inserting \n" + a.bibtex.toBIBTEXString, e)
-            throw e
+//            throw e
           }
         }
       }

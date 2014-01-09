@@ -22,5 +22,7 @@ object TitleBot extends App {
     titlebot("Data:" + a.identifierString + "/Title") = a.textTitle
   }
 
+  println("Done entering authors!")
+
   net.tqft.wiki.FirefoxDriver.quit
 }
