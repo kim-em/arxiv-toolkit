@@ -3,13 +3,16 @@ package net.tqft.mlp
 import net.tqft.mlp.sql.SQLTables
 import scala.slick.driver.MySQLDriver.simple._
 import net.tqft.mlp.sql.SQL
+import net.tqft.mathscinet.Article
 import net.tqft.wiki.WikiMap
+import net.tqft.wiki.FirefoxDriver
 
 object DOIMatchBot extends App {
 
   lazy val arxivbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("arxivbot", "zytopex")
+    b.setThrottle(5000)
     b
   }
 
@@ -23,14 +26,18 @@ object DOIMatchBot extends App {
 
     println("Matching DOIs:")
 
-    val results = matchingDOIs.run
+    val results = scala.util.Random.shuffle(matchingDOIs.run)
+    println("total: " + results.size)
 
-    for ((arxivid, mrnumber) <- results) {
-
-      println(arxivid + " " + mrnumber)
-      arxivbot("Data:")
+    for ((arxivid, mrnumber) <- results;
+    	mr = Article(mrnumber).identifierString
+    ) {
+      println(arxivid + " <---> " + mr)
+      arxivbot("Data:" + mr + "/FreeURL") = "http://arxiv.org/abs/" + arxivid
     }
 
     println("total: " + results.size)
   }
+  
+  FirefoxDriver.quit
 }

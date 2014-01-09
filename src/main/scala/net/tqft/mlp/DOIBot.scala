@@ -25,5 +25,7 @@ object DOIBot extends App {
     }
   }
 
+  println("Done entering authors!")
+
   net.tqft.wiki.FirefoxDriver.quit
 }
