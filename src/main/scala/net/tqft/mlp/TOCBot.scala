@@ -17,6 +17,7 @@ object TOCBot extends App {
   lazy val tocbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("tocbot", "zytopex")
+//    b.setThrottle(5000)
     import net.tqft.toolkit.collections.MapCaching._
     b.caching()
   }
@@ -76,7 +77,7 @@ object TOCBot extends App {
       }
       val yearSummary = yearSummaries(Some(journal))(Some(year))
       issues.keySet.toSeq.sortBy(tokenizeIssue).map(i => "* " + s(i) + " [[" + j + "/" + i + "]]").mkString("==" + year + " " + yearSummary.mkString("{{progress|", "|", "}}") + "==\n" + (now :: yearSummary.sum :: yearSummary).mkString("{{progress-text|", "|", "}}\n"), "\n", "\n")
-    }).toSeq.sorted.mkString("\n")
+    }).toSeq.mkString("\n")
     tocbot(j) = text
 
     for ((issue, articles) <- years.values.flatten) {
@@ -90,5 +91,7 @@ object TOCBot extends App {
     f.format(new Date()) + " UTC";
   }
 
+  println("All finished!")
+  
   net.tqft.wiki.FirefoxDriver.quit
 }

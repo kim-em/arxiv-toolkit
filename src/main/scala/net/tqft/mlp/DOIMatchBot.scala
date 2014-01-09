@@ -4,19 +4,19 @@ import net.tqft.mlp.sql.SQLTables
 import scala.slick.driver.MySQLDriver.simple._
 import net.tqft.mlp.sql.SQL
 import net.tqft.mathscinet.Article
+import net.tqft.wiki.WikiMap
+import net.tqft.wiki.FirefoxDriver
 
 object DOIMatchBot extends App {
 
+  lazy val arxivbot = {
+    val b = WikiMap("http://tqft.net/mlp/index.php")
+    b.login("arxivbot", "zytopex")
+    b.setThrottle(5000)
+    b
+  }
+
   SQL { implicit session =>
-    val arxivDOIs = (for {
-      a <- SQLTables.arxiv;
-      if a.doi.isNotNull
-    } yield (a.doi)).take(5)
-    
-    println(arxivDOIs.run)
-    
-    println((for(a <- SQLTables.mathscinet; if a.MRNumber === 2453592) yield a).run)
-    
     val matchingDOIs = for {
       a <- SQLTables.arxiv;
       b <- SQLTables.mathscinet if a.doi === b.doi
@@ -24,20 +24,20 @@ object DOIMatchBot extends App {
 
     println(matchingDOIs.selectStatement)
 
-    val matchingTitles = for {
-      a <- SQLTables.arxiv;
-      b <- SQLTables.mathscinet if a.title === b.title
-    } yield (a.arxivid, b.MRNumber)
-
-    println(matchingTitles.selectStatement)
-
     println("Matching DOIs:")
-    for ((arxivid, mrnumber) <- matchingDOIs.run) {
-      println(arxivid + " <---> " + Article(mrnumber).identifierString)
+
+    val results = scala.util.Random.shuffle(matchingDOIs.run)
+    println("total: " + results.size)
+
+    for ((arxivid, mrnumber) <- results;
+    	mr = Article(mrnumber).identifierString
+    ) {
+      println(arxivid + " <---> " + mr)
+      arxivbot("Data:" + mr + "/FreeURL") = "http://arxiv.org/abs/" + arxivid
     }
-//    println("Matching titles:")
-//    for ((arxivid, mrnumber) <- matchingTitles.run) {
-//      println(arxivid + " " + mrnumber)
-//    }
+
+    println("total: " + results.size)
   }
+  
+  FirefoxDriver.quit
 }
