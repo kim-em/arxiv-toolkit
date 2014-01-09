@@ -22,5 +22,7 @@ object AuthorBot extends App {
     authorbot("Data:" + a.identifierString + "/Authors") = a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and ")
   }
 
+  println("Done entering authors!")
+  
   net.tqft.wiki.FirefoxDriver.quit
 }
