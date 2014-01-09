@@ -49,6 +49,9 @@ object NewTOCBot extends App {
 //    }).toSeq.sorted.mkString("\n")
 //    tocbot(j) = text
 
+    tocbot("Data:" + j + "/Years") = years.keys.flatten.toSeq.sortBy(n => -n).mkString("/")
+    tocbot(j) = "{{GenerateIssueList}}"
+    
     for((Some(year), issues) <- years) {
       tocbot("Data:" + j + "/" + year + "/Contents") = issues.keySet.toSeq.sortBy(tokenizeIssue).mkString("/\n")
     }
