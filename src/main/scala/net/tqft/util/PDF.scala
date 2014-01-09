@@ -8,7 +8,7 @@ import org.apache.commons.io.IOUtils
 
 object PDF {
   def getBytes(url: String): Option[Array[Byte]] = {
-    getBytes(HtmlUnitSlurp.getStream(url))
+    getBytes(HttpClientSlurp.getStream(url))
   }
   def getBytes(pdfInputStream: InputStream): Option[Array[Byte]] = {
     val bis = new BufferedInputStream(pdfInputStream)
@@ -31,7 +31,7 @@ object PDF {
       }
       case t => {
         Logging.warn("Content does not appear to be a PDF! (File begins with " + prefixString + " and MIME type detected as " + t + ".)")
-        Logging.warn(IOUtils.toString(bis))
+//        Logging.warn(IOUtils.toString(bis))
         bis.close
         None
       }

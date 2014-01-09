@@ -27,7 +27,7 @@ object Scholar extends App {
 
     while ({
       Thread.sleep(Throttle.logNormalDistribution(20000).toLong);
-      driver.getCurrentUrl().contains("scholar.google.com/sorry/")
+      driver.getTitle.contains("Sorry") || driver.getCurrentUrl().contains("scholar.google.com/sorry/")
     }) {
       // Uhoh, we hit their captcha
       println("Oops, we've hit google's robot detector. Please kill this job, or go do the captcha.")
@@ -39,7 +39,7 @@ object Scholar extends App {
 
     while ({
       Thread.sleep(Throttle.logNormalDistribution(5000).toLong);
-      driver.getCurrentUrl().contains("scholar.google.com/sorry/")
+      driver.getTitle.contains("Sorry") || driver.getCurrentUrl().contains("scholar.google.com/sorry/")
     }) {
       // Uhoh, we hit their captcha
       println("Oops, we've hit google's robot detector. Please kill this job, or go do the captcha.")
@@ -65,12 +65,13 @@ object Scholar extends App {
           println("none available")
           scholarbot("Data:" + a.identifierString + "/FreeURL") = "none available, according to Google Scholar"
         }
-        if (r._1.isEmpty && r._2.nonEmpty) {
-          for (link <- r._2.filter(PDF.getBytes(_).nonEmpty).headOption) {
-            println("posting PDF link: " + link)
-            scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
-          }
-        }
+        //  Seems this might have to wait for httpclient 4.3.2 
+        //        if (r._1.isEmpty && r._2.nonEmpty) {
+        //          for (link <- r._2.filter(PDF.getBytes(_).nonEmpty).headOption) {
+        //            println("posting PDF link: " + link)
+        //            scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
+        //          }
+        //        }
         println("done")
       }
     }
