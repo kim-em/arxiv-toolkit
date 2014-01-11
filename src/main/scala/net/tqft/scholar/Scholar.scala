@@ -26,7 +26,7 @@ object Scholar extends App {
     println(driver.getCurrentUrl())
 
     while ({
-      Thread.sleep(Throttle.logNormalDistribution(20000).toLong);
+      Thread.sleep(Throttle.logNormalDistribution(60000).toLong);
       driver.getTitle.contains("Sorry") || driver.getCurrentUrl().contains("scholar.google.com/sorry/")
     }) {
       // Uhoh, we hit their captcha
@@ -51,7 +51,7 @@ object Scholar extends App {
       pdfLinks.map(_.getAttribute("href")))
   }
 
-  for (a <- scala.util.Random.shuffle(net.tqft.mlp.extendedCoverage.toSeq)) {
+  for (a <- scala.util.Random.shuffle(net.tqft.mlp.topJournals(50).toSeq)) {
     println(a.DOI)
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
