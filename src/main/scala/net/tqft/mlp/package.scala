@@ -1,5 +1,6 @@
 package net.tqft
 
+import net.tqft.eigenfactor.Eigenfactor
 package object mlp {
   import net.tqft.journals.ISSNs
   import net.tqft.mathscinet.Search
@@ -26,4 +27,6 @@ package object mlp {
 
   def extendedCoverage = for (j <- extendedJournals; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
 
+  def topJournals(k: Int) = for (j <- Eigenfactor.topJournals.take(k); y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
+  
 }
