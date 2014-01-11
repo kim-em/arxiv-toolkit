@@ -28,9 +28,9 @@ object OAI2MRef extends App {
     doi = chunk(2).stripPrefix("doi: ");
     title = chunk(3).stripPrefix("title: ");
     authors = chunk(4).stripPrefix("aa: ");
-    if doi == "";
+    if doi == ""
 //    if (journalRef.contains("Discrete") || journalRef.contains("Adv") && journalRef.contains("Math") || journalRef.contains("Geom") && journalRef.contains("Fun") || journalRef.contains("Alg") && journalRef.contains("Geom") && journalRef.contains("Top"));
-    if journalRef.contains("2013")
+//    if journalRef.contains("2013")
   ) {
     println(chunk)
 
