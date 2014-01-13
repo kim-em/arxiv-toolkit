@@ -12,12 +12,13 @@ object AuthorBot extends App {
   lazy val authorbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("authorbot", "zytopex")
+    b.setThrottle(45000)
     b
   }
 
   //  Article.enableBibtexSaving
 
-  for (a <- extendedCoverage) {
+  for (a <- topJournals(100)) {
     println("posting authors for " + a.identifierString)
     authorbot("Data:" + a.identifierString + "/Authors") = a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and ")
   }
