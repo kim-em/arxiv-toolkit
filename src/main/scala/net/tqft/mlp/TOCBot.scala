@@ -17,7 +17,7 @@ object TOCBot extends App {
     lazy val tocbot = {
       val b = WikiMap("http://tqft.net/mlp/index.php")
       b.login("tocbot", "zytopex")
-      //    b.setThrottle(5000)
+      b.setThrottle(15000)
       import net.tqft.toolkit.collections.MapCaching._
       b.caching()
     }
@@ -37,7 +37,7 @@ object TOCBot extends App {
       List(availableAtArxiv, availableElsewhere, notClassified, noneAvailable)
     }
 
-    val arranged3 = selectedCoverage.toSeq.groupBy(_.journalOption)
+    val arranged3 = extendedCoverage.toSeq.groupBy(_.journalOption)
     val arranged2 = arranged3.mapValues(_.groupBy(_.yearOption))
     val arranged = arranged2.mapValues(_.mapValues(_.groupBy(_.volumeYearAndIssue)))
 
