@@ -12,7 +12,7 @@ object TitleBot extends App {
   lazy val titlebot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("titlebot", "zytopex")
-    b.setThrottle(25000)
+    b.setThrottle(45000)
     b
   }
 
