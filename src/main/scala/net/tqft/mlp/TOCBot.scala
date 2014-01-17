@@ -17,7 +17,7 @@ object TOCBot extends App {
     lazy val tocbot = {
       val b = WikiMap("http://tqft.net/mlp/index.php")
       b.login("tocbot", "zytopex")
-          b.setThrottle(5000)
+      b.setThrottle(15000)
       import net.tqft.toolkit.collections.MapCaching._
       b.caching()
     }

@@ -12,12 +12,13 @@ object DOIBot extends App {
   lazy val doibot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("doibot", "zytopex")
+    b.setThrottle(10000)
     b
   }
 
   //  Article.enableBibtexSaving
 
-  for (a <- extendedCoverage) {
+  for (a <- topJournals(100)) {
     for (link <- a.DOI.map("http://dx.doi.org/" + _).orElse(a.URL)) {
       println("posting link for " + a.identifierString)
       doibot("Data:" + a.identifierString + "/PublishedURL") = link
@@ -25,7 +26,7 @@ object DOIBot extends App {
     }
   }
 
-  println("Done entering authors!")
+  println("Done entering DOIs!")
 
   net.tqft.wiki.FirefoxDriver.quit
 }

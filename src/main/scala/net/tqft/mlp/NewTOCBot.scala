@@ -45,9 +45,6 @@ object NewTOCBot extends App {
 
   for ((Some(journal), years) <- arranged) {
     val j = pandoc.latexToText(journal)
-//    val text = (for ((Some(year), issues) <- years.toSeq.sortBy(y => y._1.map(0 - _))) yield {
-//    }).toSeq.sorted.mkString("\n")
-//    tocbot(j) = text
 
     tocbot("Data:" + j + "/Years") = years.keys.flatten.toSeq.sortBy(n => -n).mkString("/")
     tocbot(j) = "{{GenerateIssueList}}"
