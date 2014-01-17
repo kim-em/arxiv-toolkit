@@ -12,12 +12,13 @@ object TitleBot extends App {
   lazy val titlebot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("titlebot", "zytopex")
+    b.setThrottle(45000)
     b
   }
 
   //  Article.enableBibtexSaving
 
-  for (a <- extendedCoverage) {
+  for (a <- topJournals(100)) {
     println("posting title for " + a.identifierString)
     titlebot("Data:" + a.identifierString + "/Title") = a.textTitle
   }
