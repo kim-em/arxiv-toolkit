@@ -3,6 +3,8 @@ import net.tqft.util.Slurp
 import net.tqft.util.URLEncode
 
 object MRef {
+  // TODO error handling?
+  
 	def lookup(reference: String): List[Article] = {
 	  val re = """<tr><td align="left"><pre>&lt;a href="http://www.ams.org/mathscinet-getitem\?mr=([0-9]*)"&gt;[0-9]*&lt;/a&gt;</pre></td></tr>""".r
 	  

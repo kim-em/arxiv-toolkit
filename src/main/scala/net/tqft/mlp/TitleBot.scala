@@ -18,12 +18,12 @@ object TitleBot extends App {
 
   //  Article.enableBibtexSaving
 
-  for (a <- topJournals(100)) {
+  for (a <-extendedCoverage ++ topJournals(100)) {
     println("posting title for " + a.identifierString)
     titlebot("Data:" + a.identifierString + "/Title") = a.textTitle
   }
 
-  println("Done entering authors!")
+  println("Done entering titles!")
 
   net.tqft.wiki.FirefoxDriver.quit
 }

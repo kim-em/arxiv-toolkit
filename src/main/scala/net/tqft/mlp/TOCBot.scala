@@ -18,8 +18,10 @@ object TOCBot extends App {
       val b = WikiMap("http://tqft.net/mlp/index.php")
       b.login("tocbot", "zytopex")
       b.setThrottle(15000)
-      import net.tqft.toolkit.collections.MapCaching._
-      b.caching()
+      // using .caching() causes thread problems...
+//      import net.tqft.toolkit.collections.MapCaching._
+//      b.caching()
+      b
     }
 
     def summarize(articles: Iterator[Article]) = {

@@ -20,7 +20,7 @@ package object mlp {
 
   def selectedCoverage = for (j <- selectedJournals; y <- selectedYears; a <- Search.inJournalYear(j, y)) yield a
 
-  def extendedJournals = selectedJournals ++ Iterator(ISSNs.`Journal of Algebra`, ISSNs.`Journal of Pure and Applied Algebra`)
+  def extendedJournals = Iterator(ISSNs.`Journal of Algebra`, ISSNs.`Journal of Pure and Applied Algebra`) ++ selectedJournals
   def extendedYears = Seq(2010, 2013)
 
   def extendedCoverage = for (j <- extendedJournals; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a

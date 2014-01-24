@@ -18,7 +18,7 @@ object DOIBot extends App {
 
   //  Article.enableBibtexSaving
 
-  for (a <- topJournals(100)) {
+  for (a <- extendedCoverage ++ topJournals(100)) {
     for (link <- a.DOI.map("http://dx.doi.org/" + _).orElse(a.URL)) {
       println("posting link for " + a.identifierString)
       doibot("Data:" + a.identifierString + "/PublishedURL") = link
