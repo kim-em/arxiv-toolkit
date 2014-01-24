@@ -29,7 +29,7 @@ object TOCBot extends App {
       var noneAvailable = 0
       var availableAtArxiv = 0
       var availableElsewhere = 0
-      articles.map({ a => Thread.sleep(5000); tocbot.get("Data:" + a.identifierString + "/FreeURL") }).foreach({
+      articles.map({ a => Thread.sleep(500); println("looking for " + a.identifierString + " in " + a.citation); tocbot.get("Data:" + a.identifierString + "/FreeURL") }).foreach({
         case Some(content) if content.contains("arxiv") => availableAtArxiv += 1
         case Some(content) if content.contains("http") => availableElsewhere += 1
         case None => notClassified += 1
@@ -68,6 +68,7 @@ object TOCBot extends App {
     }
 
     for ((Some(journal), articles) <- arranged3) {
+      println("writing progress data for " + journal)
       tocbot("Data:" + journal + "/Progress") = summarize(articles.iterator).mkString("{{progress|", "|", "}}")
     }
 
@@ -80,10 +81,12 @@ object TOCBot extends App {
         val yearSummary = yearSummaries(Some(journal))(Some(year))
         issues.keySet.toSeq.sortBy(tokenizeIssue).map(i => "* " + s(i) + " [[" + j + "/" + i + "]]").mkString("==" + year + " " + yearSummary.mkString("{{progress|", "|", "}}") + "==\n" + (now :: yearSummary.sum :: yearSummary).mkString("{{progress-text|", "|", "}}\n"), "\n", "\n")
       }).toSeq.mkString("\n")
+      println("writing journal page: " + j)
       tocbot(j) = text
 
       for ((issue, articles) <- years.values.flatten) {
         tocbot(j + "/" + issue) = articles.map("{{toc|" + _.identifierString + "}}").sorted.mkString("Back to [[{{#titleparts:{{PAGENAME}}|1|}}]]\n\n{|\n", "\n", "\n|}")
+        println("writing issue page: " + j + "/" + issue)
       }
     }
 
