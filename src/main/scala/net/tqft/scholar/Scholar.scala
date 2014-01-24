@@ -51,7 +51,7 @@ object Scholar extends App {
       pdfLinks.map(_.getAttribute("href")))
   }
 
-  for (a <- scala.util.Random.shuffle(net.tqft.mlp.topJournals(50).toSeq)) {
+  for (a <- scala.util.Random.shuffle(net.tqft.mlp.topJournals(100).toSeq)) {
     println(a.DOI)
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {

@@ -18,7 +18,7 @@ object AuthorBot extends App {
 
   //  Article.enableBibtexSaving
 
-  for (a <- topJournals(100)) {
+  for (a <- extendedCoverage ++ topJournals(100)) {
     println("posting authors for " + a.identifierString)
     authorbot("Data:" + a.identifierString + "/Authors") = a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and ")
   }
