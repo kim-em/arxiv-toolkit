@@ -11,8 +11,8 @@ object VerifyJournalCompleteApp extends App {
   val target = new File(System.getProperty("user.home") + "/Literature")
 
   //  val journals = Map("Topology" -> ISSNs.`Topology`)
-  val journals = Map("Adv. Math." -> ISSNs.`Advances in Mathematics`)
-//  val journals = Map("J. Algebra" -> ISSNs.`Journal of Algebra`)
+//  val journals = Map("Adv. Math." -> ISSNs.`Advances in Mathematics`)
+  val journals = Map("J. Algebra" -> ISSNs.`Journal of Algebra`)
 //  val journals = Map("Discrete Math." -> ISSNs.`Discrete Mathematics`)
 
   def pdfs(directory: File) = {

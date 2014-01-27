@@ -45,13 +45,30 @@ object Scholar extends App {
       println("Oops, we've hit google's robot detector. Please kill this job, or be a nice human and do the captcha.")
     }
 
-    val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala
-    val pdfLinks = driver.findElements(By.partialLinkText("[PDF]")).asScala
-    (arxivLinks.map(_.getAttribute("href")),
-      pdfLinks.map(_.getAttribute("href")))
+    val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala.toSeq
+
+    val arxivURLs: Seq[String] = arxivLinks.map(_.getAttribute("href"))
+    val pdfLinks = driver.findElements(By.partialLinkText("[PDF]")).asScala.toSeq
+    val pdfURLs: Seq[String] = if (arxivURLs.isEmpty) {
+      for (
+        link <- pdfLinks.map(_.getAttribute("href"));
+        if !link.startsWith("ftp");
+        if !link.startsWith("http://link.springer.com/");
+        if !link.startsWith("http://www.jointmathematicsmeetings.org/");
+        if !link.startsWith("http://www.researchgate.net/");
+        bytes <- PDF.getBytes(link);
+        if PDF.portrait_?(bytes)
+      ) yield { link }
+    } else { Seq.empty }
+
+    (arxivURLs,
+      pdfURLs)
   }
 
-  for (a <- scala.util.Random.shuffle(net.tqft.mlp.topJournals(100).toSeq)) {
+  for (
+    g <- net.tqft.mlp.topJournals(100).grouped(1000);
+    a <- scala.util.Random.shuffle(g)
+  ) {
     println(a.DOI)
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
@@ -65,14 +82,15 @@ object Scholar extends App {
           println("none available")
           scholarbot("Data:" + a.identifierString + "/FreeURL") = "none available, according to Google Scholar"
         }
-        //  Seems this might have to wait for httpclient 4.3.2 
-        //        if (r._1.isEmpty && r._2.nonEmpty) {
-        //          for (link <- r._2.filter(PDF.getBytes(_).nonEmpty).headOption) {
-        //            println("posting PDF link: " + link)
-        //            scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
-        //          }
-        //        }
+        if (r._1.isEmpty && r._2.nonEmpty) {
+          for (link <- r._2.headOption) {
+            println("posting PDF link: " + link)
+            scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
+          }
+        }
         println("done")
+      } else {
+        println("already done")
       }
     }
   }

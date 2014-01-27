@@ -25,11 +25,10 @@ import org.openqa.selenium.htmlunit.HtmlUnitDriver
 import com.gargoylesoftware.htmlunit.BrowserVersion
 import org.apache.http.impl.conn.SchemeRegistryFactory
 import org.apache.http.params.HttpConnectionParams
-//import org.apache.http.impl.client.DecompressingHttpClient
-//import org.apache.http.impl.conn.PoolingClientConnectionManager
-//import org.apache.http.impl.conn.BasicClientConnectionManager
+import org.apache.http.impl.client.DecompressingHttpClient
 import java.io.FilterInputStream
 import org.openqa.selenium.firefox.FirefoxProfile
+import org.apache.http.impl.conn.PoolingClientConnectionManager
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -81,38 +80,36 @@ trait Slurp {
 }
 
 trait HttpClientSlurp extends Slurp {
-//  val cxMgr = new PoolingClientConnectionManager(SchemeRegistryFactory.createDefault());
-//  cxMgr.setMaxTotal(100);
-//  cxMgr.setDefaultMaxPerRoute(20);
-//
-//  val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(cxMgr))
-//
-//  val params = client.getParams()
-//  params.setBooleanParameter("http.protocol.handle-redirects", true)
-//  HttpConnectionParams.setConnectionTimeout(params, 20000);
-//  HttpConnectionParams.setSoTimeout(params, 20000);
-//
-//  def useragent = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)"
-//  HttpProtocolParams.setUserAgent(params, useragent);
+  val cxMgr = new PoolingClientConnectionManager(SchemeRegistryFactory.createDefault());
+  cxMgr.setMaxTotal(100);
+  cxMgr.setDefaultMaxPerRoute(20);
+
+  val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(cxMgr))
+
+  val params = client.getParams()
+  params.setBooleanParameter("http.protocol.handle-redirects", true)
+  HttpConnectionParams.setConnectionTimeout(params, 20000);
+  HttpConnectionParams.setSoTimeout(params, 20000);
+
+  def useragent = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)"
+  HttpProtocolParams.setUserAgent(params, useragent);
 
   override def getStream(url: String) = getStream(url, None)
   def getStream(url: String, referer: Option[String]): InputStream = {
-//    val get = new HttpGet(url)
-//    get.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-//    referer.map(r => get.setHeader("Referer", r))
-//
-//    val response = client.execute(get);
-//
-//    class ReleasingInputStream(is: InputStream) extends FilterInputStream(is) {
-//      override def close() {
-//        get.releaseConnection()
-//        is.close()
-//      }
-//    }
-//
-//    new ReleasingInputStream(response.getEntity.getContent())
-    
-    ???
+    val get = new HttpGet(url)
+    get.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+    referer.map(r => get.setHeader("Referer", r))
+
+    val response = client.execute(get);
+
+    class ReleasingInputStream(is: InputStream) extends FilterInputStream(is) {
+      override def close() {
+        get.releaseConnection()
+        is.close()
+      }
+    }
+
+    new ReleasingInputStream(response.getEntity.getContent())
   }
 }
 
