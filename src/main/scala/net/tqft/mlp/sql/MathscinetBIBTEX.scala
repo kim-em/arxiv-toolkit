@@ -1,10 +1,11 @@
 package net.tqft.mlp.sql
 
 import scala.slick.driver.MySQLDriver.simple._
+import net.tqft.mathscinet.Article
+import net.tqft.util.BIBTEX
 import java.sql.Date
-import scala.slick.model.PrimaryKey
 
-class MathscinetBIBTEX(tag: Tag) extends Table[(Int, String, Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String])](tag, "mathscinet_bibtex") {
+class MathscinetBIBTEX(tag: Tag) extends Table[Article](tag, "mathscinet_bibtex") {
   def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
   def `type` = column[String]("type")
   def title = column[Option[String]]("title")
@@ -27,8 +28,38 @@ class MathscinetBIBTEX(tag: Tag) extends Table[(Int, String, Option[String], Opt
   def edition = column[Option[String]]("edition")
   def publisher = column[Option[String]]("publisher")
   def series = column[Option[String]]("series")
-  def * = (MRNumber, `type`, title, booktitle, author, editor, doi, url, journal, fjournal, issn, isbn, volume, issue, year, pages, mrclass, number, address, edition, publisher, series)
-  
+  def * = (MRNumber, `type`, title, booktitle, author, editor, doi, url, journal, fjournal, issn, isbn, volume, issue, year, pages, mrclass, number, address, edition, publisher, series) <> (buildArticle, { a: Article => Some(a.sqlRow) })
+
+  private def buildArticle(data: bibtexTuple): Article = {
+    val bibtexData = (
+      ("title" -> data._3) ::
+      ("booktitle" -> data._4) ::
+      ("author" -> data._5) ::
+      ("editor" -> data._6) ::
+      ("doi" -> data._7) ::
+      ("url" -> data._8) ::
+      ("journal" -> data._9) ::
+      ("fjournal" -> data._10) ::
+      ("issn" -> data._11) ::
+      ("isbn" -> data._12) ::
+      ("volume" -> data._13) ::
+      ("issue" -> data._14) ::
+      ("year" -> data._15) ::
+      ("pages" -> data._16) ::
+      ("mrclass" -> data._17) ::
+      ("number" -> data._18) ::
+      ("address" -> data._19) ::
+      ("edition" -> data._20) ::
+      ("publisher" -> data._21) ::
+      ("series" -> data._22) ::
+      Nil).collect({ case (k, Some(v)) => (k -> v) })
+
+    val result = new Article {
+      override val identifier = data._1
+    }
+    result.bibtexData = Some(BIBTEX(data._2, result.identifierString, bibtexData))
+    result
+  }
 }
 
 class Arxiv(tag: Tag) extends Table[(String, Date, Date, String, String, String, String, String, String, String, String, String, String, String, String)](tag, "arxiv") {
@@ -53,8 +84,16 @@ class Arxiv(tag: Tag) extends Table[(String, Date, Date, String, String, String,
 object SQLTables {
   val mathscinet = TableQuery[MathscinetBIBTEX]
   val arxiv = TableQuery[Arxiv]
+
+  def mathscinet(ISSNs: TraversableOnce[String], years: TraversableOnce[Int]): Iterator[Article] = {
+    import scala.slick.driver.MySQLDriver.simple._
+    SQL { implicit session =>
+      for (j <- ISSNs.toIterator; y <- years.toIterator; a <- SQLTables.mathscinet.filter(_.issn === j).filter(_.year === y.toString).iterator) yield a
+    }
+
+  }
 }
 
 object SQL {
-  def apply[A](closure: slick.driver.MySQLDriver.backend.Session => A): A = Database.forURL("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=mathscinetbot&password=zytopex", driver = "com.mysql.jdbc.Driver") withSession closure  
+  def apply[A](closure: slick.driver.MySQLDriver.backend.Session => A): A = Database.forURL("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=mathscinetbot&password=zytopex", driver = "com.mysql.jdbc.Driver") withSession closure
 }
