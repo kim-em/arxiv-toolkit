@@ -12,15 +12,16 @@ object TitleBot extends App {
   lazy val titlebot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("titlebot", "zytopex")
+    b.enableSQLReads("jdbc:mysql://mysql.tqft.net/tqft_net?user=readonly1&password=foobar1", "mlp_")
     b.setThrottle(45000)
     b
   }
 
   //  Article.enableBibtexSaving
 
-  for (a <-extendedCoverage ++ topJournals(100)) {
-    println("posting title for " + a.identifierString)
-    titlebot("Data:" + a.identifierString + "/Title") = a.textTitle
+  for (a <- extendedCoverage ++ topJournals(100)) {
+    println("posting title for " + a.identifierString + ": " + a.title + " // " + a.wikiTitle)
+    titlebot("Data:" + a.identifierString + "/Title") = a.wikiTitle
   }
 
   println("Done entering titles!")

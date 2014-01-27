@@ -39,30 +39,29 @@ trait Article {
   var endnoteData: Option[Map[String, List[String]]] = None
   var bibtexData: Option[BIBTEX] = None
 
-  def sqlRow = (identifier,
-      bibtex.documentType, 
-      bibtex.get("title"),
-      bibtex.get("booktitle"),
-      bibtex.get("author"),
-      bibtex.get("editor"),
-      bibtex.get("doi"),
-      bibtex.get("url"),
-      bibtex.get("journal"),
-      bibtex.get("fjournal"),
-      bibtex.get("issn"),
-      bibtex.get("isbn"),
-      bibtex.get("volume"),
-      bibtex.get("issue"),
-      bibtex.get("year"),
-      bibtex.get("pages"),
-      bibtex.get("mrclass"),
-      bibtex.get("number"),
-      bibtex.get("address"),
-      bibtex.get("edition"),
-      bibtex.get("publisher"),
-      bibtex.get("series")
-      )
-  
+  def sqlRow: net.tqft.mlp.sql.bibtexTuple = (identifier,
+    bibtex.documentType,
+    bibtex.get("title"),
+    bibtex.get("booktitle"),
+    bibtex.get("author"),
+    bibtex.get("editor"),
+    bibtex.get("doi"),
+    bibtex.get("url"),
+    bibtex.get("journal"),
+    bibtex.get("fjournal"),
+    bibtex.get("issn"),
+    bibtex.get("isbn"),
+    bibtex.get("volume"),
+    bibtex.get("issue"),
+    bibtex.get("year"),
+    bibtex.get("pages"),
+    bibtex.get("mrclass"),
+    bibtex.get("number"),
+    bibtex.get("address"),
+    bibtex.get("edition"),
+    bibtex.get("publisher"),
+    bibtex.get("series"))
+
   def endnote = {
     if (endnoteData.isEmpty) {
       val lines = Slurp(endnoteURL).toList
@@ -436,6 +435,22 @@ trait Article {
 
   def sanitizedTitle = textTitle.replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
     .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+
+  def wikiTitle = {
+    def pandocFragment(f: String) = {
+      val f0 = f.replaceAllLiterally("{", "").replaceAllLiterally("}", "")
+      (if (f0.startsWith(" ")) " " else "") +
+        pandoc.latexToText(f0) +
+        (if (f0.endsWith(" ")) " " else "")
+    }
+    plainTitle.split("\\$").grouped(2).map({ p =>
+      pandocFragment(p(0)) +
+        (p.tail.headOption match {
+          case Some(q) => "$" + q
+          case None => ""
+        })
+    }).mkString("$")
+  }
 
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
     val authorNames = authors.map(a => pandoc.latexToText(a.name))
