@@ -30,7 +30,7 @@ object pandoc {
         stdout => scala.io.Source.fromInputStream(stdout).getLines.foreach(result.append),
         _ => ())
       val p = pandocCommand.run(pio)
-      require(p.exitValue == 0)
+      require(p.exitValue == 0, "pandoc failed on input: " + latex)
       result.toString
     } else {
       latex
