@@ -17,10 +17,8 @@ object TOCBot extends App {
     lazy val tocbot = {
       val b = WikiMap("http://tqft.net/mlp/index.php")
       b.login("tocbot", "zytopex")
+      b.enableSQLReads("jdbc:mysql://mysql.tqft.net/tqft_net?user=readonly1&password=foobar1", "mlp_")
       b.setThrottle(15000)
-      // using .caching() causes thread problems...
-//      import net.tqft.toolkit.collections.MapCaching._
-//      b.caching()
       b
     }
 

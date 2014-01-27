@@ -6,9 +6,10 @@ import net.tqft.mathscinet.MRef
 import net.tqft.toolkit.collections.Split.splittableIterator
 import net.tqft.wiki.WikiMap
 import net.tqft.wiki.FirefoxDriver
+import net.tqft.mlp.sql.SQL
+import net.tqft.mlp.sql.SQLTables
 
 object OAI2MRef extends App {
-
 
   lazy val arxivbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
@@ -19,33 +20,40 @@ object OAI2MRef extends App {
   import net.tqft.toolkit.collections.Split._
 
   var count = 0
+  val journals = scala.collection.mutable.Map[String, String]()
   val input: File = new File("/Users/scott/projects/arxiv-toolkit/arxiv.txt")
-  for (
-    chunk <- Source.fromFile(input).getLines.splitOn(_.startsWith("---"));
-    if chunk.nonEmpty;
-    id = chunk(0).stripPrefix("id: ");
-    journalRef = chunk(1).stripPrefix("jr: ");
-    doi = chunk(2).stripPrefix("doi: ");
-    title = chunk(3).stripPrefix("title: ");
-    authors = chunk(4).stripPrefix("aa: ");
-    if doi == ""
-//    if (journalRef.contains("Discrete") || journalRef.contains("Adv") && journalRef.contains("Math") || journalRef.contains("Geom") && journalRef.contains("Fun") || journalRef.contains("Alg") && journalRef.contains("Geom") && journalRef.contains("Top"));
-//    if journalRef.contains("2013")
-  ) {
-    println(chunk)
 
-    // TODO if the DOI is there, use it
+  import scala.slick.driver.MySQLDriver.simple._
 
-    val citation = title + "\n" + authors + "\n" + journalRef
-    val result = MRef.lookup(citation)
-    println(result.map(_.identifierString))
+  SQL { implicit session =>
+    val articlesWithoutMatchingDOI = for (
+      a <- SQLTables.arxiv;
+      if a.doi === "" || !SQLTables.mathscinet.filter(_.doi === a.doi).exists
+    ) yield (a.arxivid, a.title, a.authors, a.journalref)
 
-    if (result.size == 1) {
-      arxivbot("Data:" + result(0).identifierString + "/FreeURL") = "http://arxiv.org/abs/" + id
+    for ((id, title, authorsXML, journalRef) <- articlesWithoutMatchingDOI) {
+      val authors = ???
+      val citation = title + "\n" + authors + "\n" + journalRef
+      println("Looking up: " + citation)
+      val result = MRef.lookup(citation)
+      println("  found: " + result.map(_.identifierString))
+
+      if (result.size == 1) {
+        for (r <- result) {
+          if (!journals.contains(r.journal)) {
+            println("New journal: " + r.journal + " ---> " + r.ISSN)
+            journals(r.journal) = r.ISSN
+          }
+          arxivbot("Data:" + r.identifierString + "/FreeURL") = "http://arxiv.org/abs/" + id
+        }
+      }
+      count += 1
+
     }
-    count += 1
   }
+
   println(count)
+  println(journals)
 
   FirefoxDriver.quit
 }

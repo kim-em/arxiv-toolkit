@@ -1,6 +1,8 @@
 package net.tqft
 
 import net.tqft.eigenfactor.Eigenfactor
+import net.tqft.mlp.sql.SQLTables
+import net.tqft.mlp.sql.SQL
 package object mlp {
   import net.tqft.journals.ISSNs
   import net.tqft.mathscinet.Search
@@ -18,7 +20,12 @@ package object mlp {
 
   val selectedYears = Seq(2013)
 
-  def selectedCoverage = for (j <- selectedJournals; y <- selectedYears; a <- Search.inJournalYear(j, y)) yield a
+  def selectedCoverage = {
+    import scala.slick.driver.MySQLDriver.simple._
+    SQL { implicit session =>
+      for (j <- selectedJournals; y <- selectedYears; a <- SQLTables.mathscinet.filter(_.issn === j).filter(_.year === y.toString).iterator) yield a
+    }
+  }
 
   def extendedJournals = Iterator(ISSNs.`Journal of Algebra`, ISSNs.`Journal of Pure and Applied Algebra`) ++ selectedJournals
   def extendedYears = Seq(2010, 2013)
@@ -26,5 +33,5 @@ package object mlp {
   def extendedCoverage = for (j <- extendedJournals; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
 
   def topJournals(k: Int) = for (j <- extendedJournals; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
-  
+
 }
