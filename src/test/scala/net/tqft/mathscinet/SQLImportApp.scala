@@ -28,7 +28,7 @@ object SQLImportApp extends App {
       for (group <- cache.keysIterator.toSeq.sorted.reverse.grouped(1000); groupPar = { val p = group.par; p.tasksupport = pool; p }; k <- groupPar; a = Article(k)) {
         println("inserting: " + a.identifierString)
         try {
-          SQLTables.mathscinet += a.sqlRow
+          SQLTables.mathscinet += a
         } catch {
           case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {}
           case e: Exception => {
