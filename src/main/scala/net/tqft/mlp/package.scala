@@ -34,6 +34,6 @@ package object mlp {
 
   def extendedCoverage = for (j <- extendedJournals; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
 
-  def topJournals(k: Int) = for (j <- extendedJournals; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
+  def topJournals(k: Int) = for (j <- scala.util.Random.shuffle(Eigenfactor.topJournals.take(k)).iterator; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
 
 }
