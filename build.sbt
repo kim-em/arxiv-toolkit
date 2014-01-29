@@ -6,6 +6,8 @@ version := "0.1.1-SNAPSHOT"
 
 scalaVersion := "2.10.3"
 
+scalacOptions += "-target:jvm-1.7"
+
 resolvers ++= Seq(
 	"Java.net Maven2 Repository" at "http://download.java.net/maven/2/",
 	"tqft.net Maven repository" at "http://tqft.net/releases",

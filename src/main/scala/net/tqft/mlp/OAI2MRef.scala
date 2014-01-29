@@ -33,7 +33,6 @@ object OAI2MRef extends App {
     ) yield (a.arxivid, a.title, a.authors, a.journalref)
 
     for ((id, title, authorsXML, journalRef) <- articlesWithoutMatchingDOI) {
-      println(authorsXML)
       val authors = (for(names <- (scala.xml.XML.loadString("<authors>" + authorsXML + "</authors>") \\ "author").iterator) yield  (names \\ "keyname").text + ", " + (names \\ "forenames").text).mkString("", "; ", ";")
       val citation = (title + "\n" + authors + "\n" + journalRef).trim
       println("Looking up: " + citation)
@@ -42,7 +41,7 @@ object OAI2MRef extends App {
 
       if (result.size == 1) {
         for (r <- result) {
-          if (!journals.contains(r.journal)) {
+          if (r.journalOption.nonEmpty && !journals.contains(r.journal)) {
             println("New journal: " + r.journal + " ---> " + r.ISSN)
             journals(r.journal) = r.ISSN
           }

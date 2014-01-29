@@ -24,6 +24,8 @@ import java.util.zip.GZIPInputStream
 import java.io.FileInputStream
 import net.tqft.util.pandoc
 import net.tqft.util.PDF
+import net.tqft.mlp.sql.SQL
+import net.tqft.mlp.sql.SQLTables
 
 trait Article {
   def identifier: Int
@@ -518,10 +520,20 @@ object Article {
   }
 
   def apply(identifier: Int): Article = {
-    val identifier_ = identifier
-    new Article {
-      override val identifier = identifier_
+    import scala.slick.driver.MySQLDriver.simple._
+    val lookup = SQL { implicit session =>
+      (for (
+        a <- SQLTables.mathscinet;
+        if a.MRNumber === identifier
+      ) yield a).firstOption
     }
+
+    lookup.getOrElse({
+      val identifier_ = identifier
+      new Article {
+        override val identifier = identifier_
+      }
+    })
   }
 
   def fromDOI(doi: String): Option[Article] = {
@@ -571,6 +583,20 @@ object MRIdentifier {
 }
 
 object Articles {
+
+  def apply(identifierStrings: Traversable[String]): Map[String, Article] = {
+    def apply(identifiers: Traversable[Int]): Map[Int, Article] = {
+      import scala.slick.driver.MySQLDriver.simple._
+      SQL { implicit session =>
+        (for (
+          a <- SQLTables.mathscinet;
+          if a.MRNumber.inSet(identifiers)
+        ) yield a).list.map(a => a.identifier -> a).toMap
+      }
+    }
+    apply(identifierStrings.collect({ case MRIdentifier(id) => id })).map(p => p._2.identifierString -> p._2)
+  }
+
   def withCachedBIBTEX: Iterator[Article] = {
     BIBTEX.cache.keysIterator.collect({ case MRIdentifier(id) => Article(id) })
   }
