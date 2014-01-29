@@ -2,6 +2,10 @@ package net.tqft.mathscinet
 
 import java.io.File
 import net.tqft.journals.ISSNs
+import net.tqft.mlp.sql.SQL
+import net.tqft.mlp.sql.SQLTables
+import net.tqft.util.pandoc
+import net.tqft.journals.Journals
 
 object VerifyJournalCompleteApp extends App {
 
@@ -10,16 +14,16 @@ object VerifyJournalCompleteApp extends App {
   val source = new File("/Volumes/Repository Backups/elsevier-oa/")
   val target = new File(System.getProperty("user.home") + "/Literature")
 
-  //  val journals = Map("Topology" -> ISSNs.`Topology`)
-//  val journals = Map("Adv. Math." -> ISSNs.`Advances in Mathematics`)
-  val journals = Map("J. Algebra" -> ISSNs.`Journal of Algebra`)
-//  val journals = Map("Discrete Math." -> ISSNs.`Discrete Mathematics`)
+
+  val elsevierJournals = Journals.names.filter(p => ISSNs.Elsevier.contains(p._1))
 
   def pdfs(directory: File) = {
     scala.sys.process.Process("ls", directory).lines_!.iterator.filter(name => name.endsWith(".pdf")).map(name => new File(directory, name))
   }
 
-  for ((name, issn) <- journals) {
+  for ((issn, name) <- elsevierJournals) {
+
+    println("Checking " + name)
 
     val files = scala.collection.mutable.Set[File]() ++ pdfs(new File(target, name))
 

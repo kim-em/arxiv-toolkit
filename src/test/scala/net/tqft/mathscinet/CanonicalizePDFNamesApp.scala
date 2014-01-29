@@ -9,6 +9,11 @@ import java.io.PrintStream
 import java.io.FileOutputStream
 import scala.collection.parallel.ForkJoinTaskSupport
 import java.text.SimpleDateFormat
+import java.nio.file.Paths
+import java.nio.file.Files
+import java.nio.file.DirectoryStream
+import java.nio.file.Path
+import net.tqft.journals.Journals
 
 object CanonicalizePDFNamesApp extends App {
   //    FirefoxSlurp.disable
@@ -20,14 +25,6 @@ object CanonicalizePDFNamesApp extends App {
   val dropboxDirectory = new File(System.getProperty("user.home") + "/Dropbox/Apps/Papers from mathscinet")
 
   val identifierRegex = "MR[0-9]{7}".r
-
-  val articles = (for (
-    a <- Articles.fromBibtexFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/100_4.bib") //;
-  //    issn <- a.ISSNOption;
-  //    if ISSNs.Elsevier.contains(issn)
-  ) yield { a.identifierString -> a }).toMap
-
-  //  val articles = Map.empty[String, Article]
 
   //   Verifying that we can build a name for *everything*
   //    for (a <- Articles.fromBibtexGzipFile(System.getProperty("user.home") + "/projects/arxiv-toolkit/100_4.bib.gz")) {
@@ -79,37 +76,59 @@ object CanonicalizePDFNamesApp extends App {
     script.delete()
   }
 
-  def pdfs(directory: File) = {
-    scala.sys.process.Process("ls", directory).lines_!.iterator.filter(name => identifierRegex.findFirstMatchIn(name).nonEmpty).map(name => new File(directory, name))
-  }
+  def pdfs(directory: Path) = {
+    import scala.collection.JavaConverters._
 
-  // If we've accidentally mangled file names, .listFiles might actually unmangle them for us, hiding the problem. Hence this version is no good!
-  //  def pdfs(directory: File) = {
-  //    directory.listFiles(new FilenameFilter { override def accept(dir: File, name: String) = name.contains("probabilistic") && identifierRegex.findFirstMatchIn(name).nonEmpty })
-  //  }
+    Files.newDirectoryStream(directory, new DirectoryStream.Filter[Path] {
+      override def accept(path: Path) = {
+        identifierRegex.findFirstMatchIn(path.getFileName.toString).nonEmpty
+      }
+    }).iterator.asScala
+  }
 
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
   val formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-//  val directories = Seq(dropboxDirectory, otherDirectory, ktdirectory, directory)
+  //  val directories = Seq(dropboxDirectory, otherDirectory, ktdirectory, directory)
   val directories = Seq(directory)
-  
+
+  val literature = Paths.get(new File(System.getProperty("user.home") + "/Literature").toURI())
+
   for (
     dir <- directories.filter(_.exists);
-    //    group <- pdfs(dir).grouped(1000);
-    //    file <- { val p = group.par; p.tasksupport = pool; p };
-    file <- pdfs(dir);
-    //    if file.getName().contains(" - Adv.");
-    identifier <- identifierRegex.findAllMatchIn(file.getName()).toSeq.lastOption.map(_.matched);
+    dirPath = Paths.get(dir.toURI());
+    group <- pdfs(dirPath).grouped(1000);
+    identifiers = group.map(file => file -> identifierRegex.findAllMatchIn(file.getFileName.toString).toSeq.lastOption.map(_.matched));
+    articles = Articles(identifiers.flatMap(_._2));
+    (file, Some(identifier)) <- identifiers.par;
     article = articles.get(identifier).getOrElse(Article(identifier))
   ) {
+    import java.nio.file.StandardCopyOption._
+
+//    println(article.bibtex.toBIBTEXString)
+    println(identifier)
     val newName = article.constructFilename()
-    if (file.getName != newName) {
+    if (file.toFile.getName != newName) {
       println(formatter.format(new java.util.Date()))
-      println("Renaming " + file.getName + " to " + newName)
-      println("Original title: " + article.title)
-      safeRename(identifier, dir, newName)
+      println("Renaming:\n  " + file.getFileName + "\nto\n  " + newName)
+      println("Original title:\n  " + article.title)
+      Files.move(file, file.resolveSibling(newName), REPLACE_EXISTING)
+    }
+
+    // now create a symbolic link
+    val journalDir = literature.resolve(Journals.names(article.ISSN))
+    if (!Files.exists(journalDir)) {
+      Files.createDirectory(journalDir)
+      if (ISSNs.Elsevier.contains(article.ISSN)) {
+        if (Files.exists(dirPath.resolve("LICENSE.pdf"))) {
+          Files.copy(dirPath.resolve("LICENSE.pdf"), journalDir.resolve("LICENSE.pdf"))
+        }
+      }
+    }
+    val link = journalDir.resolve(newName)
+    if(!Files.exists(link)) {
+      Files.createSymbolicLink(link, file.resolveSibling(newName))
     }
   }
 
