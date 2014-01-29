@@ -28,12 +28,14 @@ object OAI2MRef extends App {
   SQL { implicit session =>
     val articlesWithoutMatchingDOI = for (
       a <- SQLTables.arxiv;
-      if a.doi === "" || !SQLTables.mathscinet.filter(_.doi === a.doi).exists
+      if a.journalref.isNotNull;
+      if a.doi.isNull || !SQLTables.mathscinet.filter(_.doi === a.doi).exists
     ) yield (a.arxivid, a.title, a.authors, a.journalref)
 
     for ((id, title, authorsXML, journalRef) <- articlesWithoutMatchingDOI) {
-      val authors = ???
-      val citation = title + "\n" + authors + "\n" + journalRef
+      println(authorsXML)
+      val authors = (for(names <- (scala.xml.XML.loadString("<authors>" + authorsXML + "</authors>") \\ "author").iterator) yield  (names \\ "keyname").text + ", " + (names \\ "forenames").text).mkString("", "; ", ";")
+      val citation = (title + "\n" + authors + "\n" + journalRef).trim
       println("Looking up: " + citation)
       val result = MRef.lookup(citation)
       println("  found: " + result.map(_.identifierString))
