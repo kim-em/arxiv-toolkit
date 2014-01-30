@@ -26,6 +26,10 @@ import net.tqft.util.pandoc
 import net.tqft.util.PDF
 import net.tqft.mlp.sql.SQL
 import net.tqft.mlp.sql.SQLTables
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.DirectoryStream
+import java.nio.file.Path
 
 trait Article {
   def identifier: Int
@@ -258,7 +262,7 @@ trait Article {
 
       val pages = numbers.map({ n =>
         if (n == "10") {
-          println("Something went wrong while looking up " + identifierString + " on the Elsevier website.")
+          Logging.warn("Something went wrong while looking up " + identifierString + " on the Elsevier website.")
           ???
         }
         val url = "http://www.sciencedirect.com/science/journal/" + issn.replaceAllLiterally("-", "") + "/" + volume + "/" + n
@@ -268,18 +272,27 @@ trait Article {
         val lines = p._2
         //        println(lines.mkString("\n"))
         val titleLine = lines.find(_.contains("<title>")).get
-        println(titleLine)
+        Logging.info(titleLine)
         titleLine.contains("| Vol " + volume) &&
           !titleLine.contains("In Progress") &&
           !titleLine.contains("Topology | Vol 48, Isss 2–4, Pgs 41-224, (June–December, 2009)")
       }).toSeq
 
       val regex1 = """<span style="font-weight : bold ;">(.*)</span></a></h3>""".r
-      val regex2 = """<a href="(http://www.sciencedirect.com/science\?_ob=MiamiImageURL.*.pdf) " target="newPdfWin"""".r
-      val regex3 = """<a class="cLink" rel="nofollow" href="(http://www.sciencedirect.com/science/article/pii/.*.pdf)" queryStr="\?_origin=browseVolIssue&_zone=rslt_list_item" target="newPdfWin">""".r
+      val regex2 = """<a href="(http://www.sciencedirect.com/science\?_ob=MiamiImageURL.*.pdf) " target="newPdfWin"""".r  // probably obsolete now??
+      val regex3 = """<a class="cLink" rel="nofollow" href="(http://www.sciencedirect.com/science/article/pii/.*.pdf)" queryStr="\?_origin=browseVolIssue&_zone=rslt_list_item" target="_blank">""".r
 
-      val matches = (for ((_, p) <- pages; l <- p; if l.contains("newPdfWin"); titleFound <- regex1.findFirstMatchIn(l); urlFound <- regex2.findFirstMatchIn(l).orElse(regex3.findFirstMatchIn(l))) yield {
-        (titleFound.group(1), urlFound.group(1), StringUtils.getLevenshteinDistance(titleFound.group(1).replaceAll("<[^>]*>", ""), title).toDouble / title.length())
+      val matches = (for (
+        (_, p) <- pages;
+        l <- p;
+        if l.contains("pdfIconSmall");
+        titleFound <- regex1.findFirstMatchIn(l);
+        urlFound <- regex3.findFirstMatchIn(l).orElse(regex2.findFirstMatchIn(l))
+      ) yield {
+        (
+          titleFound.group(1),
+          urlFound.group(1),
+          StringUtils.getLevenshteinDistance(titleFound.group(1).replaceAll("<[^>]*>", ""), title).toDouble / title.length())
       }).sortBy(_._3)
 
       Logging.info("   found matches:")
@@ -311,6 +324,7 @@ trait Article {
       chosenMatch
     } else if (ISSN == ISSNs.`K-Theory`) {
       // K-Theory, have to get it from Portico for now
+      // FIXME this is apparently broken
       val toc = HttpClientSlurp.getString("http://www.portico.org/Portico/browse/access/toc.por?journalId=ISSN_09203036&issueId=ISSN_09203036v" + volume.toString + "i" + number)
       //      println(toc)
       val pagesPosition = toc.indexOf(pages.replaceAllLiterally("--", "-"))
@@ -395,7 +409,7 @@ trait Article {
   }
 
   def pdfInputStream: Option[InputStream] = {
-    if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
+    val result = if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
       // Duke expects to see a Referer field.
       pdfURL.map({ u =>
         HttpClientSlurp.getStream(u, referer = Some(u))
@@ -403,8 +417,18 @@ trait Article {
     } else {
       pdfURL.map(HttpClientSlurp.getStream)
     }
+    result.orElse(exceptionalPDF)
   }
 
+  private def exceptionalPDF: Option[InputStream] = {
+    val path = Paths.get(System.getProperty("user.home") + "/media/exceptions/").resolve(identifierString + ".pdf")
+    if(Files.exists(path)) {
+      Some(new FileInputStream(path.toFile))
+    } else {
+      None
+    }
+  }
+  
   def pdf: Option[Array[Byte]] = pdfInputStream.flatMap(PDF.getBytes)
 
   val defaultFilenameTemplate = "$TITLE - $AUTHOR - $JOURNALREF - $MRNUMBER.pdf"
@@ -435,7 +459,7 @@ trait Article {
     stripMoreLaTeX(pandoc.latexToText(plainTitle))
   }
 
-  def sanitizedTitle = textTitle.replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
+  def sanitizedTitle = textTitle.stripPrefix(".").replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
     .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
 
   def wikiTitle = {
@@ -464,14 +488,18 @@ trait Article {
         .replaceAllLiterally("$AUTHOR", authorNames.mkString(" and "))
         .replaceAllLiterally("$JOURNALREF", textCitation)
         .replaceAllLiterally("$MRNUMBER", identifierString)
-      if (attempt.length > 250) {
+      if (attempt.getBytes().length > 250) {
         val shortAuthors = if (authors.size > 4) {
           authorNames.head + " et al."
         } else {
           authorNames.mkString(" and ")
         }
-        val shortCitation = if (textCitation.length > 95) {
-          textCitation.take(92) + "..."
+        val maxCitationLength = scala.math.max(90, 250 - (filenameTemplate
+          .replaceAllLiterally("$AUTHOR", shortAuthors)
+          .replaceAllLiterally("$MRNUMBER", identifierString)
+          .replaceAllLiterally("$TITLE", sanitizedTitle).getBytes().length - "$JOURNALREF".size))
+        val shortCitation = if (textCitation.getBytes().length > maxCitationLength) {
+          textCitation.reverse.tails.find(_.getBytes.length + 3 <= maxCitationLength).get.reverse + "..."
         } else {
           textCitation
         }
@@ -479,13 +507,13 @@ trait Article {
           .replaceAllLiterally("$AUTHOR", shortAuthors)
           .replaceAllLiterally("$JOURNALREF", shortCitation)
           .replaceAllLiterally("$MRNUMBER", identifierString)
-        val maxTitleLength = 250 - (partialReplacement.length - 6)
-        val shortTitle = if (textTitle.length > maxTitleLength) {
-          sanitizedTitle.take(maxTitleLength - 3) + "..."
+        val maxTitleLength = 250 - (partialReplacement.getBytes().length - "$TITLE".size)
+        val shortTitle = if (sanitizedTitle.getBytes().length > maxTitleLength) {
+          sanitizedTitle.reverse.tails.find(_.getBytes.length + 3 <= maxTitleLength).get.reverse + "..."
         } else {
           sanitizedTitle
         }
-        partialReplacement.replaceAllLiterally("$TITLE", shortTitle).ensuring(_.length <= 250)
+        partialReplacement.replaceAllLiterally("$TITLE", shortTitle).ensuring(_.getBytes().length <= 250)
       } else {
         attempt
       }
@@ -495,19 +523,21 @@ trait Article {
   def savePDF(directory: File, filenameTemplate: String = defaultFilenameTemplate) {
     val fileName = constructFilename(filenameTemplate)
     val file = new File(directory, fileName)
-    if (directory.listFiles(new FilenameFilter { override def accept(dir: File, name: String) = name.contains(identifierString) }).nonEmpty) {
-      Logging.info("PDF for " + identifierString + " already exists in " + directory)
-      // TODO this shouldn't really be here:
-      //      CanonicalizePDFNamesApp.safeRename(identifierString, directory, fileName)
+    val existingFiles = Article.fileNamesCache(Paths.get(directory.toURI)).find(_.contains(identifierString))
+    if (existingFiles.nonEmpty) {
+      Logging.info("PDF for " + identifierString + " already exists in " + directory + ", renaming...")
+      Logging.info("  " + existingFiles.get)
+      Logging.info("  " + fileName)
+      Files.move(Paths.get(directory.toURI).resolve(existingFiles.get), Paths.get(file.toURI))
     } else {
+      Logging.info("Downloading PDF from " + pdfURL + " ...")
       pdf match {
         case Some(bytes) => {
-          println("Saving PDF to " + fileName)
+          Logging.info("Saving PDF to " + fileName)
           FileUtils.writeByteArrayToFile(file, bytes)
         }
         case None => {
           Logging.info("No PDF available for " + fileName)
-          //          ???
         }
       }
     }
@@ -570,6 +600,13 @@ object Article {
   private var saving_? = false
   def disableBibtexSaving { saving_? = false }
   def enableBibtexSaving { saving_? = true }
+
+  val fileNamesCache = {
+    import net.tqft.toolkit.functions.Memo._
+    import scala.collection.JavaConverters._
+
+    { path: Path => Files.newDirectoryStream(path).iterator.asScala.map(_.getFileName.toString).toSet }.memo
+  }
 }
 
 object MRIdentifier {
