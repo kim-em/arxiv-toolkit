@@ -14,6 +14,7 @@ import java.nio.file.Files
 import java.nio.file.DirectoryStream
 import java.nio.file.Path
 import net.tqft.journals.Journals
+import net.tqft.toolkit.Logging
 
 object CanonicalizePDFNamesApp extends App {
   //    FirefoxSlurp.disable
@@ -53,28 +54,6 @@ object CanonicalizePDFNamesApp extends App {
   //  }
 
   private var renameCounter = 0
-  def renameScript(directory: File) = {
-    val name =
-      synchronized {
-        renameCounter = renameCounter + 1
-        "doRename" + renameCounter.toString
-      }
-    val r = new File(directory, name)
-    val ps = new PrintStream(new FileOutputStream(r))
-    ps.println("")
-    ps.close()
-    scala.sys.process.Process(Seq("chmod", "u+x", name), directory).!
-    r
-  }
-
-  def safeRename(identifier: String, directory: File, name: String) {
-    val script = renameScript(directory)
-    val ps = new PrintStream(new FileOutputStream(script))
-    ps.println("mv *" + identifier + ".pdf " + "\"" + name + "\"")
-    ps.close()
-    scala.sys.process.Process(Seq("./" + script.getName), directory).!
-    script.delete()
-  }
 
   def pdfs(directory: Path) = {
     import scala.collection.JavaConverters._
@@ -106,7 +85,7 @@ object CanonicalizePDFNamesApp extends App {
   ) {
     import java.nio.file.StandardCopyOption._
 
-//    println(article.bibtex.toBIBTEXString)
+    //    println(article.bibtex.toBIBTEXString)
     println(identifier)
     val newName = article.constructFilename()
     if (file.toFile.getName != newName) {
@@ -122,13 +101,19 @@ object CanonicalizePDFNamesApp extends App {
       Files.createDirectory(journalDir)
       if (ISSNs.Elsevier.contains(article.ISSN)) {
         if (Files.exists(dirPath.resolve("LICENSE.pdf"))) {
-          Files.copy(dirPath.resolve("LICENSE.pdf"), journalDir.resolve("LICENSE.pdf"))
+          Files.createSymbolicLink(journalDir.resolve("LICENSE.pdf"), dirPath.resolve("LICENSE.pdf"))
         }
       }
     }
     val link = journalDir.resolve(newName)
-    if(!Files.exists(link)) {
-      Files.createSymbolicLink(link, file.resolveSibling(newName))
+    if (!Files.exists(link)) {
+      try {
+        Files.createSymbolicLink(link, file.resolveSibling(newName))
+      } catch {
+        case e: Exception => {
+          Logging.warn("Exception while creating symbolic link for:\n" + article.bibtex.toBIBTEXString, e)
+        }
+      }
     }
   }
 
