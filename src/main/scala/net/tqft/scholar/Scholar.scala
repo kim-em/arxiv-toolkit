@@ -21,48 +21,55 @@ object Scholar extends App {
   def fromDOI(doi: String) = {
     def driver = FirefoxDriver.driverInstance
 
-    driver.get("http://scholar.google.com/scholar?q=http://dx.doi.org/" + doi)
+    try {
+      driver.get("http://scholar.google.com/scholar?q=http://dx.doi.org/" + doi)
 
-    println(driver.getCurrentUrl())
+      println(driver.getCurrentUrl())
 
-    while ({
-      Thread.sleep(Throttle.logNormalDistribution(60000).toLong);
-      driver.getTitle.contains("Sorry") || driver.getCurrentUrl().contains("scholar.google.com/sorry/")
-    }) {
-      // Uhoh, we hit their captcha
-      println("Oops, we've hit google's robot detector. Please kill this job, or be a nice human and do the captcha.")
+      while ({
+        Thread.sleep(Throttle.logNormalDistribution(60000).toLong);
+        driver.getTitle.contains("Sorry") || driver.getCurrentUrl().contains("scholar.google.com/sorry/")
+      }) {
+        // Uhoh, we hit their captcha
+        println("Oops, we've hit google's robot detector. Please kill this job, or be a nice human and do the captcha.")
+      }
+
+      import scala.collection.JavaConverters._
+      val links = driver.findElements(By.partialLinkText("versions")).asScala
+      links.headOption.map(_.click)
+
+      while ({
+        Thread.sleep(Throttle.logNormalDistribution(5000).toLong);
+        driver.getTitle.contains("Sorry") || driver.getCurrentUrl().contains("scholar.google.com/sorry/")
+      }) {
+        // Uhoh, we hit their captcha
+        println("Oops, we've hit google's robot detector. Please kill this job, or be a nice human and do the captcha.")
+      }
+
+      val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala.toSeq
+
+      val arxivURLs: Seq[String] = arxivLinks.map(_.getAttribute("href"))
+      val pdfLinks = driver.findElements(By.partialLinkText("[PDF]")).asScala.toSeq
+      val pdfURLs: Seq[String] = if (arxivURLs.isEmpty) {
+        for (
+          link <- pdfLinks.map(_.getAttribute("href"));
+          if !link.startsWith("ftp");
+          if !link.startsWith("http://link.springer.com/");
+          if !link.startsWith("http://www.jointmathematicsmeetings.org/");
+          if !link.startsWith("http://www.researchgate.net/");
+          bytes <- PDF.getBytes(link);
+          if PDF.portrait_?(bytes)
+        ) yield { link }
+      } else { Seq.empty }
+
+      Some((arxivURLs,
+        pdfURLs))
+    } catch {
+      case e: Exception => {
+        Logging.warn("Exception while reading from Google Scholar", e)
+        None
+      }
     }
-
-    import scala.collection.JavaConverters._
-    val links = driver.findElements(By.partialLinkText("versions")).asScala
-    links.headOption.map(_.click)
-
-    while ({
-      Thread.sleep(Throttle.logNormalDistribution(5000).toLong);
-      driver.getTitle.contains("Sorry") || driver.getCurrentUrl().contains("scholar.google.com/sorry/")
-    }) {
-      // Uhoh, we hit their captcha
-      println("Oops, we've hit google's robot detector. Please kill this job, or be a nice human and do the captcha.")
-    }
-
-    val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala.toSeq
-
-    val arxivURLs: Seq[String] = arxivLinks.map(_.getAttribute("href"))
-    val pdfLinks = driver.findElements(By.partialLinkText("[PDF]")).asScala.toSeq
-    val pdfURLs: Seq[String] = if (arxivURLs.isEmpty) {
-      for (
-        link <- pdfLinks.map(_.getAttribute("href"));
-        if !link.startsWith("ftp");
-        if !link.startsWith("http://link.springer.com/");
-        if !link.startsWith("http://www.jointmathematicsmeetings.org/");
-        if !link.startsWith("http://www.researchgate.net/");
-        bytes <- PDF.getBytes(link);
-        if PDF.portrait_?(bytes)
-      ) yield { link }
-    } else { Seq.empty }
-
-    (arxivURLs,
-      pdfURLs)
   }
 
   for (
@@ -73,22 +80,23 @@ object Scholar extends App {
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
         println("searching...")
-        val r = fromDOI(doi)
-        for (link <- r._1.headOption) {
-          println("posting arxiv link: " + link)
-          scholarbot("Data:" + a.identifierString + "/FreeURL") = link
-        }
-        if (r._1.isEmpty && r._2.isEmpty) {
-          println("none available")
-          scholarbot("Data:" + a.identifierString + "/FreeURL") = "none available, according to Google Scholar"
-        }
-        if (r._1.isEmpty && r._2.nonEmpty) {
-          for (link <- r._2.headOption) {
-            println("posting PDF link: " + link)
-            scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
+        for (r <- fromDOI(doi)) {
+          for (link <- r._1.headOption) {
+            println("posting arxiv link: " + link)
+            scholarbot("Data:" + a.identifierString + "/FreeURL") = link
           }
+          if (r._1.isEmpty && r._2.isEmpty) {
+            println("none available")
+            scholarbot("Data:" + a.identifierString + "/FreeURL") = "none available, according to Google Scholar"
+          }
+          if (r._1.isEmpty && r._2.nonEmpty) {
+            for (link <- r._2.headOption) {
+              println("posting PDF link: " + link)
+              scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
+            }
+          }
+          println("done")
         }
-        println("done")
       } else {
         println("already done")
       }
