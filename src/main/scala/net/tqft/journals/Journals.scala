@@ -47,9 +47,37 @@ case class Journal(issn: String) {
     }
 
   }
+
+  def openAccess: Iterator[Article] = {
+    if (ISSNs.Elsevier.contains(issn)) {
+      for (a <- upToYear(2009);
+      v <- a.volumeOption; 
+      if v >= Journals.earliestOpenAccessVolume(a.correctedISSN);
+      if a.numberOption.isEmpty || !a.number.contains("index")
+      ) yield a
+    } else {
+      ???
+    }
+  }
 }
 
 object Journals {
+
+  val earliestOpenAccessVolume = Map(
+    "0168-0072" -> 24,
+    "0294-1449" -> 14,
+    "0007-4497" -> 122,
+    "0195-6698" -> 13,
+    "0723-0869" -> 19,
+    "1385-7258" -> 72,
+    "0890-5401" -> 72,
+    "0021-7824" -> 76,
+    "0097-3165" -> 10,
+    "0095-8956" -> 10,
+    "1567-8326" -> 47,
+    "0895-7177" -> 10,
+    "0166-8641" -> 11).withDefault(_ => 1)
+
   //  val journalNames = {
   //    import scala.slick.driver.MySQLDriver.simple._
   //

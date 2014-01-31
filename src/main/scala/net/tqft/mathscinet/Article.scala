@@ -85,6 +85,12 @@ trait Article {
         val finish = lines.indexWhere(_.trim == "</pre>")
         if (start == -1 || finish <= start) {
           Logging.warn("Did not find BIBTEX block in: \n" + lines.mkString("\n"))
+          try {
+            BIBTEX.cache -= identifierString
+            Slurp -= bibtexURL
+          } catch {
+            case e: Exception => Logging.warn("Failed to clean BIBTEX database.", e)
+          }
           ???
         }
         (lines(start).trim.stripPrefix("<pre>") +: lines.slice(start + 1, finish)).mkString("\n").trim
@@ -96,8 +102,9 @@ trait Article {
           Logging.error("Exception while parsing BIBTEX for " + identifierString + ": \n" + text, e)
           try {
             BIBTEX.cache -= identifierString
+            Slurp -= bibtexURL
           } catch {
-            case e: Exception => Logging.warn("Failed to clean BIBTEX database.")
+            case e: Exception => Logging.warn("Failed to clean BIBTEX database.", e)
           }
           ???
         }
@@ -162,14 +169,14 @@ trait Article {
     bibtex.get("YEAR").map(y => y.replace("/", "-"))
   }
   def yearOption: Option[Int] = {
-    bibtex.get("YEAR").flatMap({
+    bibtex.get("YEAR").map(s => s.takeWhile(_.isDigit)).flatMap({
       case Int(year) => Some(year)
       case _ => None
     })
   }
   def year = yearOption.get
   def volumeOption: Option[Int] = {
-    bibtex.get("VOLUME").flatMap({
+    bibtex.get("VOLUME").map(s => s.takeWhile(_.isDigit)).flatMap({
       case Int(v) => Some(v)
       case _ => None
     })
@@ -180,7 +187,7 @@ trait Article {
   def numberOption = bibtex.get("NUMBER")
   def number: String = numberOption.get
 
-  def ISSNOption = bibtex.get("ISSN")
+  def ISSNOption = bibtex.get("ISSN").map(_.toUpperCase)
   def ISSN = ISSNOption.get
 
   def pagesOption = bibtex.get("PAGES")
@@ -231,97 +238,116 @@ trait Article {
   }
   def citations: Iterator[Article] = Search.citing(identifier)
 
+  def correctedISSN = ISSN match {
+    case "0890-5401" if yearOption.nonEmpty && year <= 1986 => "0019-9958"
+    case "0019-3577" if yearOption.nonEmpty && year <= 1989 => "1385-7258"
+    case ow => ow
+  }
+
+  private def searchElsevierForPDFURL: Option[String] = {
+    Logging.info("Attempting to find URL for Elsevier article.")
+
+    val issn = correctedISSN
+
+    val numbers = {
+      // Topology, special cases
+      if (issn == "0040-9383" && volume == 2) {
+        Stream("1-2", "3", "4")
+      } else if (issn == "0040-9383" && volume == 3) {
+        Stream("supp/S1", "supp/S2", "1", "2", "3", "4")
+      } else if (issn == ISSNs.`Advances in Mathematics` && volume == 24 && number == "2") {
+        Stream("1", "2")
+      } else if (issn == "0012-365X" && volume == 57) {
+        Stream("1-2", "3")
+      } else if (issn == "0012-365X" && volume == 59) {
+        Stream("1-2", "3")
+      } else if (issn == "0012-365X" && volume == 7) {
+        Stream("1-2", "3-4")
+      } else if (issn == "0012-365X" && volume == 3) {
+        Stream("1-3", "4")
+      } else {
+        "" +: (numberOption match {
+          case Some(number) => Stream(number.split(" ").last)
+          case _ => Stream.from(1).map(_.toString)
+        })
+      }
+    }
+
+    val volumeURL = "http://www.sciencedirect.com/science/journal/" + issn.replaceAllLiterally("-", "") + "/" + volume
+    val pages = numbers.map({ n =>
+      if (n == "10") {
+        Logging.warn("Something went wrong while looking up " + identifierString + " on the Elsevier website.")
+        ???
+      }
+      val url = volumeURL + "/" + n
+      Logging.info("Scanning page: " + url)
+      (url, Article.ElsevierSlurpCache(url))
+    }).takeWhile({ p =>
+      val lines = p._2
+      val titleLine = lines.find(_.contains("<title>")).get
+      Logging.info(titleLine)
+      (titleLine.contains("| Vol " + volume + ",") || (titleLine.contains("| Vols ") && titleLine.contains(volume.toString))) &&
+        !titleLine.contains("In Progress") &&
+        !titleLine.contains("Topology | Vol 48, Isss 2–4, Pgs 41-224, (June–December, 2009)")
+    }).toSeq
+
+    val regex1 = """<span style="font-weight : bold ;">(.*)</span></a></h3>""".r
+    val regex2 = """<a href="(http://www.sciencedirect.com/science\?_ob=MiamiImageURL.*.pdf) " target="newPdfWin"""".r // probably obsolete now??
+    val regex3 = """<a class="cLink" rel="nofollow" href="(http://www.sciencedirect.com/science/article/pii/.*.pdf)" queryStr="\?_origin=browseVolIssue&_zone=rslt_list_item" target="_blank">""".r
+
+    val matches = (for (
+      (_, p) <- pages;
+      l <- p;
+      if l.contains("pdfIconSmall");
+      titleFound <- regex1.findFirstMatchIn(l);
+      urlFound <- regex3.findFirstMatchIn(l).orElse(regex2.findFirstMatchIn(l))
+    ) yield {
+      (
+        titleFound.group(1),
+        urlFound.group(1),
+        StringUtils.getLevenshteinDistance(titleFound.group(1).replaceAll("<[^>]*>", ""), textTitle).toDouble / title.length())
+    }).sortBy(_._3).distinct
+
+    Logging.info("   found matches:")
+    for (m <- matches) Logging.info(m)
+
+    val chosenMatch = if (matches.filter(_._3 == 0.0).size == 1
+      || matches.filter(_._3 <= 0.425).size == 1
+      || (matches.filter(_._3 <= 0.425).size > 1 && matches(0)._3 < matches(1)._3 / 2)) {
+      Some(matches.head._2)
+    } else if (title.startsWith("Erratum") && matches.count(_._1.startsWith("Erratum")) == 1) {
+      matches.find(_._1.startsWith("Erratum")).map(_._2)
+    } else if (issn == 0024 - 3795 && title.startsWith("Erratum") && matches.count(_._1.startsWith("From the editor-in-chief")) == 1) {
+      matches.find(_._1.startsWith("From the editor-in-chief")).map(_._2)
+    } else if (title.startsWith("Errata") && matches.count(_._1.startsWith("Errata")) == 1) {
+      matches.find(_._1.startsWith("Errata")).map(_._2)
+    } else if (title.startsWith("Preface") && matches.count(_._1.startsWith("Preface")) == 1) {
+      matches.find(_._1.startsWith("Preface")).map(_._2)
+    } else if (title.startsWith("Correction to") && matches.count(_._1.startsWith("Correction to")) == 1) {
+      matches.find(_._1.startsWith("Correction to")).map(_._2)
+    } else if (title.startsWith("Addendum") && matches.count(_._1.startsWith("Addendum")) == 1) {
+      matches.find(_._1.startsWith("Addendum")).map(_._2)
+    } else if (title.startsWith("Obituary") && matches.count(_._1.startsWith("Obituary")) == 1) {
+      matches.find(_._1.startsWith("Obituary")).map(_._2)
+    } else if (title.startsWith("Corrigendum") && matches.count(_._1.contains("orrigendum")) == 1) {
+      matches.find(_._1.contains("orrigendum")).map(_._2)
+    } else {
+      None
+    }
+
+    //      require(chosenMatch.nonEmpty, "\n" + title + matches.map(t => t._1 -> t._3).mkString("\n", "\n", ""))
+    for (c <- chosenMatch) println("Found URL for old Elsevier article: " + c)
+
+    chosenMatch
+  }
+
   lazy val pdfURL: Option[String] = {
     // This mimics the logic of direct-article-link.user.js 
 
-    if (ISSNs.Elsevier.contains(ISSN) && (URL.isEmpty || URL.get.startsWith("http://www.sciencedirect.com/science?_ob=GatewayURL"))) {
+    if (ISSNs.Elsevier.contains(ISSN) && (URL.isEmpty || URL.get.startsWith("http://www.sciencedirect.com/science?_ob=GatewayURL") || (ISSN == "0377-0427" && volume == 33) || (ISSN == "0166-218X" && volume == 59 /* DOI resolution fails for these */ ))) {
       // Old Elsevier articles, that MathSciNet doesn't know about
+      searchElsevierForPDFURL
 
-      Logging.info("Attempting to find URL for Elsevier article.")
-
-      val numbers = {
-        // Topology, special cases
-        if (ISSN == "0040-9383" && volume == 2) {
-          Stream("1-2", "3", "4")
-        } else if (ISSN == "0040-9383" && volume == 3) {
-          Stream("supp/S1", "supp/S2", "1", "2", "3", "4")
-        } else if (ISSN == ISSNs.`Advances in Mathematics` && volume == 24 && number == "2") {
-          Stream("1", "2")
-        } else {
-          numberOption match {
-            case Some(number) => Stream(number.split(" ").last)
-            case _ => Stream.from(1).map(_.toString)
-          }
-        }
-      }
-
-      val issn = ISSN match {
-        case "0890-5401" if yearOption.nonEmpty && year <= 1986 => "0019-9958"
-        case ow => ow
-      }
-
-      val pages = numbers.map({ n =>
-        if (n == "10") {
-          Logging.warn("Something went wrong while looking up " + identifierString + " on the Elsevier website.")
-          ???
-        }
-        val url = "http://www.sciencedirect.com/science/journal/" + issn.replaceAllLiterally("-", "") + "/" + volume + "/" + n
-        //        println("Scanning page: " + url)
-        (url, Article.ElsevierSlurpCache(url))
-      }).takeWhile({ p =>
-        val lines = p._2
-        //        println(lines.mkString("\n"))
-        val titleLine = lines.find(_.contains("<title>")).get
-        Logging.info(titleLine)
-        titleLine.contains("| Vol " + volume) &&
-          !titleLine.contains("In Progress") &&
-          !titleLine.contains("Topology | Vol 48, Isss 2–4, Pgs 41-224, (June–December, 2009)")
-      }).toSeq
-
-      val regex1 = """<span style="font-weight : bold ;">(.*)</span></a></h3>""".r
-      val regex2 = """<a href="(http://www.sciencedirect.com/science\?_ob=MiamiImageURL.*.pdf) " target="newPdfWin"""".r  // probably obsolete now??
-      val regex3 = """<a class="cLink" rel="nofollow" href="(http://www.sciencedirect.com/science/article/pii/.*.pdf)" queryStr="\?_origin=browseVolIssue&_zone=rslt_list_item" target="_blank">""".r
-
-      val matches = (for (
-        (_, p) <- pages;
-        l <- p;
-        if l.contains("pdfIconSmall");
-        titleFound <- regex1.findFirstMatchIn(l);
-        urlFound <- regex3.findFirstMatchIn(l).orElse(regex2.findFirstMatchIn(l))
-      ) yield {
-        (
-          titleFound.group(1),
-          urlFound.group(1),
-          StringUtils.getLevenshteinDistance(titleFound.group(1).replaceAll("<[^>]*>", ""), title).toDouble / title.length())
-      }).sortBy(_._3)
-
-      Logging.info("   found matches:")
-      for (m <- matches) Logging.info(m)
-
-      val chosenMatch = if (matches.filter(_._3 == 0.0).size == 1
-        || matches.filter(_._3 <= 0.425).size == 1
-        || (matches.filter(_._3 <= 0.425).size > 1 && matches(0)._3 < matches(1)._3 / 2)) {
-        Some(matches.head._2)
-      } else if (title.startsWith("Erratum") && matches.count(_._1.startsWith("Erratum")) == 1) {
-        matches.find(_._1.startsWith("Erratum")).map(_._2)
-      } else if (title.startsWith("Errata") && matches.count(_._1.startsWith("Errata")) == 1) {
-        matches.find(_._1.startsWith("Errata")).map(_._2)
-      } else if (title.startsWith("Correction to") && matches.count(_._1.startsWith("Correction to")) == 1) {
-        matches.find(_._1.startsWith("Correction to")).map(_._2)
-      } else if (title.startsWith("Addendum") && matches.count(_._1.startsWith("Addendum")) == 1) {
-        matches.find(_._1.startsWith("Addendum")).map(_._2)
-      } else if (title.startsWith("Obituary") && matches.count(_._1.startsWith("Obituary")) == 1) {
-        matches.find(_._1.startsWith("Obituary")).map(_._2)
-      } else if (title.startsWith("Corrigendum") && matches.count(_._1.contains("orrigendum")) == 1) {
-        matches.find(_._1.contains("orrigendum")).map(_._2)
-      } else {
-        None
-      }
-
-      //      require(chosenMatch.nonEmpty, "\n" + title + matches.map(t => t._1 -> t._3).mkString("\n", "\n", ""))
-      for (c <- chosenMatch) println("Found URL for old Elsevier article: " + c)
-
-      chosenMatch
     } else if (ISSN == ISSNs.`K-Theory`) {
       // K-Theory, have to get it from Portico for now
       // FIXME this is apparently broken
@@ -350,7 +376,7 @@ trait Article {
           case url if url.startsWith("http://dx.doi.org/10.1006") || url.startsWith("http://dx.doi.org/10.1016") => {
             // If we're not logged in, it's not going to work. Just use the HttpClientSlurp, and don't make any attempt to save the answer.
             val regex = """pdfurl="([^"]*)"""".r
-            regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => m.group(1))
+            regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => m.group(1)).orElse(searchElsevierForPDFURL)
           }
           // Cambridge University Press
           // 10.1017 10.1051
@@ -422,13 +448,13 @@ trait Article {
 
   private def exceptionalPDF: Option[InputStream] = {
     val path = Paths.get(System.getProperty("user.home") + "/media/exceptions/").resolve(identifierString + ".pdf")
-    if(Files.exists(path)) {
+    if (Files.exists(path)) {
       Some(new FileInputStream(path.toFile))
     } else {
       None
     }
   }
-  
+
   def pdf: Option[Array[Byte]] = pdfInputStream.flatMap(PDF.getBytes)
 
   val defaultFilenameTemplate = "$TITLE - $AUTHOR - $JOURNALREF - $MRNUMBER.pdf"
@@ -456,10 +482,10 @@ trait Article {
         .replaceAllLiterally("""\scr """, "")
         .replaceAllLiterally("""\rm """, "")
     }
-    stripMoreLaTeX(pandoc.latexToText(plainTitle))
+    stripMoreLaTeX(pandoc.latexToText(plainTitle)).stripPrefix(".")
   }
 
-  def sanitizedTitle = textTitle.stripPrefix(".").replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
+  def sanitizedTitle = textTitle.replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
     .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
 
   def wikiTitle = {
