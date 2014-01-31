@@ -248,7 +248,7 @@ object FirefoxSlurp extends FirefoxSlurp {
 
 trait MathSciNetMirrorSlurp extends Slurp {
   val offset = Random.nextInt(10 * 60 * 1000)
-  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ "ams.rice.edu",  "ams.impa.br",  "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
+  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ "ams.rice.edu", "ams.impa.br", "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {
@@ -291,6 +291,13 @@ trait S3CachingSlurp extends CachingSlurp {
     })
   }
 
+  def -=(url: String): this.type = {
+    import net.tqft.toolkit.collections.MapTransformer._
+    val hostName = new URL(url).getHost
+    s3.bytes(hostName + bucketSuffix).transformKeys({ relativeURL: String => "http://" + hostName + "/" + relativeURL }, { absoluteURL: String => new URL(absoluteURL).getFile().stripPrefix("/") }) -= url
+    this
+  }
+
   override def cache(url: String) = {
     val hostName = new URL(url).getHost
     caches(hostName)
@@ -310,10 +317,10 @@ object Throttle extends Logging {
   val lastThrottle = scala.collection.mutable.Map[String, Long]().withDefaultValue(0)
 
   // poisson distributed gaps
-   def exponentialDistribution(mean: Int) = {
+  def exponentialDistribution(mean: Int) = {
     (-mean * (Math.log(1.0 - scala.util.Random.nextDouble())))
   }
-   def normalDistribution = {
+  def normalDistribution = {
     import scala.math._
     import scala.util.Random.nextDouble
     sqrt(-2 * log(nextDouble)) * cos(2 * Pi * nextDouble)

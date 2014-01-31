@@ -12,8 +12,14 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import net.tqft.journals.Journal
 import net.tqft.toolkit.Logging
+import net.tqft.toolkit.Throttle
 
 object VerifyJournalCompleteApp extends App {
+
+  val missingButWhoCares_? = Seq("MR0337466", "MR0337465", "MR0337467") ++ // birthday stuff
+    Seq("MR0585438", "MR0585435", "MR0973821") ++ // bad data on mathscinet?
+    Seq("MR0949339") ++ // a memorial
+    Seq("MR0532067") // errata
 
   Article.disableBibtexSaving
 
@@ -34,9 +40,11 @@ object VerifyJournalCompleteApp extends App {
     }).iterator.asScala
   }
 
-  for ((issn, name) <- elsevierJournals.headOption) {
+  var journalCount = 0
+  for ((issn, name) <- scala.util.Random.shuffle(elsevierJournals.toSeq)) {
 
-    println("Checking " + name)
+    journalCount += 1
+    println("Checking " + name + " (" + journalCount + "/" + elsevierJournals.size + ")")
 
     val journalPath = target.resolve(name)
 
@@ -49,44 +57,62 @@ object VerifyJournalCompleteApp extends App {
 
     val files = scala.collection.mutable.Set[Path]() ++ pdfs(journalPath)
 
+    val throttle = Throttle.linearBackoff(10000)
+
     var count = 0
-    for (article <- Journal(issn).upToYear(2008); if article.journalOption != Some("Advancement in Math.")) {
-      count = count + 1
-      val filename = article.constructFilename()
-      val sourceFile = source.resolve(filename)
-      if (!Files.exists(sourceFile)) {
-        println("Not found in source directory: ")
-        println(filename)
-        println(article.bibtex.toBIBTEXString)
-        article.savePDF(source.toFile())
+    val articles = Journal(issn).openAccess.filterNot(a => missingButWhoCares_?.contains(a.identifierString)).toSeq
+
+    println("Total articles: " + articles.size)
+    println(articles.groupBy(_.year).mapValues(_.size).toSeq.sorted.mkString(" "))
+
+    def incr {
+      synchronized {
+        count += 1
       }
-      if (Files.exists(sourceFile)) {
-        val targetFile = journalPath.resolve(filename)
-        if (!Files.exists(targetFile)) {
-          println("Not found in target directory: ")
+    }
+
+    for (group <- articles.grouped(100); article <- group.par; if article.journalOption != Some("Advancement in Math.")) {
+      try {
+        incr
+        val filename = article.constructFilename()
+        val sourceFile = source.resolve(filename)
+        if (!Files.exists(sourceFile)) {
+          println("Not found in source directory: ")
           println(filename)
           println(article.bibtex.toBIBTEXString)
-          try {
-            println("Creating symbolic link ...")
-            Files.createSymbolicLink(targetFile, sourceFile)
-          } catch {
-            case e: Exception => {
-              Logging.warn("Exception while creating symbolic link for:\n" + article.bibtex.toBIBTEXString, e)
+          article.savePDF(source.toFile())
+        }
+        if (Files.exists(sourceFile)) {
+          val targetFile = journalPath.resolve(filename)
+          if (!Files.exists(targetFile)) {
+            println("Not found in target directory: ")
+            println(filename)
+            println(article.bibtex.toBIBTEXString)
+            try {
+              println("Creating symbolic link ...")
+              Files.createSymbolicLink(targetFile, sourceFile)
+            } catch {
+              case e: Exception => {
+                Logging.warn("Exception while creating symbolic link for:\n" + article.bibtex.toBIBTEXString, e)
+              }
+            }
+          } else {
+            synchronized {
+              files -= targetFile
             }
           }
-        } else {
-          files -= targetFile
+        }
+      } catch {
+        case e: Exception => {
+          Logging.warn("Exception while checking: " + article.bibtex.toBIBTEXString, e)
         }
       }
     }
 
     println("Found " + count + " articles in " + name)
-    if (files.nonEmpty) {
-      println("There were some files that perhaps shouldn't be there, deleting now...")
-      for (file <- files) {
-        println(file.getFileName)
-        Files.delete(file)
-      }
+    for (file <- files) {
+      println("Deleting: " + file.getFileName)
+      Files.delete(file)
     }
   }
 }
