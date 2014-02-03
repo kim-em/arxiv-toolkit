@@ -22,10 +22,9 @@ object CitationSearch extends App {
     val index = scala.collection.mutable.Map[String, scala.collection.mutable.Set[Int]]()
     
     val (t, _) = Profiler.timing(
-      for (a <- articlesPaged) {
+      for (a <- articlesPaged.take(10000)) {
         try {
-          val citation = a.constructFilename(maxLength = None).stripSuffix(".pdf")
-          for (w <- citation.split(" ").map(_.stripPrefix("(").stripSuffix(")").stripSuffix(",").stripSuffix("."))) {
+          for (w <- a.fullCitation.split(" ").map(_.stripPrefix("(").stripSuffix(")").stripSuffix(",").stripSuffix(".").toLowerCase)) {
             index.getOrElseUpdate(w, scala.collection.mutable.Set[Int]()) += a.identifier
           }
         } catch {

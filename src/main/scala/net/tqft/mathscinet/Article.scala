@@ -40,6 +40,8 @@ trait Article { article =>
   def bibtexURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=bibtex&pg1=MR&s1=" + identifier
   def endnoteURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=endnote&pg1=MR&s1=" + identifier
 
+  override def toString = fullCitation
+  
   lazy val slurp = Slurp(MathSciNetURL).toList
 
   var endnoteData: Option[Map[String, List[String]]] = None
@@ -511,6 +513,8 @@ trait Article { article =>
         })
     }).mkString("$")
   }
+  
+  def fullCitation = constructFilename(maxLength = None).stripSuffix(".pdf")
   
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate, maxLength: Option[Int] = Some(250)) = {
     val authorNames = authors.map(a => pandoc.latexToText(a.name))
