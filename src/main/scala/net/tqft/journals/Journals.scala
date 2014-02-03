@@ -53,7 +53,7 @@ case class Journal(issn: String) {
       for (a <- upToYear(2009);
       v <- a.volumeOption; 
       if v >= Journals.earliestOpenAccessVolume(a.correctedISSN);
-      if a.numberOption.isEmpty || !a.number.contains("index")
+      if a.numberOption.isEmpty || (!a.number.contains("index") && !a.number.contains("Index"))
       ) yield a
     } else {
       ???
@@ -76,7 +76,8 @@ object Journals {
     "0095-8956" -> 10,
     "1567-8326" -> 47,
     "0895-7177" -> 10,
-    "0166-8641" -> 11).withDefault(_ => 1)
+    "0166-8641" -> 11, 
+    "0019-9958" -> 12 /* this appears to be an oversight? c.f. my email on 2014-02-03 */).withDefault(_ => 1)
 
   //  val journalNames = {
   //    import scala.slick.driver.MySQLDriver.simple._

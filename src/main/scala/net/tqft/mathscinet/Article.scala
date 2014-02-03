@@ -317,7 +317,7 @@ trait Article { article =>
 
     val chosenMatch = if (matches.filter(_._3 == 0.0).size == 1
       || matches.filter(_._3 <= 0.425).size == 1
-      || (matches.filter(_._3 <= 0.425).size > 1 && matches(0)._3 < matches(1)._3 / 2)) {
+      || (matches.filter(_._3 <= 0.425).size > 1 && matches(0)._3 < matches(1)._3 / 1.99)) {
       Some(matches.head._2)
     } else if (title.startsWith("Erratum") && matches.count(_._1.startsWith("Erratum")) == 1) {
       matches.find(_._1.startsWith("Erratum")).map(_._2)
