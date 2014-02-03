@@ -93,7 +93,7 @@ object VerifyJournalCompleteApp extends App {
               Files.createSymbolicLink(targetFile, sourceFile)
             } catch {
               case e: Exception => {
-                Logging.warn("Exception while creating symbolic link for:\n" + article.bibtex.toBIBTEXString, e)
+                Logging.error("Exception while creating symbolic link for:\n" + article.bibtex.toBIBTEXString, e)
               }
             }
           } else {
@@ -104,7 +104,7 @@ object VerifyJournalCompleteApp extends App {
         }
       } catch {
         case e: Exception => {
-          Logging.warn("Exception while checking: " + article.bibtex.toBIBTEXString, e)
+          Logging.error("Exception while checking: " + article.bibtex.toBIBTEXString, e)
         }
       }
     }
