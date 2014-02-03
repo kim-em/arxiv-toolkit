@@ -1,0 +1,1 @@
+cat - | grep DOI | cut -c15- | sed -e 's/},$//' | sort
