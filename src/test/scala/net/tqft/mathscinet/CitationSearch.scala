@@ -11,10 +11,12 @@ object CitationSearch extends App {
   import scala.slick.driver.MySQLDriver.simple._
 
   SQL { implicit session =>
-    def articlesPage(k: Int) = (for (
+    def articlesPage(k: Int) = {
+      println("retrieving page " + k)
+      (for (
       a <- SQLTables.mathscinet
     ) yield a).drop(k * 1000).take(1000).list
-
+    }
     def articlesPaged = Iterator.from(0).map(articlesPage).takeWhile(_.nonEmpty).flatten
 
     val index = scala.collection.mutable.Map[String, scala.collection.mutable.Set[Int]]()
