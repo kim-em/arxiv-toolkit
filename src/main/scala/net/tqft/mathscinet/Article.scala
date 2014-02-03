@@ -321,14 +321,16 @@ trait Article { article =>
       Some(matches.head._2)
     } else if (title.startsWith("Erratum") && matches.count(_._1.startsWith("Erratum")) == 1) {
       matches.find(_._1.startsWith("Erratum")).map(_._2)
-    } else if (issn == 0024 - 3795 && title.startsWith("Erratum") && matches.count(_._1.startsWith("From the editor-in-chief")) == 1) {
-      matches.find(_._1.startsWith("From the editor-in-chief")).map(_._2)
+    } else if (issn == "0024-3795" && title.startsWith("Erratum") && matches.count(_._1.toLowerCase.startsWith("from the editor-in-chief")) == 1) {
+      matches.find(_._1.toLowerCase.startsWith("from the editor-in-chief")).map(_._2)
     } else if (title.startsWith("Errata") && matches.count(_._1.startsWith("Errata")) == 1) {
       matches.find(_._1.startsWith("Errata")).map(_._2)
     } else if (title.startsWith("Preface") && matches.count(_._1.startsWith("Preface")) == 1) {
       matches.find(_._1.startsWith("Preface")).map(_._2)
     } else if (title.startsWith("Correction to") && matches.count(_._1.startsWith("Correction to")) == 1) {
       matches.find(_._1.startsWith("Correction to")).map(_._2)
+    } else if (title.startsWith("Laudatum") && matches.count(_._1.startsWith("Laudatum")) == 1) {
+      matches.find(_._1.startsWith("Laudatum")).map(_._2)
     } else if (title.startsWith("Addendum") && matches.count(_._1.startsWith("Addendum")) == 1) {
       matches.find(_._1.startsWith("Addendum")).map(_._2)
     } else if (title.startsWith("Addenda") && matches.count(_._1.startsWith("Addenda")) == 1) {
@@ -343,7 +345,6 @@ trait Article { article =>
       None
     }
 
-    //      require(chosenMatch.nonEmpty, "\n" + title + matches.map(t => t._1 -> t._3).mkString("\n", "\n", ""))
     for (c <- chosenMatch) println("Found URL for old Elsevier article: " + c)
 
     chosenMatch
@@ -352,11 +353,7 @@ trait Article { article =>
   lazy val pdfURL: Option[String] = {
     // This mimics the logic of direct-article-link.user.js 
 
-    if (ISSNs.Elsevier.contains(ISSN) && (URL.isEmpty || URL.get.startsWith("http://www.sciencedirect.com/science?_ob=GatewayURL") || (ISSN == "0377-0427" && volume == 33) || (ISSN == "0166-218X" && volume == 59 /* DOI resolution fails for these */ ))) {
-      // Old Elsevier articles, that MathSciNet doesn't know about
-      searchElsevierForPDFURL
-
-    } else if (ISSN == ISSNs.`K-Theory`) {
+    val lookup = if (ISSN == ISSNs.`K-Theory`) {
       // K-Theory, have to get it from Portico for now
       // FIXME this is apparently broken
       val toc = HttpClientSlurp.getString("http://www.portico.org/Portico/browse/access/toc.por?journalId=ISSN_09203036&issueId=ISSN_09203036v" + volume.toString + "i" + number)
@@ -440,10 +437,12 @@ trait Article { article =>
         }
       }
     }
+
+      lookup.orElse(if(ISSNs.Elsevier.contains(ISSN)) searchElsevierForPDFURL else None)
   }
 
   def pdfInputStream: Option[InputStream] = {
-    val result = if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
+    lazy val result = if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
       // Duke expects to see a Referer field.
       pdfURL.map({ u =>
         HttpClientSlurp.getStream(u, referer = Some(u))
@@ -451,12 +450,13 @@ trait Article { article =>
     } else {
       pdfURL.map(HttpClientSlurp.getStream)
     }
-    result.orElse(exceptionalPDF)
+    exceptionalPDF.orElse(result)
   }
 
   private def exceptionalPDF: Option[InputStream] = {
     val path = Paths.get(System.getProperty("user.home") + "/media/exceptions/").resolve(identifierString + ".pdf")
     if (Files.exists(path)) {
+      Logging.info("Found a local copy of the PDF, marked as exceptional.")
       Some(new FileInputStream(path.toFile))
     } else {
       None
@@ -511,8 +511,8 @@ trait Article { article =>
         })
     }).mkString("$")
   }
-
-  def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
+  
+  def constructFilename(filenameTemplate: String = defaultFilenameTemplate, maxLength: Option[Int] = Some(250)) = {
     val authorNames = authors.map(a => pandoc.latexToText(a.name))
     val textCitation = pandoc.latexToText(citation)
 
@@ -522,13 +522,13 @@ trait Article { article =>
         .replaceAllLiterally("$AUTHOR", authorNames.mkString(" and "))
         .replaceAllLiterally("$JOURNALREF", textCitation)
         .replaceAllLiterally("$MRNUMBER", identifierString)
-      if (attempt.getBytes().length > 250) {
+      if (maxLength.nonEmpty && attempt.getBytes().length > maxLength.get) {
         val shortAuthors = if (authors.size > 4) {
           authorNames.head + " et al."
         } else {
           authorNames.mkString(" and ")
         }
-        val maxCitationLength = scala.math.max(90, 250 - (filenameTemplate
+        val maxCitationLength = scala.math.max(maxLength.get * 9 / 25, maxLength.get - (filenameTemplate
           .replaceAllLiterally("$AUTHOR", shortAuthors)
           .replaceAllLiterally("$MRNUMBER", identifierString)
           .replaceAllLiterally("$TITLE", sanitizedTitle).getBytes().length - "$JOURNALREF".size))
@@ -541,13 +541,13 @@ trait Article { article =>
           .replaceAllLiterally("$AUTHOR", shortAuthors)
           .replaceAllLiterally("$JOURNALREF", shortCitation)
           .replaceAllLiterally("$MRNUMBER", identifierString)
-        val maxTitleLength = 250 - (partialReplacement.getBytes().length - "$TITLE".size)
+        val maxTitleLength = maxLength.get - (partialReplacement.getBytes().length - "$TITLE".size)
         val shortTitle = if (sanitizedTitle.getBytes().length > maxTitleLength) {
           sanitizedTitle.reverse.tails.find(_.getBytes.length + 3 <= maxTitleLength).get.reverse + "..."
         } else {
           sanitizedTitle
         }
-        partialReplacement.replaceAllLiterally("$TITLE", shortTitle).ensuring(_.getBytes().length <= 250)
+        partialReplacement.replaceAllLiterally("$TITLE", shortTitle).ensuring(_.getBytes().length <= maxLength.get)
       } else {
         attempt
       }
