@@ -31,7 +31,7 @@ import java.nio.file.Paths
 import java.nio.file.DirectoryStream
 import java.nio.file.Path
 
-trait Article {
+trait Article { article =>
   def identifier: Int
   def identifierString = "MR" + ("0000000" + identifier.toString).takeRight(7)
   //  def shortIdentifierString = "MR" + identifier.toString
@@ -295,17 +295,21 @@ trait Article {
     val regex2 = """<a href="(http://www.sciencedirect.com/science\?_ob=MiamiImageURL.*.pdf) " target="newPdfWin"""".r // probably obsolete now??
     val regex3 = """<a class="cLink" rel="nofollow" href="(http://www.sciencedirect.com/science/article/pii/.*.pdf)" queryStr="\?_origin=browseVolIssue&_zone=rslt_list_item" target="_blank">""".r
 
+    val regex4 = """<br><i>Pages ([-0-9]*)</i><br>""".r
+    
     val matches = (for (
       (_, p) <- pages;
       l <- p;
       if l.contains("pdfIconSmall");
       titleFound <- regex1.findFirstMatchIn(l);
-      urlFound <- regex3.findFirstMatchIn(l).orElse(regex2.findFirstMatchIn(l))
+      urlFound <- regex3.findFirstMatchIn(l).orElse(regex2.findFirstMatchIn(l)).map(_.group(1));
+      titleAndPagesFound = titleFound.group(1).replaceAll("<[^>]*>", "") + " " + regex4.findFirstMatchIn(l).map(_.group(1)).getOrElse("")
     ) yield {
+      val titlesAndPages = textTitle + " " + pagesOption.getOrElse("")
       (
-        titleFound.group(1),
-        urlFound.group(1),
-        StringUtils.getLevenshteinDistance(titleFound.group(1).replaceAll("<[^>]*>", ""), textTitle).toDouble / title.length())
+        titleAndPagesFound,
+        urlFound,
+        StringUtils.getLevenshteinDistance(titleAndPagesFound, titlesAndPages).toDouble / titlesAndPages.length())
     }).sortBy(_._3).distinct
 
     Logging.info("   found matches:")
@@ -327,10 +331,14 @@ trait Article {
       matches.find(_._1.startsWith("Correction to")).map(_._2)
     } else if (title.startsWith("Addendum") && matches.count(_._1.startsWith("Addendum")) == 1) {
       matches.find(_._1.startsWith("Addendum")).map(_._2)
+    } else if (title.startsWith("Addenda") && matches.count(_._1.startsWith("Addenda")) == 1) {
+      matches.find(_._1.startsWith("Addenda")).map(_._2)
     } else if (title.startsWith("Obituary") && matches.count(_._1.startsWith("Obituary")) == 1) {
       matches.find(_._1.startsWith("Obituary")).map(_._2)
     } else if (title.startsWith("Corrigendum") && matches.count(_._1.contains("orrigendum")) == 1) {
       matches.find(_._1.contains("orrigendum")).map(_._2)
+    } else if (title.startsWith("Corrigenda") && matches.count(_._1.contains("orrigenda")) == 1) {
+      matches.find(_._1.contains("orrigenda")).map(_._2)
     } else {
       None
     }
