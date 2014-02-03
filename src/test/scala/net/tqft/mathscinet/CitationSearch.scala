@@ -39,8 +39,9 @@ object CitationSearch extends App {
 //    println(index.values.map(_.size).tally.sorted)
     
     val out = new PrintStream(new FileOutputStream("terms"))
-    for(p <- index) {
-      out.println(p)
+    for((term, documents) <- index) {
+      out.println(term)
+      out.println(documents.mkString(","))
     }
   }
 
