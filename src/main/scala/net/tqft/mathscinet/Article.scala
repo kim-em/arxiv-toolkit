@@ -587,7 +587,12 @@ object Article {
     apply(identifierString.stripPrefix("MR").toInt)
   }
 
-  def apply(identifier: Int): Article = {
+  val apply = {
+    import net.tqft.toolkit.functions.Memo._
+    (_apply _).memo
+  }
+  
+  def _apply(identifier: Int): Article = {
     import scala.slick.driver.MySQLDriver.simple._
     val lookup = SQL { implicit session =>
       (for (
