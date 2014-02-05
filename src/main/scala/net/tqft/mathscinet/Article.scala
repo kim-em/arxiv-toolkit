@@ -588,8 +588,10 @@ object Article {
   }
 
   val apply = {
-    import net.tqft.toolkit.functions.Memo._
-    (_apply _).memo
+//    import net.tqft.toolkit.functions.Memo._
+//    (_apply _).memo
+    
+    _apply _
   }
   
   def _apply(identifier: Int): Article = {
