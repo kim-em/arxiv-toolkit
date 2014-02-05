@@ -16,13 +16,14 @@ object SQLAuxApp extends App {
     def articlesPage(k: Int) = {
       println("retrieving page " + k)
       (for (
-        a <- SQLTables.mathscinet
+        a <- SQLTables.mathscinet;
+        if !SQLTables.mathscinet_aux.filter(_.MRNumber === a.MRNumber).exists
       ) yield a).drop(k * 1000).take(1000).list
     }
 
-    def articlesPaged = Iterator.from(0).map(articlesPage).takeWhile(_.nonEmpty).flatten
+    def articlesPaged = Iterator.from(0).map(articlesPage).takeWhile(_.nonEmpty)
 
-    for (group <- articlesPaged.grouped(1000); groupPar = { val p = group.par; p.tasksupport = pool; p }; a <- groupPar) {
+    for (group <- articlesPaged; groupPar = { val p = group.par; p.tasksupport = pool; p }; a <- groupPar) {
       try {
         SQLTables.mathscinet_aux += ((a.identifier, a.textTitle, a.wikiTitle, a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and "), pandoc.latexToText(a.citation)))
         println("inserted data for " + a.identifierString)
