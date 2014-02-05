@@ -8,9 +8,8 @@ import net.tqft.util.pandoc
 import scala.collection.parallel.ForkJoinTaskSupport
 
 object SQLAuxApp extends App {
-  
-    val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
+  val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
 
   SQL { implicit session =>
     def articlesPage(k: Int) = {
@@ -21,21 +20,24 @@ object SQLAuxApp extends App {
       ) yield a).drop(k * 1000).take(1000).list
     }
 
-    def articlesPaged = Iterator.from(0).map(articlesPage).takeWhile(_.nonEmpty)
+    var group = articlesPage(1)
+    while (group.nonEmpty) {
 
-    for (group <- articlesPaged; groupPar = { val p = group.par; p.tasksupport = pool; p }; a <- groupPar) {
-      try {
-        SQLTables.mathscinet_aux += ((a.identifier, a.textTitle, a.wikiTitle, a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and "), pandoc.latexToText(a.citation)))
-        println("inserted data for " + a.identifierString)
-      } catch {
-        case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
-          println("skipping " + a.identifierString)
-        }
-        case e: Exception => {
-          Logging.warn("Exception while inserting \n" + a.bibtex.toBIBTEXString)
+      for (a <- group) {
+        try {
+          SQLTables.mathscinet_aux += ((a.identifier, a.textTitle, a.wikiTitle, a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and "), pandoc.latexToText(a.citation)))
+          println("inserted data for " + a.identifierString)
+        } catch {
+          case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
+            println("skipping " + a.identifierString)
+          }
+          case e: Exception => {
+            Logging.warn("Exception while inserting \n" + a.bibtex.toBIBTEXString)
+          }
         }
       }
-    }
+      group = articlesPage(1)
 
+    }
   }
 }
