@@ -73,7 +73,7 @@ object Scholar extends App {
   }
 
   for (
-    g <- (net.tqft.mlp.extendedCoverage ++ net.tqft.mlp.topJournals(100)).grouped(1000);
+    g <- (/* net.tqft.mlp.extendedCoverage ++ */ net.tqft.mlp.topJournals(100)).grouped(1000);
     a <- scala.util.Random.shuffle(g)
   ) {
     println(a.DOI)
