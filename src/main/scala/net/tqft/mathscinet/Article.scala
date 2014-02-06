@@ -30,6 +30,9 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.DirectoryStream
 import java.nio.file.Path
+import scala.concurrent.future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.BitSet
 
 trait Article { article =>
   def identifier: Int
@@ -41,7 +44,7 @@ trait Article { article =>
   def endnoteURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=endnote&pg1=MR&s1=" + identifier
 
   override def toString = fullCitation
-  
+
   lazy val slurp = Slurp(MathSciNetURL).toList
 
   var endnoteData: Option[Map[String, List[String]]] = None
@@ -298,7 +301,7 @@ trait Article { article =>
     val regex3 = """<a class="cLink" rel="nofollow" href="(http://www.sciencedirect.com/science/article/pii/.*.pdf)" queryStr="\?_origin=browseVolIssue&_zone=rslt_list_item" target="_blank">""".r
 
     val regex4 = """<br><i>Pages ([-0-9]*)</i><br>""".r
-    
+
     val matches = (for (
       (_, p) <- pages;
       l <- p;
@@ -436,11 +439,14 @@ trait Article { article =>
             Some(url.replaceAllLiterally("http://aif.cedram.org/item?id=", "http://aif.cedram.org/cedram-bin/article/") + ".pdf")
           }
           case url if url.startsWith("http://muse.jhu.edu/journals/american_journal_of_mathematics/") => Some(url)
+          // http://www.combinatorics.org/Volume_12/Abstracts/v12i1n3.html
+          // http://www.combinatorics.org/ojs/index.php/eljc/article/view/v12i1n3/pdf
+          case url if url.startsWith("http://www.combinatorics.org/") => Some("http://www.combinatorics.org/ojs/index.php/eljc/article/view/" + url.split("/").last.stripSuffix(".html") + "/pdf")
         }
       }
     }
 
-      lookup.orElse(if(ISSNs.Elsevier.contains(ISSN)) searchElsevierForPDFURL else None)
+    lookup.orElse(if (ISSNs.Elsevier.contains(ISSN)) searchElsevierForPDFURL else None)
   }
 
   def pdfInputStream: Option[InputStream] = {
@@ -513,9 +519,9 @@ trait Article { article =>
         })
     }).mkString("$")
   }
-  
+
   def fullCitation = constructFilename(maxLength = None).stripSuffix(".pdf")
-  
+
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate, maxLength: Option[Int] = Some(250)) = {
     val authorNames = authors.map(a => pandoc.latexToText(a.name))
     val textCitation = pandoc.latexToText(citation)
@@ -588,12 +594,12 @@ object Article {
   }
 
   val apply = {
-//    import net.tqft.toolkit.functions.Memo._
-//    (_apply _).memo
-    
+    //    import net.tqft.toolkit.functions.Memo._
+    //    (_apply _).memo
+
     _apply _
   }
-  
+
   def _apply(identifier: Int): Article = {
     import scala.slick.driver.MySQLDriver.simple._
     val lookup = SQL { implicit session =>
@@ -633,10 +639,29 @@ object Article {
           override val identifier = id
         }
         result.bibtexData = Some(b)
+        if (!Articles.identifiersInDatabase.contains(id)) {
+          future {
+            import scala.slick.driver.MySQLDriver.simple._
+
+            try {
+              SQL { implicit session =>
+                SQLTables.mathscinet += result
+                Logging.info("Saving to the database:\n" + bibtexString)
+              }
+            } catch {
+              case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {}
+              case e: Exception => {
+                Logging.error("Exception while inserting \n" + result.bibtex.toBIBTEXString, e)
+              }
+            }
+          }
+        }
         result
     })
   }
 
+
+  
   val ElsevierSlurpCache = {
     import net.tqft.toolkit.functions.Memo._
     { url: String => HttpClientSlurp.apply(url).toList }.memo
@@ -707,6 +732,26 @@ object Articles {
   def withDOIPrefix(prefix: String): Iterator[Article] = {
     val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(50))
     for (group <- AnonymousS3("DOI2mathscinet").keysWithPrefix(prefix).iterator.grouped(1000); doi <- { val p = group.par; p.tasksupport = pool; p }; article <- Article.fromDOI(doi)) yield article
+  }
+
+    lazy val identifiersInDatabase = {
+    Logging.info("Finding out what's already in the database ...")
+    import scala.slick.driver.MySQLDriver.simple._
+     val result = SQL { implicit session =>
+      new scala.collection.mutable.BitSet(4000000) ++= SQLTables.mathscinet.map(_.MRNumber).iterator
+    }
+    Logging.info(s" ... ${result.size} articles")
+    result
+  }
+
+    lazy val ISSNsInDatabase = {
+    Logging.info("Finding out which ISSNs appear in the database ...")
+    import scala.slick.driver.MySQLDriver.simple._
+     val result = SQL { implicit session =>
+      SQLTables.mathscinet.groupBy(x => x.issn).map(_._1).list.flatten.map(_.toUpperCase)
+    }
+    Logging.info(s" ... ${result.size} ISSNs")
+    result
   }
 
 }

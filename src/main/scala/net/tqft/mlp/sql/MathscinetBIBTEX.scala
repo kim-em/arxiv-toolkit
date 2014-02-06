@@ -5,13 +5,15 @@ import net.tqft.mathscinet.Article
 import net.tqft.util.BIBTEX
 import java.sql.Date
 
-class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String)](tag, "mathscinet_aux") {
+class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String, Option[String])](tag, "mathscinet_aux") {
  def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
   def textTitle = column[String]("textTitle")
   def wikiTitle = column[String]("wikiTitle")
   def textAuthors = column[String]("textAuthors")
   def textCitation = column[String]("textCitation")
-  def * = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation)
+  def pdf = column[Option[String]]("pdf")
+  def * = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation, pdf)
+  def citationData = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation)
 }
 
 class MathscinetBIBTEX(tag: Tag) extends Table[Article](tag, "mathscinet_bibtex") {
@@ -93,7 +95,9 @@ class Arxiv(tag: Tag) extends Table[(String, Date, Date, String, String, String,
 object SQLTables {
   val mathscinet = TableQuery[MathscinetBIBTEX]
   val arxiv = TableQuery[Arxiv]
-  val mathscinet_aux = TableQuery[MathscinetAux]
+  object mathscinet_aux extends TableQuery(new MathscinetAux(_)) {
+    def citationData = map(aux => aux.citationData)
+  }
 
   def mathscinet(ISSNs: TraversableOnce[String], years: TraversableOnce[Int]): Iterator[Article] = {
     import scala.slick.driver.MySQLDriver.simple._
