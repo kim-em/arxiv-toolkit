@@ -286,7 +286,14 @@ trait Article { article =>
       }
       val url = volumeURL + "/" + n
       Logging.info("Scanning page: " + url)
-      (url, Article.ElsevierSlurpCache(url))
+      try {
+        (url, Article.ElsevierSlurpCache(url))
+      } catch {
+        case e: Exception => {
+          Logging.error("Exception while looking up Elsevier: ", e)
+          (url, Nil)
+        }
+      }
     }).takeWhile({ p =>
       val lines = p._2
       val titleLine = lines.find(_.contains("<title>")).get

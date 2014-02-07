@@ -22,7 +22,7 @@ object SQLAuxApp extends App {
 
     var group = articlesPage(0)
     while (group.nonEmpty) {
-
+    	println(group.size)
         for (a <- { val p = group.par; p.tasksupport = pool; p }) {
           try {
             val data = (a.identifier, a.textTitle, a.wikiTitle, a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and "), pandoc.latexToText(a.citation))
