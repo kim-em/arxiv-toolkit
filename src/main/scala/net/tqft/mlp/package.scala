@@ -29,7 +29,7 @@ package object mlp {
     }
   }
 
-  def extendedJournals = Iterator() ++ selectedJournals
+  def extendedJournals = ISSNs.Elsevier.iterator ++ Iterator() ++ selectedJournals
   def extendedYears = Seq(2010, 2013)
 
   def extendedCoverage = for (j <- extendedJournals; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a

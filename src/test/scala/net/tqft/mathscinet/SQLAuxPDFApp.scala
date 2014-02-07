@@ -9,8 +9,6 @@ import scala.collection.parallel.ForkJoinTaskSupport
 
 object SQLAuxPDFApp extends App {
 
-  val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
-
   SQL { implicit session =>
     def articlesPage(k: Int) = {
       println("retrieving page " + k)
