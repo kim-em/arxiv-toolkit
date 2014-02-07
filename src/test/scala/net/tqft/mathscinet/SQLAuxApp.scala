@@ -20,7 +20,7 @@ object SQLAuxApp extends App {
       ) yield a).drop(k * 1000).take(1000).list
     }
 
-    var group = articlesPage(4)
+    var group = articlesPage(0)
     while (group.nonEmpty) {
 
         for (a <- { val p = group.par; p.tasksupport = pool; p }) {
@@ -37,7 +37,7 @@ object SQLAuxApp extends App {
             }
         }
       }
-      group = articlesPage(4)
+      group = articlesPage(0)
 
     }
   }

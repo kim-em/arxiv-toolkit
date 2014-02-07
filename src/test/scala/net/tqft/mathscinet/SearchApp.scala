@@ -6,7 +6,7 @@ import net.tqft.util.FirefoxSlurp
 import net.tqft.journals.ISSNs
 
 object SearchApp extends App {
-  println(Search.inTopJournalsJumbled(200).size)
+//  println(Search.inTopJournalsJumbled(200).size)
   println(Search.inJournalsJumbled(Articles.ISSNsInDatabase).size)
   println(Search.during(2013).size)
   

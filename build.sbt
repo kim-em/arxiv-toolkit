@@ -23,6 +23,7 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "toolkit-collections" % "0.1.16-SNAPSHOT",
 	"net.tqft" %% "toolkit-amazon" % "0.1.16-SNAPSHOT",
 	"net.tqft" %% "toolkit-wiki" % "0.1.16-SNAPSHOT",
+	"net.tqft" %% "citation-search" % "0.1",
 	"com.ibm.icu" % "icu4j" % "51.1",
 	"rome" % "rome" % "1.0",
 	"org.apache.httpcomponents" % "httpclient" % "4.3.2", // jets3t can't cope with 4.2, but 4.3.2 should be okay again

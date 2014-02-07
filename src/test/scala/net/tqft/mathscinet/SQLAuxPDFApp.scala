@@ -23,13 +23,13 @@ object SQLAuxPDFApp extends App {
       ) yield (a, aux)).drop(k * 1000).take(1000).list
     }
 
-    var group = articlesPage(0)
+    var group = articlesPage(2)
     while (group.nonEmpty) {
 
       for ((a, aux) <- group) {
           try {
-            val pdf = a.pdfURL.getOrElse("-")
-            SQLTables.mathscinet_aux.filter(_.MRNumber === a.identifier).update(aux.copy(_6 = Some(pdf)))
+            val pdf = a.stablePDFURL.getOrElse("-")
+            SQLTables.mathscinet_aux.filter(_.MRNumber === a.identifier).map(_.pdf).update(Some(pdf))
             println("Adding PDF URL for " + a.identifierString + ": " + pdf)
           } catch {
             case e: Exception => {
@@ -38,7 +38,7 @@ object SQLAuxPDFApp extends App {
             }
           }
       }
-      group = articlesPage(0)
+      group = articlesPage(2)
 
     }
   }

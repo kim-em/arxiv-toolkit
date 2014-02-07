@@ -373,7 +373,7 @@ trait Article { article =>
       Some(result)
     } else {
 
-      URL flatMap { url =>
+      correctedURL flatMap { url =>
         url match {
           // Elsevier
           // 10.1006 10.1016, Elsevier, has complicated URLs, e.g.
@@ -396,7 +396,14 @@ trait Article { article =>
           // We also need to grab some 10.1112 DOIs, for LMS journals run by CMP e.g. 10.1112/S0010437X04001034
           case url if url.startsWith("http://dx.doi.org/10.1017/S") || url.startsWith("http://dx.doi.org/10.1017/is") || url.startsWith("http://dx.doi.org/10.1051/S") || url.startsWith("http://dx.doi.org/10.1112/S0010437X") || url.startsWith("http://dx.doi.org/10.1112/S14611570") || url.startsWith("http://dx.doi.org/10.1112/S00255793") => {
             val regex = """<a href="([^"]*)"[ \t\n]*title="View PDF" class="article-pdf">""".r
-            regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
+            try {
+              regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
+            } catch {
+              case e: Exception => {
+                Logging.error("Exception while reading from CUP", e)
+                None
+              }
+            }
           }
 
           // Wiley
@@ -429,8 +436,15 @@ trait Article { article =>
               case Some(redirect) => Some(redirect)
             }
           }
-          case url if url.startsWith("http://projecteuclid.org/getRecord?id=") => {
-            Some(url.replaceAllLiterally("http://projecteuclid.org/getRecord?id=", "http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle="))
+
+          // new URLs
+          //          http://projecteuclid.org/euclid.nmj/1313682316
+          // 	      http://projecteuclid.org/download/pdf_1/euclid.nmj/1313682316
+          // old URLs
+          //          http://projecteuclid.org/getRecord?id=euclid.nmj/1313682316
+          //          http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=euclid.nmj/1313682316
+          case url if url.startsWith("http://projecteuclid.org/euclid.") => {
+            Some(url.replaceAllLiterally("http://projecteuclid.org/euclid.", "http://projecteuclid.org/download/pdf_1/euclid."))
           }
           case url if url.startsWith("http://www.numdam.org/item?id=") => {
             Some(url.replaceAllLiterally("http://www.numdam.org/item?id=", "http://archive.numdam.org/article/") + ".pdf")
@@ -449,11 +463,33 @@ trait Article { article =>
     lookup.orElse(if (ISSNs.Elsevier.contains(ISSN)) searchElsevierForPDFURL else None)
   }
 
+  def correctedURL = URL match {
+    case Some(url) if url.startsWith("http://projecteuclid.org/getRecord?id=") => {
+      Some(url.replaceAllLiterally("http://projecteuclid.org/getRecord?id=",  "http://projecteuclid.org/"))
+    }
+    case other => other
+  }
+  
+  def stablePDFURL = {
+    if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
+      None
+    } else if (pdfURL.nonEmpty && pdfURL.get.startsWith("http://projecteuclid.org/download/pdf_1/euclid.")) {
+      None
+    } else {
+      pdfURL
+    }
+  }
+  
   def pdfInputStream: Option[InputStream] = {
     lazy val result = if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
       // Duke expects to see a Referer field.
       pdfURL.map({ u =>
         HttpClientSlurp.getStream(u, referer = Some(u))
+      })
+    } else if (pdfURL.nonEmpty && pdfURL.get.startsWith("http://projecteuclid.org/download/pdf_1/euclid.")) {
+      // Euclid expects to see a Referer field?
+      pdfURL.map({ u =>
+        HttpClientSlurp.getStream(u, referer = URL)
       })
     } else {
       pdfURL.map(HttpClientSlurp.getStream)
@@ -660,8 +696,6 @@ object Article {
     })
   }
 
-
-  
   val ElsevierSlurpCache = {
     import net.tqft.toolkit.functions.Memo._
     { url: String => HttpClientSlurp.apply(url).toList }.memo
@@ -734,20 +768,20 @@ object Articles {
     for (group <- AnonymousS3("DOI2mathscinet").keysWithPrefix(prefix).iterator.grouped(1000); doi <- { val p = group.par; p.tasksupport = pool; p }; article <- Article.fromDOI(doi)) yield article
   }
 
-    lazy val identifiersInDatabase = {
+  lazy val identifiersInDatabase = {
     Logging.info("Finding out what's already in the database ...")
     import scala.slick.driver.MySQLDriver.simple._
-     val result = SQL { implicit session =>
+    val result = SQL { implicit session =>
       new scala.collection.mutable.BitSet(4000000) ++= SQLTables.mathscinet.map(_.MRNumber).iterator
     }
     Logging.info(s" ... ${result.size} articles")
     result
   }
 
-    lazy val ISSNsInDatabase = {
+  lazy val ISSNsInDatabase = {
     Logging.info("Finding out which ISSNs appear in the database ...")
     import scala.slick.driver.MySQLDriver.simple._
-     val result = SQL { implicit session =>
+    val result = SQL { implicit session =>
       SQLTables.mathscinet.groupBy(x => x.issn).map(_._1).list.flatten.map(_.toUpperCase)
     }
     Logging.info(s" ... ${result.size} ISSNs")
