@@ -286,7 +286,14 @@ trait Article { article =>
       }
       val url = volumeURL + "/" + n
       Logging.info("Scanning page: " + url)
-      (url, Article.ElsevierSlurpCache(url))
+      try {
+        (url, Article.ElsevierSlurpCache(url))
+      } catch {
+        case e: Exception => {
+          Logging.error("Exception while looking up Elsevier: ", e)
+          (url, Nil)
+        }
+      }
     }).takeWhile({ p =>
       val lines = p._2
       val titleLine = lines.find(_.contains("<title>")).get
@@ -660,8 +667,6 @@ object Article {
     })
   }
 
-
-  
   val ElsevierSlurpCache = {
     import net.tqft.toolkit.functions.Memo._
     { url: String => HttpClientSlurp.apply(url).toList }.memo
@@ -734,20 +739,20 @@ object Articles {
     for (group <- AnonymousS3("DOI2mathscinet").keysWithPrefix(prefix).iterator.grouped(1000); doi <- { val p = group.par; p.tasksupport = pool; p }; article <- Article.fromDOI(doi)) yield article
   }
 
-    lazy val identifiersInDatabase = {
+  lazy val identifiersInDatabase = {
     Logging.info("Finding out what's already in the database ...")
     import scala.slick.driver.MySQLDriver.simple._
-     val result = SQL { implicit session =>
+    val result = SQL { implicit session =>
       new scala.collection.mutable.BitSet(4000000) ++= SQLTables.mathscinet.map(_.MRNumber).iterator
     }
     Logging.info(s" ... ${result.size} articles")
     result
   }
 
-    lazy val ISSNsInDatabase = {
+  lazy val ISSNsInDatabase = {
     Logging.info("Finding out which ISSNs appear in the database ...")
     import scala.slick.driver.MySQLDriver.simple._
-     val result = SQL { implicit session =>
+    val result = SQL { implicit session =>
       SQLTables.mathscinet.groupBy(x => x.issn).map(_._1).list.flatten.map(_.toUpperCase)
     }
     Logging.info(s" ... ${result.size} ISSNs")
