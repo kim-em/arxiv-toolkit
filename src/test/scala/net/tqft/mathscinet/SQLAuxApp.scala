@@ -20,9 +20,9 @@ object SQLAuxApp extends App {
       ) yield a).drop(k * 1000).take(1000).list
     }
 
-    var group = articlesPage(4)
+    var group = articlesPage(0)
     while (group.nonEmpty) {
-
+    	println(group.size)
         for (a <- { val p = group.par; p.tasksupport = pool; p }) {
           try {
             val data = (a.identifier, a.textTitle, a.wikiTitle, a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and "), pandoc.latexToText(a.citation))
@@ -37,7 +37,7 @@ object SQLAuxApp extends App {
             }
         }
       }
-      group = articlesPage(4)
+      group = articlesPage(0)
 
     }
   }
