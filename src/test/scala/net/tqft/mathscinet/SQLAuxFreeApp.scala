@@ -34,25 +34,7 @@ object SQLAuxFreeApp extends App {
   private def Texts = TableQuery(tag => new Text(tag, _tablePrefix))
   private def Pages = TableQuery(tag => new Page(tag, _tablePrefix))
 
-//  SQL { implicit session =>
-//    def targets = SQLTables.mathscinet_aux.filter(_.identifierString.isNull).take(1000)
-//
-//    var targetsList = targets.list
-//
-//    while (targetsList.nonEmpty) {
-//      println(targetsList.size)
-//      for (aux <- targetsList) {
-//        SQLTables.mathscinet_aux
-//          .filter(_.MRNumber === aux._1)
-//          .update(aux.copy(_8 = Some("MR" + ("0000000" + aux._1).takeRight(7))))
-//        println("Filling in identifierString for " + aux._1)
-//      }
-//      targetsList = targets.list
-//    }
-//  }
-
   val pages = SQL { implicit session =>
-
     val query = (for (
       p <- Pages;
       if p.page_namespace === 100;
