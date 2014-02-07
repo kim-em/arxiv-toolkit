@@ -5,14 +5,15 @@ import net.tqft.mathscinet.Article
 import net.tqft.util.BIBTEX
 import java.sql.Date
 
-class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String, Option[String])](tag, "mathscinet_aux") {
+class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String, Option[String], Option[String])](tag, "mathscinet_aux") {
  def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
   def textTitle = column[String]("textTitle")
   def wikiTitle = column[String]("wikiTitle")
   def textAuthors = column[String]("textAuthors")
   def textCitation = column[String]("textCitation")
   def pdf = column[Option[String]]("pdf")
-  def * = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation, pdf)
+  def free = column[Option[String]]("free")
+  def * = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation, pdf, free)
   def citationData = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation)
 }
 
