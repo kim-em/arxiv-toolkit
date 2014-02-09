@@ -181,7 +181,7 @@ trait Article { article =>
   }
   def year = yearOption.get
   def volumeOption: Option[Int] = {
-    bibtex.get("VOLUME").map(s => s.takeWhile(_.isDigit)).flatMap({
+    bibtex.get("VOLUME").map(s => s.trim.takeWhile(_.isDigit)).flatMap({
       case Int(v) => Some(v)
       case _ => None
     })

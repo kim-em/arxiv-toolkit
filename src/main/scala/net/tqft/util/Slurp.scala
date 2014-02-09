@@ -145,6 +145,12 @@ trait FirefoxSlurp extends Slurp {
           Logging.info("retrying ...")
           getStream(url)
         }
+        case e @ (_: org.openqa.selenium.TimeoutException) => {
+          Logging.warn("Timeout, sleeping then trying again.")
+          Thread.sleep(60 * 1000)
+          Logging.info("retrying ...")
+          getStream(url)
+        }
       }
     } else {
       throw new IllegalStateException("slurping via Selenium has been disabled, but someone asked for a URL: " + url)
