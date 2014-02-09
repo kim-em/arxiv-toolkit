@@ -12,7 +12,7 @@ object TitleBot extends App {
   lazy val titlebot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("titlebot", "zytopex")
-    b.enableSQLReads("jdbc:mysql://mysql.tqft.net/tqft_net?user=readonly1&password=foobar1", "mlp_")
+    b.enableSQLReads("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=readonly1&password=foobar1", "mlp_")
     b.setThrottle(45000)
     b
   }

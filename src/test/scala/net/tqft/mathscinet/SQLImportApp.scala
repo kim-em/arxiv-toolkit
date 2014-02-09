@@ -14,15 +14,6 @@ object SQLImportApp extends App {
 
   val cache = AnonymousS3("LoM-bibtex")
 
-//  var maxlengths = IndexedSeq.fill(20)(0)
-//  var count = 0
-//
-//  for (group <- cache.keysIterator.grouped(1000); groupPar = { val p = group.par; p.tasksupport = pool; p }; k <- groupPar; a = Article(k)) {
-//    val lengths = for (i <- 2 until 22) yield a.sqlRow.productElement(i).asInstanceOf[Option[String]].getOrElse("").length()
-//    count += 1
-//    maxlengths = lengths.zip(maxlengths).map(p => scala.math.max(p._1, p._2))
-//    if(count % 1000 == 0) println(maxlengths)
-//  }
 
   SQL { implicit session =>
       for (group <- cache.keysIterator.toSeq.sorted.reverse.grouped(1000); groupPar = { val p = group.par; p.tasksupport = pool; p }; k <- groupPar; a = Article(k)) {

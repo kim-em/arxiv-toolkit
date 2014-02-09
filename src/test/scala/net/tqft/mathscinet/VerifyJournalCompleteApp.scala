@@ -16,9 +16,9 @@ import net.tqft.toolkit.Throttle
 
 object VerifyJournalCompleteApp extends App {
 
-  val missingButWhoCares_? = Seq("MR0337466", "MR0337465", "MR0337467") ++ // birthday stuff
+  val missingButWhoCares_? = Seq("MR0337466", "MR0337465", "MR0337467", "MR1690573") ++ // birthdays
     Seq("MR0585438", "MR0585435", "MR0973821") ++ // bad data on mathscinet?
-    Seq("MR0949339") ++ // a memorial
+    Seq("MR0949339", "MR1895524") ++ // memorials
     Seq("MR0532067") // errata
 
   Article.disableBibtexSaving
@@ -93,7 +93,7 @@ object VerifyJournalCompleteApp extends App {
               Files.createSymbolicLink(targetFile, sourceFile)
             } catch {
               case e: Exception => {
-                Logging.warn("Exception while creating symbolic link for:\n" + article.bibtex.toBIBTEXString, e)
+                Logging.error("Exception while creating symbolic link for:\n" + article.bibtex.toBIBTEXString, e)
               }
             }
           } else {
@@ -104,7 +104,7 @@ object VerifyJournalCompleteApp extends App {
         }
       } catch {
         case e: Exception => {
-          Logging.warn("Exception while checking: " + article.bibtex.toBIBTEXString, e)
+          Logging.error("Exception while checking: " + article.bibtex.toBIBTEXString, e)
         }
       }
     }
