@@ -434,6 +434,7 @@ trait Article { article =>
 
           // otherwise, try using DOI-direct
           case url if url.startsWith("http://dx.doi.org/") => {
+            Logging.info("trying to find PDF URL via doi-direct")
             Http.findRedirect(url.replaceAllLiterally("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/")) match {
               case None => None
               case Some(redirect) if redirect.startsWith("http://dx.doi.org/") => {
