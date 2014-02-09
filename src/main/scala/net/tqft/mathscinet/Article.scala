@@ -30,8 +30,11 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.DirectoryStream
 import java.nio.file.Path
+import scala.concurrent.future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.BitSet
 
-trait Article {
+trait Article { article =>
   def identifier: Int
   def identifierString = "MR" + ("0000000" + identifier.toString).takeRight(7)
   //  def shortIdentifierString = "MR" + identifier.toString
@@ -39,6 +42,8 @@ trait Article {
   def MathSciNetURL = "http://www.ams.org/mathscinet-getitem?mr=" + identifier
   def bibtexURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=bibtex&pg1=MR&s1=" + identifier
   def endnoteURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=endnote&pg1=MR&s1=" + identifier
+
+  override def toString = fullCitation
 
   lazy val slurp = Slurp(MathSciNetURL).toList
 
@@ -281,7 +286,14 @@ trait Article {
       }
       val url = volumeURL + "/" + n
       Logging.info("Scanning page: " + url)
-      (url, Article.ElsevierSlurpCache(url))
+      try {
+        (url, Article.ElsevierSlurpCache(url))
+      } catch {
+        case e: Exception => {
+          Logging.error("Exception while looking up Elsevier: ", e)
+          (url, Nil)
+        }
+      }
     }).takeWhile({ p =>
       val lines = p._2
       val titleLine = lines.find(_.contains("<title>")).get
@@ -295,17 +307,21 @@ trait Article {
     val regex2 = """<a href="(http://www.sciencedirect.com/science\?_ob=MiamiImageURL.*.pdf) " target="newPdfWin"""".r // probably obsolete now??
     val regex3 = """<a class="cLink" rel="nofollow" href="(http://www.sciencedirect.com/science/article/pii/.*.pdf)" queryStr="\?_origin=browseVolIssue&_zone=rslt_list_item" target="_blank">""".r
 
+    val regex4 = """<br><i>Pages ([-0-9]*)</i><br>""".r
+
     val matches = (for (
       (_, p) <- pages;
       l <- p;
       if l.contains("pdfIconSmall");
       titleFound <- regex1.findFirstMatchIn(l);
-      urlFound <- regex3.findFirstMatchIn(l).orElse(regex2.findFirstMatchIn(l))
+      urlFound <- regex3.findFirstMatchIn(l).orElse(regex2.findFirstMatchIn(l)).map(_.group(1));
+      titleAndPagesFound = titleFound.group(1).replaceAll("<[^>]*>", "") + " " + regex4.findFirstMatchIn(l).map(_.group(1)).getOrElse("")
     ) yield {
+      val titlesAndPages = textTitle + " " + pagesOption.getOrElse("")
       (
-        titleFound.group(1),
-        urlFound.group(1),
-        StringUtils.getLevenshteinDistance(titleFound.group(1).replaceAll("<[^>]*>", ""), textTitle).toDouble / title.length())
+        titleAndPagesFound,
+        urlFound,
+        StringUtils.getLevenshteinDistance(titleAndPagesFound, titlesAndPages).toDouble / titlesAndPages.length())
     }).sortBy(_._3).distinct
 
     Logging.info("   found matches:")
@@ -313,29 +329,34 @@ trait Article {
 
     val chosenMatch = if (matches.filter(_._3 == 0.0).size == 1
       || matches.filter(_._3 <= 0.425).size == 1
-      || (matches.filter(_._3 <= 0.425).size > 1 && matches(0)._3 < matches(1)._3 / 2)) {
+      || (matches.filter(_._3 <= 0.425).size > 1 && matches(0)._3 < matches(1)._3 / 1.99)) {
       Some(matches.head._2)
     } else if (title.startsWith("Erratum") && matches.count(_._1.startsWith("Erratum")) == 1) {
       matches.find(_._1.startsWith("Erratum")).map(_._2)
-    } else if (issn == 0024 - 3795 && title.startsWith("Erratum") && matches.count(_._1.startsWith("From the editor-in-chief")) == 1) {
-      matches.find(_._1.startsWith("From the editor-in-chief")).map(_._2)
+    } else if (issn == "0024-3795" && title.startsWith("Erratum") && matches.count(_._1.toLowerCase.startsWith("from the editor-in-chief")) == 1) {
+      matches.find(_._1.toLowerCase.startsWith("from the editor-in-chief")).map(_._2)
     } else if (title.startsWith("Errata") && matches.count(_._1.startsWith("Errata")) == 1) {
       matches.find(_._1.startsWith("Errata")).map(_._2)
     } else if (title.startsWith("Preface") && matches.count(_._1.startsWith("Preface")) == 1) {
       matches.find(_._1.startsWith("Preface")).map(_._2)
     } else if (title.startsWith("Correction to") && matches.count(_._1.startsWith("Correction to")) == 1) {
       matches.find(_._1.startsWith("Correction to")).map(_._2)
+    } else if (title.startsWith("Laudatum") && matches.count(_._1.startsWith("Laudatum")) == 1) {
+      matches.find(_._1.startsWith("Laudatum")).map(_._2)
     } else if (title.startsWith("Addendum") && matches.count(_._1.startsWith("Addendum")) == 1) {
       matches.find(_._1.startsWith("Addendum")).map(_._2)
+    } else if (title.startsWith("Addenda") && matches.count(_._1.startsWith("Addenda")) == 1) {
+      matches.find(_._1.startsWith("Addenda")).map(_._2)
     } else if (title.startsWith("Obituary") && matches.count(_._1.startsWith("Obituary")) == 1) {
       matches.find(_._1.startsWith("Obituary")).map(_._2)
     } else if (title.startsWith("Corrigendum") && matches.count(_._1.contains("orrigendum")) == 1) {
       matches.find(_._1.contains("orrigendum")).map(_._2)
+    } else if (title.startsWith("Corrigenda") && matches.count(_._1.contains("orrigenda")) == 1) {
+      matches.find(_._1.contains("orrigenda")).map(_._2)
     } else {
       None
     }
 
-    //      require(chosenMatch.nonEmpty, "\n" + title + matches.map(t => t._1 -> t._3).mkString("\n", "\n", ""))
     for (c <- chosenMatch) println("Found URL for old Elsevier article: " + c)
 
     chosenMatch
@@ -344,11 +365,7 @@ trait Article {
   lazy val pdfURL: Option[String] = {
     // This mimics the logic of direct-article-link.user.js 
 
-    if (ISSNs.Elsevier.contains(ISSN) && (URL.isEmpty || URL.get.startsWith("http://www.sciencedirect.com/science?_ob=GatewayURL") || (ISSN == "0377-0427" && volume == 33) || (ISSN == "0166-218X" && volume == 59 /* DOI resolution fails for these */ ))) {
-      // Old Elsevier articles, that MathSciNet doesn't know about
-      searchElsevierForPDFURL
-
-    } else if (ISSN == ISSNs.`K-Theory`) {
+    val lookup = if (ISSN == ISSNs.`K-Theory`) {
       // K-Theory, have to get it from Portico for now
       // FIXME this is apparently broken
       val toc = HttpClientSlurp.getString("http://www.portico.org/Portico/browse/access/toc.por?journalId=ISSN_09203036&issueId=ISSN_09203036v" + volume.toString + "i" + number)
@@ -363,7 +380,7 @@ trait Article {
       Some(result)
     } else {
 
-      URL flatMap { url =>
+      correctedURL flatMap { url =>
         url match {
           // Elsevier
           // 10.1006 10.1016, Elsevier, has complicated URLs, e.g.
@@ -386,7 +403,14 @@ trait Article {
           // We also need to grab some 10.1112 DOIs, for LMS journals run by CMP e.g. 10.1112/S0010437X04001034
           case url if url.startsWith("http://dx.doi.org/10.1017/S") || url.startsWith("http://dx.doi.org/10.1017/is") || url.startsWith("http://dx.doi.org/10.1051/S") || url.startsWith("http://dx.doi.org/10.1112/S0010437X") || url.startsWith("http://dx.doi.org/10.1112/S14611570") || url.startsWith("http://dx.doi.org/10.1112/S00255793") => {
             val regex = """<a href="([^"]*)"[ \t\n]*title="View PDF" class="article-pdf">""".r
-            regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
+            try {
+              regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
+            } catch {
+              case e: Exception => {
+                Logging.error("Exception while reading from CUP", e)
+                None
+              }
+            }
           }
 
           // Wiley
@@ -419,8 +443,15 @@ trait Article {
               case Some(redirect) => Some(redirect)
             }
           }
-          case url if url.startsWith("http://projecteuclid.org/getRecord?id=") => {
-            Some(url.replaceAllLiterally("http://projecteuclid.org/getRecord?id=", "http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle="))
+
+          // new URLs
+          //          http://projecteuclid.org/euclid.nmj/1313682316
+          // 	      http://projecteuclid.org/download/pdf_1/euclid.nmj/1313682316
+          // old URLs
+          //          http://projecteuclid.org/getRecord?id=euclid.nmj/1313682316
+          //          http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=euclid.nmj/1313682316
+          case url if url.startsWith("http://projecteuclid.org/euclid.") => {
+            Some(url.replaceAllLiterally("http://projecteuclid.org/euclid.", "http://projecteuclid.org/download/pdf_1/euclid."))
           }
           case url if url.startsWith("http://www.numdam.org/item?id=") => {
             Some(url.replaceAllLiterally("http://www.numdam.org/item?id=", "http://archive.numdam.org/article/") + ".pdf")
@@ -429,26 +460,54 @@ trait Article {
             Some(url.replaceAllLiterally("http://aif.cedram.org/item?id=", "http://aif.cedram.org/cedram-bin/article/") + ".pdf")
           }
           case url if url.startsWith("http://muse.jhu.edu/journals/american_journal_of_mathematics/") => Some(url)
+          // http://www.combinatorics.org/Volume_12/Abstracts/v12i1n3.html
+          // http://www.combinatorics.org/ojs/index.php/eljc/article/view/v12i1n3/pdf
+          case url if url.startsWith("http://www.combinatorics.org/") => Some("http://www.combinatorics.org/ojs/index.php/eljc/article/view/" + url.split("/").last.stripSuffix(".html") + "/pdf")
         }
       }
     }
+
+    lookup.orElse(if (ISSNs.Elsevier.contains(ISSN)) searchElsevierForPDFURL else None)
   }
 
+  def correctedURL = URL match {
+    case Some(url) if url.startsWith("http://projecteuclid.org/getRecord?id=") => {
+      Some(url.replaceAllLiterally("http://projecteuclid.org/getRecord?id=",  "http://projecteuclid.org/"))
+    }
+    case other => other
+  }
+  
+  def stablePDFURL = {
+    if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
+      None
+    } else if (pdfURL.nonEmpty && pdfURL.get.startsWith("http://projecteuclid.org/download/pdf_1/euclid.")) {
+      None
+    } else {
+      pdfURL
+    }
+  }
+  
   def pdfInputStream: Option[InputStream] = {
-    val result = if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
+    lazy val result = if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
       // Duke expects to see a Referer field.
       pdfURL.map({ u =>
         HttpClientSlurp.getStream(u, referer = Some(u))
       })
+    } else if (pdfURL.nonEmpty && pdfURL.get.startsWith("http://projecteuclid.org/download/pdf_1/euclid.")) {
+      // Euclid expects to see a Referer field?
+      pdfURL.map({ u =>
+        HttpClientSlurp.getStream(u, referer = URL)
+      })
     } else {
       pdfURL.map(HttpClientSlurp.getStream)
     }
-    result.orElse(exceptionalPDF)
+    exceptionalPDF.orElse(result)
   }
 
   private def exceptionalPDF: Option[InputStream] = {
     val path = Paths.get(System.getProperty("user.home") + "/media/exceptions/").resolve(identifierString + ".pdf")
     if (Files.exists(path)) {
+      Logging.info("Found a local copy of the PDF, marked as exceptional.")
       Some(new FileInputStream(path.toFile))
     } else {
       None
@@ -504,7 +563,9 @@ trait Article {
     }).mkString("$")
   }
 
-  def constructFilename(filenameTemplate: String = defaultFilenameTemplate) = {
+  def fullCitation = constructFilename(maxLength = None).stripSuffix(".pdf")
+
+  def constructFilename(filenameTemplate: String = defaultFilenameTemplate, maxLength: Option[Int] = Some(250)) = {
     val authorNames = authors.map(a => pandoc.latexToText(a.name))
     val textCitation = pandoc.latexToText(citation)
 
@@ -514,13 +575,13 @@ trait Article {
         .replaceAllLiterally("$AUTHOR", authorNames.mkString(" and "))
         .replaceAllLiterally("$JOURNALREF", textCitation)
         .replaceAllLiterally("$MRNUMBER", identifierString)
-      if (attempt.getBytes().length > 250) {
+      if (maxLength.nonEmpty && attempt.getBytes().length > maxLength.get) {
         val shortAuthors = if (authors.size > 4) {
           authorNames.head + " et al."
         } else {
           authorNames.mkString(" and ")
         }
-        val maxCitationLength = scala.math.max(90, 250 - (filenameTemplate
+        val maxCitationLength = scala.math.max(maxLength.get * 9 / 25, maxLength.get - (filenameTemplate
           .replaceAllLiterally("$AUTHOR", shortAuthors)
           .replaceAllLiterally("$MRNUMBER", identifierString)
           .replaceAllLiterally("$TITLE", sanitizedTitle).getBytes().length - "$JOURNALREF".size))
@@ -533,13 +594,13 @@ trait Article {
           .replaceAllLiterally("$AUTHOR", shortAuthors)
           .replaceAllLiterally("$JOURNALREF", shortCitation)
           .replaceAllLiterally("$MRNUMBER", identifierString)
-        val maxTitleLength = 250 - (partialReplacement.getBytes().length - "$TITLE".size)
+        val maxTitleLength = maxLength.get - (partialReplacement.getBytes().length - "$TITLE".size)
         val shortTitle = if (sanitizedTitle.getBytes().length > maxTitleLength) {
           sanitizedTitle.reverse.tails.find(_.getBytes.length + 3 <= maxTitleLength).get.reverse + "..."
         } else {
           sanitizedTitle
         }
-        partialReplacement.replaceAllLiterally("$TITLE", shortTitle).ensuring(_.getBytes().length <= 250)
+        partialReplacement.replaceAllLiterally("$TITLE", shortTitle).ensuring(_.getBytes().length <= maxLength.get)
       } else {
         attempt
       }
@@ -575,7 +636,14 @@ object Article {
     apply(identifierString.stripPrefix("MR").toInt)
   }
 
-  def apply(identifier: Int): Article = {
+  val apply = {
+    //    import net.tqft.toolkit.functions.Memo._
+    //    (_apply _).memo
+
+    _apply _
+  }
+
+  def _apply(identifier: Int): Article = {
     import scala.slick.driver.MySQLDriver.simple._
     val lookup = SQL { implicit session =>
       (for (
@@ -614,6 +682,23 @@ object Article {
           override val identifier = id
         }
         result.bibtexData = Some(b)
+        if (!Articles.identifiersInDatabase.contains(id)) {
+          future {
+            import scala.slick.driver.MySQLDriver.simple._
+
+            try {
+              SQL { implicit session =>
+                SQLTables.mathscinet += result
+                Logging.info("Saving to the database:\n" + bibtexString)
+              }
+            } catch {
+              case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {}
+              case e: Exception => {
+                Logging.error("Exception while inserting \n" + result.bibtex.toBIBTEXString, e)
+              }
+            }
+          }
+        }
         result
     })
   }
@@ -688,6 +773,26 @@ object Articles {
   def withDOIPrefix(prefix: String): Iterator[Article] = {
     val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(50))
     for (group <- AnonymousS3("DOI2mathscinet").keysWithPrefix(prefix).iterator.grouped(1000); doi <- { val p = group.par; p.tasksupport = pool; p }; article <- Article.fromDOI(doi)) yield article
+  }
+
+  lazy val identifiersInDatabase = {
+    Logging.info("Finding out what's already in the database ...")
+    import scala.slick.driver.MySQLDriver.simple._
+    val result = SQL { implicit session =>
+      new scala.collection.mutable.BitSet(4000000) ++= SQLTables.mathscinet.map(_.MRNumber).iterator
+    }
+    Logging.info(s" ... ${result.size} articles")
+    result
+  }
+
+  lazy val ISSNsInDatabase = {
+    Logging.info("Finding out which ISSNs appear in the database ...")
+    import scala.slick.driver.MySQLDriver.simple._
+    val result = SQL { implicit session =>
+      SQLTables.mathscinet.groupBy(x => x.issn).map(_._1).list.flatten.map(_.toUpperCase)
+    }
+    Logging.info(s" ... ${result.size} ISSNs")
+    result
   }
 
 }
