@@ -26,3 +26,6 @@ project/target
 
 # artifacts
 src/main/js/mathscinet-extension.zip
+
+db
+db.p
