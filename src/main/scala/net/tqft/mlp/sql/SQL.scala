@@ -5,6 +5,13 @@ import net.tqft.mathscinet.Article
 import net.tqft.util.BIBTEX
 import java.sql.Date
 
+class ArxivMathscinetMatches(tag: Tag) extends Table[(String, Int, Double)](tag, "arxiv_mathscinet_matches") {
+  def arxivid = column[String]("arxivid")
+  def MRNumber = column[Int]("MRNumber")
+  def score = column[Double]("score")
+  def * = (arxivid, MRNumber, score)
+}
+
 class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String, Option[String], Option[String])](tag, "mathscinet_aux") {
  def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
   def textTitle = column[String]("textTitle")
@@ -96,6 +103,7 @@ class Arxiv(tag: Tag) extends Table[(String, Date, Date, String, String, String,
 object SQLTables {
   val mathscinet = TableQuery[MathscinetBIBTEX]
   val arxiv = TableQuery[Arxiv]
+  val arxiv_mathscinet_matches = TableQuery[ArxivMathscinetMatches]
   object mathscinet_aux extends TableQuery(new MathscinetAux(_)) {
     def citationData = map(aux => aux.citationData)
   }
