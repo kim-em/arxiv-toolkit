@@ -64,7 +64,7 @@ object SQLAuxFreeApp extends App {
         .map(_.free)
         .update(Some(freeLink))
 
-      println("Adding Free URL for " + title.take(9) + ": " + freeLink)       
+      println("Adding Free URL for " + title.take(9) + ": " + freeLink + " returned " + q)       
     }
 
   }

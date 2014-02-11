@@ -17,7 +17,7 @@ object TOCBot extends App {
     lazy val tocbot = {
       val b = WikiMap("http://tqft.net/mlp/index.php")
       b.login("tocbot", "zytopex")
-      b.enableSQLReads("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=readonly1&password=foobar", "mlp_")
+      b.enableSQLReads("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=readonly1&password=readonly", "mlp_")
       b.setThrottle(15000)
       b
     }

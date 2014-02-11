@@ -432,6 +432,11 @@ trait Article { article =>
             regex.findFirstMatchIn(HttpClientSlurp.getString("http://dl.acm.org/citation.cfm?doid=" + url.drop(26))).map(m => m.group(1)).map("http://dl.acm.org/" + _)
           }
 
+          case url if url.startsWith("http://links.jstor.org/") => {
+            val regex = """<div class="stable">Stable URL: http://www.jstor.org/stable/(.*)</div>""".r
+            regex.findFirstMatchIn(HttpClientSlurp.getString(url.replaceAllLiterally("<", "%3C").replaceAllLiterally(">", "%3E"))).map(m => m.group(1)).map("http://www.jstor.org/stable/pdfplus/" + _ + ".pdf?acceptTC=true")
+          }
+          
           // otherwise, try using DOI-direct
           case url if url.startsWith("http://dx.doi.org/") => {
             Logging.info("trying to find PDF URL via doi-direct")

@@ -31,8 +31,8 @@ object SQLAuxPDFApp extends App {
             println("Adding PDF URL for " + a.identifierString + ": " + pdf)
           } catch {
             case e: Exception => {
-              Logging.warn("Exception while inserting \n" + a.bibtex.toBIBTEXString)
-              throw e
+              Logging.error("Exception while inserting \n" + a.bibtex.toBIBTEXString, e)
+              // throw e
             }
           }
       }

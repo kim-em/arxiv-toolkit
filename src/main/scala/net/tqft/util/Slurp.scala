@@ -96,6 +96,8 @@ trait HttpClientSlurp extends Slurp {
 
   override def getStream(url: String) = getStream(url, None)
   def getStream(url: String, referer: Option[String]): InputStream = {
+    println("HttpClient slurping: " + url)
+    
     val get = new HttpGet(url)
     get.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
     referer.map(r => get.setHeader("Referer", r))
