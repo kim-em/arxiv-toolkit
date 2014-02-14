@@ -15,12 +15,11 @@ import net.tqft.mlp.sql.Wiki
 object TOCBot extends App {
 
   //  Article.enableBibtexSaving
-  while (true) {
     lazy val tocbot = {
       val b = WikiMap("http://tqft.net/mlp/index.php")
       b.login("tocbot", "zytopex")
       b.enableSQLReads("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=readonly1&password=readonly", "mlp_")
-      b.setThrottle(15000)
+      b.setThrottle(1500)
       b
     }
     import scala.slick.driver.MySQLDriver.simple._
@@ -38,8 +37,9 @@ object TOCBot extends App {
 
       println("Loading all /FreeURL pages from the wiki...")
       println(query.selectStatement)
-      val result = query.list.map({p => (p._1.dropRight(9), p._2)}).toMap
+      val result = query.list.map({p => (p._1.dropRight(8), p._2)}).toMap
       println(" ... done")
+      println(result.take(10))
       result
     }
 
@@ -119,6 +119,4 @@ object TOCBot extends App {
 
     net.tqft.wiki.FirefoxDriver.quit
 
-    Thread.sleep(1000 * 60 * 60 * 8)
-  }
 }
