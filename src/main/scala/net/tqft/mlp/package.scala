@@ -32,6 +32,7 @@ package object mlp {
   def extendedJournals = ISSNs.Elsevier.iterator ++ Iterator() ++ selectedJournals
   def extendedYears = Seq(2010, 2013)
 
+  // TODO pull from the database
   def extendedCoverage = for (j <- extendedJournals; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
 
   def topJournals(k: Int) = for (j <- scala.util.Random.shuffle(Eigenfactor.topJournals.take(k)).iterator; y <- extendedYears; a <- Search.inJournalYear(j, y)) yield a
