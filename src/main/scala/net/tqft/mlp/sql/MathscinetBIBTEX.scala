@@ -6,7 +6,7 @@ import net.tqft.util.BIBTEX
 import java.sql.Date
 
 class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String, Option[String], Option[String])](tag, "mathscinet_aux") {
- def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
+  def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
   def textTitle = column[String]("textTitle")
   def wikiTitle = column[String]("wikiTitle")
   def textAuthors = column[String]("textAuthors")
@@ -91,6 +91,34 @@ class Arxiv(tag: Tag) extends Table[(String, Date, Date, String, String, String,
   def license = column[String]("license")
   def `abstract` = column[String]("abstract")
   def * = (arxivid, created, updated, authors, title, categories, comments, proxy, reportno, mscclass, acmclass, journalref, doi, license, `abstract`)
+}
+
+object Wiki {
+  val _tablePrefix = "mlp_"
+  class Revision(tag: Tag, tablePrefix: String) extends Table[(Int, Int)](tag, tablePrefix + "revision") {
+    def rev_id = column[Int]("rev_id", O.PrimaryKey)
+    def rev_text_id = column[Int]("rev_text_id")
+    def * = (rev_id, rev_text_id)
+  }
+  class Text(tag: Tag, tablePrefix: String) extends Table[(Int, String)](tag, tablePrefix + "text") {
+    def old_id = column[Int]("old_id", O.PrimaryKey)
+    def old_text = column[String]("old_text")
+    def * = (old_id, old_text)
+  }
+  class Page(tag: Tag, tablePrefix: String) extends Table[(Int, Int, String, Int)](tag, tablePrefix + "page") {
+    def page_id = column[Int]("page_id", O.PrimaryKey)
+    def page_namespace = column[Int]("page_namespace")
+    def page_title = column[String]("page_title")
+    def page_latest = column[Int]("page_latest")
+    def * = (page_id, page_namespace, page_title, page_latest)
+    def name_title = index("name_title", (page_namespace, page_title), unique = true)
+  }
+
+  def Revisions = TableQuery(tag => new Revision(tag, _tablePrefix))
+  def Texts = TableQuery(tag => new Text(tag, _tablePrefix))
+  def Pages = TableQuery(tag => new Page(tag, _tablePrefix))
+
+  
 }
 
 object SQLTables {

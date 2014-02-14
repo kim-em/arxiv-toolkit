@@ -9,6 +9,8 @@ import net.tqft.util.pandoc
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 import java.util.Date
+import net.tqft.mlp.sql.SQL
+import net.tqft.mlp.sql.Wiki
 
 object TOCBot extends App {
 
@@ -21,13 +23,32 @@ object TOCBot extends App {
       b.setThrottle(15000)
       b
     }
+    import scala.slick.driver.MySQLDriver.simple._
+
+    val texts = SQL { implicit session =>
+      val query = (for (
+        p <- Wiki.Pages;
+        if p.page_namespace === 100;
+        if p.page_title like "%/FreeURL";
+        r <- Wiki.Revisions;
+        if r.rev_id === p.page_latest;
+        t <- Wiki.Texts;
+        if t.old_id === r.rev_text_id
+      ) yield (p.page_title, t.old_text))
+
+      println("Loading all /FreeURL pages from the wiki...")
+      println(query.selectStatement)
+      val result = query.list.map({p => (p._1.dropRight(9), p._2)}).toMap
+      println(" ... done")
+      result
+    }
 
     def summarize(articles: Iterator[Article]) = {
       var notClassified = 0
       var noneAvailable = 0
       var availableAtArxiv = 0
       var availableElsewhere = 0
-      articles.map({ a => Thread.sleep(500); println("looking for " + a.identifierString + " in " + a.citation); tocbot.get("Data:" + a.identifierString + "/FreeURL") }).foreach({
+      articles.map({ a =>  texts.get(a.identifierString) }).foreach({
         case Some(content) if content.contains("arxiv") => availableAtArxiv += 1
         case Some(content) if content.contains("http") => availableElsewhere += 1
         case None => notClassified += 1

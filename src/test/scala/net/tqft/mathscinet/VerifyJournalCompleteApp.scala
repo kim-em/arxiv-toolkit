@@ -16,7 +16,7 @@ import net.tqft.toolkit.Throttle
 
 object VerifyJournalCompleteApp extends App {
 
-  val missingButWhoCares_? = Seq("MR0337466", "MR0337465", "MR0337467", "MR1690573") ++ // birthdays
+  val missingButWhoCares_? = Seq("MR0337466", "MR0337465", "MR0337467", "MR1690573", "MR1690574") ++ // birthdays
     Seq("MR0585438", "MR0585435", "MR0973821") ++ // bad data on mathscinet?
     Seq("MR0949339", "MR1895524") ++ // memorials
     Seq("MR0532067") // errata
@@ -40,6 +40,7 @@ Distributed logic programming - Brogi, Antonio and Gorrieri, Roberto - J. Logic 
 A completeness result for SLDNF-resolution - Stroetmann, Karl - J. Logic Programming 15 (1993), no. 4, 337–355 - MR1208830
 On the existence of cyclic and pseudo-cyclic MDS codes - Maruta, Tatsuya - European J. Combin. 19 (1998), no. 2, 159–174 - MR1607933
 Model-theoretic forcing in logic with a generalized quantifier - Bruce, Kim B. - Ann. Math. Logic 13 (1978), no. 3, 225–265 - MR0491860
+Bounds on the number of fuzzy functions - Kameda, T. and Sadeh, E. - Information and Control 35 (1977), no. 2, 139–145 - MR0456965      
 """.split("\n").filter(_.nonEmpty).map(_.split(" ").last).collect({ case MRIdentifier(id) => id })
     
   Article.disableBibtexSaving
@@ -61,11 +62,60 @@ Model-theoretic forcing in logic with a generalized quantifier - Bruce, Kim B. -
     }).iterator.asScala
   }
 
+  val completedJournals = Seq(
+      "Discrete Optim.", 
+      "J. Approx. Theory",  
+      "Topology Appl.",
+      "Differential Geom. Appl.", 
+      "Finite Fields Appl.", 
+      "European J. Combin.", 
+      "Appl. Math. Model.",
+      "Stochastic Process. Appl.",
+      "Comput. Geom.",
+      "Math. Comput. Modelling",
+//      "J. Comput. Appl. Math.",
+      "Adv. Math.",
+      "Adv. in Appl. Math.",
+      "J. Number Theory",
+      "J. Math. Pures Appl.",
+      "J. Math. Anal. Appl.",
+      "J. Combin. Theory Ser. A",
+      "Topology",
+      "Appl. Comput. Harmon. Anal.",
+      "Indag. Math. (N.S.)",
+      "Comput. Math. Appl.",
+      "J. Approx. Reason.",
+      "J. Differential Equations",
+      "J. Complexity",
+      "Ann. Inst. H. Poincaré Anal. Non Linéaire",
+      "Bull. Sci. Math.",
+      "J. Discrete Algorithms",
+      "J. Funct. Anal.",
+      "Appl. Math. Lett.",
+      "Inform. and Control",
+      "J. Logic Programming",
+      "J. Multivariate Anal.",
+      "J. Combin. Theory Ser. B",
+      "Exposition. Math.",
+      "J. Comput. System Sci.",
+      "Math. Modelling",
+      "Historia Math.",
+      "Discrete Appl. Math.",
+      "J. Log. Algebr. Program.",
+      "General Topology Appl.",
+      "Discrete Math.",
+      "J. Appl. Log.",
+      "J. Pure Appl. Algebra",
+      "Sci. Comput. Programming",
+      "Ann. Pure Appl. Logic")
+  // TODO automatically assemble the .tar.gz files, as long as now articles are marked as missing above
+  // TODO automatically upload them to S3
+  
   var journalCount = 0
-  for ((issn, name) <- scala.util.Random.shuffle(elsevierJournals.toSeq)) {
+  for ((issn, name) <- scala.util.Random.shuffle(elsevierJournals.toSeq); if !completedJournals.contains(name)) {
 
     journalCount += 1
-    println("Checking " + name + " (" + journalCount + "/" + elsevierJournals.size + ")")
+    println("Checking " + name + " " + issn + " (" + journalCount + "/" + elsevierJournals.size + ")")
 
     val journalPath = target.resolve(name)
 

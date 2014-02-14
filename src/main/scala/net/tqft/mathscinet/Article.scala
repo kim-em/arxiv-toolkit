@@ -280,8 +280,9 @@ trait Article { article =>
 
     val volumeURL = "http://www.sciencedirect.com/science/journal/" + issn.replaceAllLiterally("-", "") + "/" + volume
     val pages = numbers.map({ n =>
-      if (n == "10") {
+      if (Int.unapply(n).map(_ >= 16).getOrElse(false) && Some(n) != numberOption) {
         Logging.warn("Something went wrong while looking up " + identifierString + " on the Elsevier website.")
+        Logging.warn(bibtex.toBIBTEXString)
         ???
       }
       val url = volumeURL + "/" + n
@@ -395,6 +396,7 @@ trait Article { article =>
             val regex = """pdfurl="([^"]*)"""".r
             regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => m.group(1)).orElse(searchElsevierForPDFURL)
           }
+          case url if url.startsWith("http://www.sciencedirect.com/science?_ob=GatewayURL&_origin=MR") => None
           // Cambridge University Press
           // 10.1017 10.1051
           // 10.1017/S0022112010001734 ---resolves to---> http://journals.cambridge.org/action/displayAbstract?fromPage=online&aid=7829674
@@ -469,6 +471,18 @@ trait Article { article =>
           // http://www.combinatorics.org/Volume_12/Abstracts/v12i1n3.html
           // http://www.combinatorics.org/ojs/index.php/eljc/article/view/v12i1n3/pdf
           case url if url.startsWith("http://www.combinatorics.org/") => Some("http://www.combinatorics.org/ojs/index.php/eljc/article/view/" + url.split("/").last.stripSuffix(".html") + "/pdf")
+          
+          case url if url.startsWith("http://stacks.iop.org/") => 
+            // http://stacks.iop.org/0305-4470/16/2187
+            // redirects to http://iopscience.iop.org/0305-4470/16/10/015/
+            // links to http://iopscience.iop.org/0305-4470/16/10/015/pdf/0305-4470_16_10_015.pdf
+            Http.findRedirect(url) match { 
+              case None => None
+              case Some(redirect) => {
+                Some(redirect + "pdf/" + redirect.split("/").drop(3).mkString("_") + ".pdf")
+              }
+            }
+            // TODO http://nyjm.albany.edu:8000/j/2010/16_387.html
         }
       }
     }

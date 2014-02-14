@@ -26,7 +26,7 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "citation-search" % "0.2-SNAPSHOT",
 	"com.ibm.icu" % "icu4j" % "51.1",
 	"rome" % "rome" % "1.0",
-	"org.apache.httpcomponents" % "httpclient" % "4.3.2", // jets3t can't cope with 4.2, but 4.3.2 should be okay again
+	"org.apache.httpcomponents" % "httpclient" % "4.3.2",
 	"commons-io" % "commons-io" % "2.4",
 	"com.google.code.findbugs" % "jsr305" % "2.0.1",
 	"net.sourceforge.htmlunit" % "htmlunit" % "2.12",
@@ -41,8 +41,6 @@ libraryDependencies ++= Seq(
 	"uk.ac.shef.wit" % "simmetrics" % "1.6.2",
 	"org.apache.pdfbox" % "pdfbox" % "1.8.3"
 )
-
-// dependencyOverrides += "org.apache.httpcomponents" % "httpclient" % "4.1.1" // jets3t can't cope with 4.2
 
 // lift-json
 libraryDependencies ++= {
