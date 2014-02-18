@@ -241,7 +241,7 @@ object FirefoxSlurp extends FirefoxSlurp {
     try {
       driverOption.map(_.quit)
     } catch {
-      case e: Exception => Logging.warn("Exception occurred while trying to quit Firefox:", e)
+      case e: Exception => Logging.error("Exception occurred while trying to quit Firefox:", e)
     }
     driverOption = None
   }
