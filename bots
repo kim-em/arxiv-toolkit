@@ -1,0 +1,10 @@
+sbt "run-main net.tqft.mlp.AuthorBot"
+sbt "run-main net.tqft.mlp.TitleBot"
+sbt "run-main net.tqft.mlp.DOIBot"
+sbt "run-main net.tqft.mlp.TOCBot"
+sbt "run-main net.tqft.mlp.OAI2MRef" 
+sbt "run-main net.tqft.mlp.DOIMatchBot"
+sbt "run-main net.tqft.scholar.Scholar"
+
+
+
