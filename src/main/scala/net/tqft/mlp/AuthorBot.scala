@@ -12,7 +12,8 @@ object AuthorBot extends App {
   lazy val authorbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("authorbot", "zytopex")
-    b.setThrottle(45000)
+    b.enableSQLReads("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=readonly1&password=readonly", "mlp_")
+    b.setThrottle(5000)
     b
   }
 
@@ -24,6 +25,6 @@ object AuthorBot extends App {
   }
 
   println("Done entering authors!")
-  
+
   net.tqft.wiki.FirefoxDriver.quit
 }
