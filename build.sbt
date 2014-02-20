@@ -19,10 +19,10 @@ resolvers ++= Seq(
 
 // Project dependencies
 libraryDependencies ++= Seq(
-	"net.tqft" %% "toolkit-base" % "0.1.16-SNAPSHOT",
-	"net.tqft" %% "toolkit-collections" % "0.1.16-SNAPSHOT",
-	"net.tqft" %% "toolkit-amazon" % "0.1.16-SNAPSHOT",
-	"net.tqft" %% "toolkit-wiki" % "0.1.16-SNAPSHOT",
+	"net.tqft" %% "toolkit-base" % "0.1.17-SNAPSHOT",
+	"net.tqft" %% "toolkit-collections" % "0.1.17-SNAPSHOT",
+	"net.tqft" %% "toolkit-amazon" % "0.1.17-SNAPSHOT",
+	"net.tqft" %% "toolkit-wiki" % "0.1.17-SNAPSHOT",
 	"net.tqft" %% "citation-search" % "0.2-SNAPSHOT",
 	"com.ibm.icu" % "icu4j" % "51.1",
 	"rome" % "rome" % "1.0",
@@ -55,7 +55,7 @@ libraryDependencies ++= {
 // Test dependencies
 libraryDependencies ++= Seq(
 	"junit" % "junit" % "4.8" % "test",
-	"org.scalatest" %% "scalatest" % "1.9.1" % "compile,test"
+	"org.scalatest" % "scalatest_2.10" % "2.0" % "compile,test"
 )
 
 // Sometimes it's useful to see debugging out from the typer (e.g. to resolve slow compiles)
