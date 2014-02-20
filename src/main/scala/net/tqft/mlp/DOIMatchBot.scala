@@ -12,6 +12,7 @@ object DOIMatchBot extends App {
   lazy val arxivbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("arxivbot", "zytopex")
+    b.enableSQLReads("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=readonly1&password=readonly", "mlp_")
     b.setThrottle(5000)
     b
   }
@@ -29,8 +30,9 @@ object DOIMatchBot extends App {
     val results = scala.util.Random.shuffle(matchingDOIs.run)
     println("total: " + results.size)
 
-    for ((arxivid, mrnumber) <- results;
-    	mr = Article(mrnumber).identifierString
+    for (
+      (arxivid, mrnumber) <- results;
+      mr = Article(mrnumber).identifierString
     ) {
       println(arxivid + " <---> " + mr)
       arxivbot("Data:" + mr + "/FreeURL") = "http://arxiv.org/abs/" + arxivid
@@ -38,6 +40,6 @@ object DOIMatchBot extends App {
 
     println("total: " + results.size)
   }
-  
+
   FirefoxDriver.quit
 }

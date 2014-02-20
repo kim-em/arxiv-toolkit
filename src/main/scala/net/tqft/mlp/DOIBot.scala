@@ -12,6 +12,7 @@ object DOIBot extends App {
   lazy val doibot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("doibot", "zytopex")
+    b.enableSQLReads("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=readonly1&password=readonly", "mlp_")
     b.setThrottle(10000)
     b
   }

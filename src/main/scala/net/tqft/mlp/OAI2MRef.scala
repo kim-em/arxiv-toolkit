@@ -15,6 +15,7 @@ object OAI2MRef extends App {
   lazy val arxivbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("arxivbot", "zytopex")
+    b.enableSQLReads("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=readonly1&password=readonly", "mlp_")
     b
   }
 
@@ -55,6 +56,6 @@ object OAI2MRef extends App {
   }
 
   println(count)
-  
+
   FirefoxDriver.quit
 }
