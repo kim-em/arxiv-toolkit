@@ -27,7 +27,7 @@ object SQLMatchesApp extends App {
       }
     }
 
-    val articles = Iterator.from(0).map(page).takeWhile(_.nonEmpty).flatten
+    val articles = Iterator.continually(Iterator.from(0).map(page).takeWhile(_.nonEmpty).flatten).takeWhile(_.nonEmpty).flatten
 
     for ((arxivid, title, authorsXML, journalref) <- articles) {
       val authors = (for (names <- (scala.xml.XML.loadString("<authors>" + authorsXML + "</authors>") \\ "author").iterator) yield (names \\ "keyname").text + ", " + (names \\ "forenames").text).mkString("", "; ", ";")
