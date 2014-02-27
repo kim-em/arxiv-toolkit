@@ -22,7 +22,7 @@ object ISSNs {
 }
 
 case class Journal(issn: String) {
-  def articles: Iterator[Article] = {
+  def articles: List[Article] = {
     import scala.slick.driver.MySQLDriver.simple._
 
     SQL { implicit session =>
@@ -30,9 +30,8 @@ case class Journal(issn: String) {
         a <- SQLTables.mathscinet;
         if a.issn === issn;
         if a.`type` === "article"
-      ) yield a).iterator
+      ) yield a).list
     }
-
   }
   def upToYear(year: Int): Iterator[Article] = {
     import scala.slick.driver.MySQLDriver.simple._
