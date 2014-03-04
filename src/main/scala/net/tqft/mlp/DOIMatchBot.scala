@@ -6,8 +6,11 @@ import net.tqft.mlp.sql.SQL
 import net.tqft.mathscinet.Article
 import net.tqft.wiki.WikiMap
 import net.tqft.wiki.FirefoxDriver
+import net.tqft.util.FirefoxSlurp
 
 object DOIMatchBot extends App {
+
+  FirefoxSlurp.disable
 
   lazy val arxivbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")

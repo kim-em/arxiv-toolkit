@@ -6,8 +6,11 @@ import net.tqft.wiki.WikiMap
 import net.tqft.mathscinet.Article
 import net.tqft.util.pandoc
 import net.tqft.eigenfactor.Eigenfactor
+import net.tqft.util.FirefoxSlurp
 
 object DOIBot extends App {
+
+  FirefoxSlurp.disable
 
   lazy val doibot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
@@ -16,8 +19,6 @@ object DOIBot extends App {
     b.setThrottle(10000)
     b
   }
-
-  //  Article.enableBibtexSaving
 
   for (a <- extendedCoverage ++ topJournals(100)) {
     for (link <- a.DOI.map("http://dx.doi.org/" + _).orElse(a.URL)) {

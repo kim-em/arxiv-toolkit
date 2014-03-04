@@ -6,9 +6,13 @@ import net.tqft.wiki.WikiMap
 import net.tqft.mathscinet.Article
 import net.tqft.util.pandoc
 import net.tqft.eigenfactor.Eigenfactor
+import net.tqft.util.FirefoxSlurp
 
 object AuthorBot extends App {
 
+  
+  FirefoxSlurp.disable
+  
   lazy val authorbot = {
     val b = WikiMap("http://tqft.net/mlp/index.php")
     b.login("authorbot", "zytopex")
