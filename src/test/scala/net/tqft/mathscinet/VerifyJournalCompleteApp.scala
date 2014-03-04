@@ -62,7 +62,7 @@ Bounds on the number of fuzzy functions - Kameda, T. and Sadeh, E. - Information
     }).iterator.asScala
   }
 
-  val completedJournals = Seq(
+  val completedJournals = Nil/*Seq(
       "Discrete Optim.", 
       "J. Approx. Theory",  
       "Topology Appl.",
@@ -107,8 +107,8 @@ Bounds on the number of fuzzy functions - Kameda, T. and Sadeh, E. - Information
       "J. Appl. Log.",
       "J. Pure Appl. Algebra",
       "Sci. Comput. Programming",
-      "Ann. Pure Appl. Logic")
-  // TODO automatically assemble the .tar.gz files, as long as now articles are marked as missing above
+      "Ann. Pure Appl. Logic")*/
+  // TODO automatically assemble the .tar.gz files, as long as no articles are marked as missing above
   // TODO automatically upload them to S3
   
   var journalCount = 0
