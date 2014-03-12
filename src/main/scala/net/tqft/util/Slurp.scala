@@ -29,6 +29,7 @@ import org.apache.http.impl.client.DecompressingHttpClient
 import java.io.FilterInputStream
 import org.openqa.selenium.firefox.FirefoxProfile
 import org.apache.http.impl.conn.PoolingClientConnectionManager
+import scala.annotation.tailrec
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -120,6 +121,8 @@ object HttpClientSlurp extends HttpClientSlurp
 trait FirefoxSlurp extends Slurp {
   private def driver = FirefoxSlurp.driverInstance
 
+  var throttle = 0
+  
   override def getStream(url: String) = {
     import scala.collection.JavaConverters._
 
@@ -135,10 +138,15 @@ trait FirefoxSlurp extends Slurp {
 
         // TODO more validation we really arrived?
         driver.getTitle match {
-          case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => throw new HttpException(e)
+          case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => {
+            Logging.error("Exception accessing " + url, new HttpException(e))
+            if(throttle == 0) throttle = 5000 else throttle *= 2
+            getStream(url)
+          }
           case e @ ("MathSciNet Access Error") => throw new HttpException("403 " + e)
           case _ =>
         }
+        throttle = 0
         new ByteArrayInputStream(driver.getPageSource.getBytes("UTF-8"))
       } catch {
         case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException | _: org.openqa.selenium.remote.ErrorHandler$UnknownServerException) => {
