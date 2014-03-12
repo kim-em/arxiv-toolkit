@@ -29,7 +29,7 @@ object JournalsNotOnTheERAList extends App {
   //    if c > 0
   ) {
     val c = count(issn)
-    if (c >= 10) {
+    if (c >= 1) {
       println(issn + ", " + name + ", " + c)
     }
   }
