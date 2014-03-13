@@ -1,0 +1,31 @@
+# use glob syntax.
+syntax: glob
+
+# temporary latex files
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.nav
+*.snm
+*.xyc
+
+# temporary eclipse files
+.classpath
+.cache
+.settings
+
+# OS X files
+.DS_Store
+
+# sbt stuff
+target
+project/project
+project/target
+
+# artifacts
+src/main/js/mathscinet-extension.zip
+
+db
+db.p
