@@ -1,0 +1,62 @@
+package net.tqft.mathscinet
+
+import java.io.File
+import net.tqft.util.CSVParser
+import net.tqft.toolkit.Extractors.Int
+import scala.io.Codec
+import net.tqft.util.FirefoxSlurp
+import scala.collection.mutable.{ Map => mMap }
+
+object CitationApp extends App {
+
+  Article.disableBibtexSaving
+
+  val mathematicians = (for (
+    line <- io.Source.fromFile(new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/mathematicians.txt"))(Codec.UTF8).getLines;
+    if line.nonEmpty && !line.startsWith("#");
+    fields = CSVParser(line)
+  ) yield fields).toList
+
+  val authors = for (
+    Int(id) :: name :: university :: level :: _ <- mathematicians;
+    if id > 0
+  ) yield {
+    (Author(id, name), university, level)
+  }
+
+  type Level = String
+  type Year = Int
+
+  val counts = mMap[Level, mMap[Year, mMap[Int, Int]]]()
+  val years = Seq(2008, 1996)
+  val levels = Seq("C", "D", "E")
+
+  for (level <- levels) {
+    counts(level) = mMap[Year, mMap[Int, Int]]()
+    for (year <- years) {
+      counts(level)(year) = mMap[Int, Int]()
+    }
+  }
+
+  try {
+    for ((a, uni, level) <- authors) {
+      for (year <- years)
+        counts(level)(year)(a.hIndex(year)) = counts(level)(year).getOrElseUpdate(a.hIndex(year), 0) + 1
+      println(a.name + s" ($uni, $level) " + years.map(a.hIndex).mkString(" "))
+    }
+  } catch {
+    case e: Exception =>
+      e.printStackTrace()
+      System.exit(1)
+  }
+
+  for(year <- years) {
+    for(level <- levels) {
+      println(counts(level)(year).toSeq.sorted)
+    }
+  }
+  
+  println(counts)
+  
+  FirefoxSlurp.quit
+}
