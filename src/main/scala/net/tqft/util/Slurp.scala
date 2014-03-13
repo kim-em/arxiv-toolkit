@@ -141,6 +141,7 @@ trait FirefoxSlurp extends Slurp {
           case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => {
             Logging.error("Exception accessing " + url, new HttpException(e))
             if(throttle == 0) throttle = 5000 else throttle *= 2
+            Thread.sleep(throttle)
             getStream(url)
           }
           case e @ ("MathSciNet Access Error") => throw new HttpException("403 " + e)
@@ -264,7 +265,7 @@ object FirefoxSlurp extends FirefoxSlurp {
 
 trait MathSciNetMirrorSlurp extends Slurp {
   val offset = Random.nextInt(10 * 60 * 1000)
-  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ "ams.rice.edu", "ams.impa.br", "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
+  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ /* "ams.rice.edu", */"ams.impa.br", "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {

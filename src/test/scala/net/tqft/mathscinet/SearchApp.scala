@@ -7,7 +7,7 @@ import net.tqft.journals.ISSNs
 
 object SearchApp extends App {
 //  println(Search.inTopJournalsJumbled(200).size)
-  println(Search.during(2013).size)
+//  println(Search.during(2013).size)
   println(Search.inJournalsJumbled(Articles.ISSNsInDatabase).size)
   
 
