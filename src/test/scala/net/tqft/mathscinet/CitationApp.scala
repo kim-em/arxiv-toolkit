@@ -29,7 +29,7 @@ object CitationApp extends App {
 
   val counts = mMap[Level, mMap[Year, mMap[Int, Int]]]()
   val years = Seq(2008, 1996)
-  val levels = Seq("C", "D", "E")
+  val levels = Seq("?", "A", "B", "C", "D", "E")
 
   for (level <- levels) {
     counts(level) = mMap[Year, mMap[Int, Int]]()
@@ -51,7 +51,9 @@ object CitationApp extends App {
   }
 
   for(year <- years) {
+    println(year)
     for(level <- levels) {
+      println(level)
       println(counts(level)(year).toSeq.sorted)
     }
   }

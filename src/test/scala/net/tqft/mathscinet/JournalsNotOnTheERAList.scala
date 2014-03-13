@@ -24,7 +24,7 @@ object JournalsNotOnTheERAList extends App {
 
   val ERA = Source.fromURL("http://tqft.net/math/ERA2015-issns.txt").getLines.toSeq
   for (
-    (issn, name) <- (Journals.names -- ERA).toSeq.par
+    (issn, name) <- (Journals.journalNames -- ERA).toSeq.par
   //    c = count(issn)
   //    if c > 0
   ) {
