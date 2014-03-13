@@ -141,6 +141,7 @@ trait FirefoxSlurp extends Slurp {
           case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => {
             Logging.error("Exception accessing " + url, new HttpException(e))
             if(throttle == 0) throttle = 5000 else throttle *= 2
+            Thread.sleep(throttle)
             getStream(url)
           }
           case e @ ("MathSciNet Access Error") => throw new HttpException("403 " + e)
