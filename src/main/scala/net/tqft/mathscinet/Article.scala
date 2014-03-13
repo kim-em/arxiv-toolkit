@@ -574,7 +574,7 @@ trait Article { article =>
         pandoc.latexToText(f0) +
         (if (f0.endsWith(" ")) " " else "")
     }
-    plainTitle.split("\\$").grouped(2).map({ p =>
+    plainTitle.replaceAllLiterally("$$", "$").split("\\$").grouped(2).map({ p =>
       pandocFragment(p(0)) +
         (p.tail.headOption match {
           case Some(q) => "$" + q
