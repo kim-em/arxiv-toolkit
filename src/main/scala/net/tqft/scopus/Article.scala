@@ -11,7 +11,24 @@ case class Article(id: String, title: String) {
   
   lazy val dataText = Slurp(textURL).toStream
   
+  private def dataWithPrefix(prefix: String) = dataText.find(_.startsWith(prefix + ": ")).map(_.stripPrefix(prefix + ": "))
+  
   def citationOption = "(.*) Cited [0-9]* times.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1))
+  def ISSNOption = dataWithPrefix("ISSN").map(s => s.take(4) + "-" + s.drop(4))
+  def DOIOption = dataWithPrefix("DOI")
+  def authorData = dataText(3)
+  
+  def numberOfCitations: Int = ".* Cited ([0-9]*) times.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1)).get.toInt
+  
+  def fullCitation = title + ", " + authorData + ", " + citationOption.getOrElse("")
+  def matches = net.tqft.citationsearch.Search.query(fullCitation).results
+  
+  def references = {
+    import net.tqft.toolkit.collections.TakeToFirst._
+    dataText.iterator.dropWhile(!_.startsWith("REFERENCES: ")).map(_.stripPrefix("REFERENCES: ").trim).takeToFirst(!_.endsWith(";")).map(_.stripSuffix(";")).toSeq
+  }
+  
+  def referenceMatches = references.map(r => (r, net.tqft.citationsearch.Search.query(r).results))
   
 //  private var bibtexData: Option[BIBTEX] = None
 //  def bibtex = {
