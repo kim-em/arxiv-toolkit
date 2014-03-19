@@ -30,6 +30,7 @@ import java.io.FilterInputStream
 import org.openqa.selenium.firefox.FirefoxProfile
 import org.apache.http.impl.conn.PoolingClientConnectionManager
 import scala.annotation.tailrec
+import net.tqft.scopus.Scopus
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -128,6 +129,8 @@ trait FirefoxSlurp extends Slurp {
 
     if (FirefoxSlurp.enabled_?) {
       try {
+        if(url.startsWith("http://www.scopus.com/")) Scopus.preload
+        
         driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
           case Some(element) => {
             Logging.info("webdriver: clicking an available link")
@@ -265,7 +268,7 @@ object FirefoxSlurp extends FirefoxSlurp {
 
 trait MathSciNetMirrorSlurp extends Slurp {
   val offset = Random.nextInt(10 * 60 * 1000)
-  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ /* "ams.rice.edu", */"ams.impa.br", "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
+  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ /* "ams.rice.edu", *//*"ams.impa.br", */"ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {

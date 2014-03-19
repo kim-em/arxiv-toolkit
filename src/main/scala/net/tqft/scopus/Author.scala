@@ -3,7 +3,7 @@ package net.tqft.scopus
 import net.tqft.util.Slurp
 import net.tqft.util.FirefoxSlurp
 
-object Author {
+object Scopus {
   lazy val preload = {
     //  use FirefoxSlurp directly, to avoid the cache on this first hit.
     (new FirefoxSlurp {})("http://www.scopus.com/")
@@ -12,8 +12,6 @@ object Author {
 }
 
 case class Author(id: Long) {
-  Author.preload
-
   def URL = "http://www.scopus.com/authid/detail.url?authorId=" + id.toString
 
   def publicationsURL = "http://www.scopus.com/search/submit/author.url?authorId=" + id.toString

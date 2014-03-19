@@ -22,24 +22,31 @@ object JournalsMSIPublishesInApp extends App {
 
   val authors = for (
     Int(id) :: name :: "ANU" :: level :: _ <- mathematicians;
-    if id > 0;
-    if level == "E" || level == "D"
+    if id > 0
   ) yield {
     Author(id, name)
   }
 
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(50))
 
-  val journalCounts = { val p = authors.par; p.tasksupport = pool; p }
+  val articles = { val p = authors.par; p.tasksupport = pool; p }
     .flatMap(_.articles)
+
+  val journalCounts = articles
     .filter(a => a.yearOption.nonEmpty && a.year > 2000)
     .groupBy(_.ISSNOption.getOrElse(""))
     .mapValues(articles => (articles.head.journalOption, articles.size)).seq - ""
 
   val ERA = Source.fromURL("http://tqft.net/math/ERA2015-issns.txt").getLines.toSeq
 
+  val articlesNotInERAJournals = articles.filter(a => a.ISSNOption.nonEmpty && !ERA.contains(a.ISSN))
+
   for ((issn, (Some(name), count)) <- journalCounts -- ERA) {
     println(issn + " " + name + " " + count)
+  }
+
+  for (a <- articlesNotInERAJournals; if a.yearOption.nonEmpty && a.year > 2000) {
+    println(a.bibtex.toBIBTEXString)
   }
 
   FirefoxSlurp.quit
