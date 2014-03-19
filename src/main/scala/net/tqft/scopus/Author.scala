@@ -5,6 +5,7 @@ import net.tqft.util.FirefoxSlurp
 
 object Scopus {
   lazy val preload = {
+    ???
     //  use FirefoxSlurp directly, to avoid the cache on this first hit.
     (new FirefoxSlurp {})("http://www.scopus.com/")
     None
