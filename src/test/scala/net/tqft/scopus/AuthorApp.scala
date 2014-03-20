@@ -28,7 +28,7 @@ object AuthorApp extends App {
       println(p)
     }
 
-    for (p <- publications.headOption) {
+    for (p <- publications) {
       println(p.dataText.mkString("\n"))
       println(p.citation)
       p.numberOfCitations.map(n => println(s"Cited $n times."))
