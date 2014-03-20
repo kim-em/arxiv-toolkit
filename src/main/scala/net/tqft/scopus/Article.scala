@@ -21,7 +21,7 @@ case class Article(id: String, title: String) {
   def numberOfCitations: Int = ".* Cited ([0-9]*) times.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1)).get.toInt
   
   def fullCitation = title + ", " + authorData + ", " + citationOption.getOrElse("")
-  def matches = net.tqft.citationsearch.Search.query(fullCitation).results
+  def matches = net.tqft.citationsearch.Search.query(fullCitation + DOIOption.map(" " + ).getOrElse("")).results
   
   def references = {
     import net.tqft.toolkit.collections.TakeToFirst._
