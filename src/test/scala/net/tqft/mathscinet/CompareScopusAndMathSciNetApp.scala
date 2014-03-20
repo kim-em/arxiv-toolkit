@@ -7,7 +7,6 @@ import net.tqft.toolkit.Extractors.Int
 import net.tqft.toolkit.Extractors.Long
 import net.tqft.citationsearch.CitationScore
 
-
 object CompareScopusAndMathSciNetApp extends App {
   val mathematicians = (for (
     line <- io.Source.fromFile(new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/mathematicians.txt"))(Codec.UTF8).getLines;
@@ -21,31 +20,31 @@ object CompareScopusAndMathSciNetApp extends App {
   ) yield {
     (Author(mathscinetAuthorId, name), net.tqft.scopus.Author(scopusAuthorId, name))
   }
-  
-  for((ma, sa) <- authors) {
+
+  for ((ma, sa) <- authors) {
     println("Analyzing publications for " + ma.name)
-    
+
     val onlyOnScopus = sa.publications.filter(_.satisfactoryMatch.isEmpty)
-    val matches =
-    sa.publications.map(p => (p, p.satisfactoryMatch)).collect({
+    val matches = sa.publications.map(p => (p, p.satisfactoryMatch)).collect({
       case (p, Some(CitationScore(c, _))) if c.MRNumber.nonEmpty => (p, Article(c.MRNumber.get))
     })
-    val onlyOnMathSciNet = ma.articles.filterNot(matches.map(_._2).contains)
-    
+    lazy val matchedMathSciNetIds = matches.map(_._2.identifier).toSet
+    lazy val onlyOnMathSciNet = ma.articles.toStream.filterNot(a => matchedMathSciNetIds.contains(a.identifier))
+
     println("  Articles found only on Scopus:")
-    for(a <- onlyOnScopus) {
+    for (a <- onlyOnScopus) {
       println("    " + a.fullCitation)
     }
     println("   ============================")
     println("   Matching articles found:")
-    for((a1, a2) <- matches) {
+    for ((a1, a2) <- matches) {
       println("    " + a1.fullCitation)
       println("    " + a2.fullCitation)
       println("    --------------")
     }
     println("   ============================")
     println("   Articles found only on MathSciNet:")
-    for(a <- onlyOnMathSciNet) {
+    for (a <- onlyOnMathSciNet) {
       println("    " + a.fullCitation)
     }
     println("   ============================")

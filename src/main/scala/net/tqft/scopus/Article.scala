@@ -19,10 +19,10 @@ case class Article(id: String, title: String) {
   def DOIOption = dataWithPrefix("DOI")
   def authorData = dataText(3)
 
-  def numberOfCitations: Option[Int] = ".* Cited ([0-9]*) times.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1).toInt)
+  def numberOfCitations: Option[Int] = ".* Cited ([0-9]*) times?.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1).toInt)
 
   def fullCitation = title + " - " + authorData + " - " + citation + " - " + id
-  lazy val matches = net.tqft.citationsearch.Search.query(fullCitation + DOIOption.map(" " +).getOrElse("")).results
+  lazy val matches = net.tqft.citationsearch.Search.query(title + " - " + authorData + " - " + citation + DOIOption.map(" " + _).getOrElse("")).results
   lazy val satisfactoryMatch: Option[CitationScore] = {
     matches.headOption.filter(s => s.score > 0.9).orElse(
       matches.sliding(2).filter(p => p(0).score > 0.5 && p(0).score * p(0).score > p(1).score).toStream.headOption.map(_.head))
