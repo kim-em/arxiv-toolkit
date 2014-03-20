@@ -21,7 +21,7 @@ case class Article(id: String, title: String) {
 
   def numberOfCitations: Option[Int] = ".* Cited ([0-9]*) times?.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1).toInt)
 
-  def fullCitation = title + " - " + authorData + " - " + citation + " - " + id
+  def fullCitation = title + " - " + authorData + " - " + citation + " - scopus:" + id
   lazy val matches = net.tqft.citationsearch.Search.query(title + " - " + authorData + " - " + citation + DOIOption.map(" " + _).getOrElse("")).results
   lazy val satisfactoryMatch: Option[CitationScore] = {
     matches.headOption.filter(s => s.score > 0.9).orElse(

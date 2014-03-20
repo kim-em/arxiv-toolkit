@@ -333,7 +333,7 @@ trait ThrottledSlurp extends Slurp {
 
 object Throttle extends Logging {
   val defaultInterval = 1000
-  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 100000, "arxiv.org" -> 5000, "google.com" -> 500, "scholar.google.com" -> 500)
+  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 100000, "scopus.com" -> 30000, "arxiv.org" -> 5000, "google.com" -> 500, "scholar.google.com" -> 500)
   val lastThrottle = scala.collection.mutable.Map[String, Long]().withDefaultValue(0)
 
   // poisson distributed gaps
