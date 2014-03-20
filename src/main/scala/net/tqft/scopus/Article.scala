@@ -13,14 +13,14 @@ case class Article(id: String, title: String) {
   
   private def dataWithPrefix(prefix: String) = dataText.find(_.startsWith(prefix + ": ")).map(_.stripPrefix(prefix + ": "))
   
-  def citationOption = "(.*) Cited [0-9]* times.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1))
+  def citation = "(.*) Cited [0-9]* times.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1)).getOrElse(dataText(5))
   def ISSNOption = dataWithPrefix("ISSN").map(s => s.take(4) + "-" + s.drop(4))
   def DOIOption = dataWithPrefix("DOI")
   def authorData = dataText(3)
   
-  def numberOfCitations: Int = ".* Cited ([0-9]*) times.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1)).get.toInt
+  def numberOfCitations: Option[Int] = ".* Cited ([0-9]*) times.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1).toInt)
   
-  def fullCitation = title + ", " + authorData + ", " + citationOption.getOrElse("")
+  def fullCitation = title + ", " + authorData + ", " + citation
   def matches = net.tqft.citationsearch.Search.query(fullCitation + DOIOption.map(" " + ).getOrElse("")).results
   
   def references = {

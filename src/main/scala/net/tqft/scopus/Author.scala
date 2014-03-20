@@ -8,7 +8,7 @@ object Scopus {
   lazy val preload = {
     //  use FirefoxSlurp directly, to avoid the cache on this first hit.
     if (latch) {
-    latch = false
+      latch = false
       (new FirefoxSlurp {})("http://www.scopus.com/")
     }
     None
