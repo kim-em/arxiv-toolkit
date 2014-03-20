@@ -37,11 +37,8 @@ object AuthorApp extends App {
         println(r)
       }
 
-      for ((r, m) <- p.referenceMatches) {
-        println(r)
-        if (m(0).score > m(1).score * 2) {
-          println("   " + m(0).citation)
-        }
+      for (m <- p.satisfactoryMatch) {
+        println(m)
       }
     }
 
