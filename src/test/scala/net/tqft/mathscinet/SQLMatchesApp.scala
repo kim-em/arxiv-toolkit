@@ -33,10 +33,11 @@ object SQLMatchesApp extends App {
       val authors = (for (names <- (scala.xml.XML.loadString("<authors>" + authorsXML + "</authors>") \\ "author").iterator) yield (names \\ "keyname").text + ", " + (names \\ "forenames").text).mkString("", "; ", ";")
       val results = net.tqft.citationsearch.Search.query(title + " " + authors + " " + journalref.getOrElse("")).results
       for (
-        (CitationScore(c: Citation, score), i) <- results.zipWithIndex;
-        if i == 0 || score > 0.5
+        (CitationScore(c : Citation, score), i) <- results.zipWithIndex;
+        if i == 0 || score > 0.5;
+        if c.MRNumber.nonEmpty
       ) {
-        SQLTables.arxiv_mathscinet_matches += ((arxivid, c.MRNumber, score, c.best))
+        SQLTables.arxiv_mathscinet_matches += ((arxivid, c.MRNumber.get, score, c.best))
       }
     }
   }
