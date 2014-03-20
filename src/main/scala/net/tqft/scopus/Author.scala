@@ -12,7 +12,7 @@ object Scopus {
   }
 }
 
-case class Author(id: Long) {
+case class Author(id: Long, name: String) {
   def URL = "http://www.scopus.com/authid/detail.url?authorId=" + id.toString
 
   def publicationsURL = "http://www.scopus.com/search/submit/author.url?authorId=" + id.toString

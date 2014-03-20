@@ -18,7 +18,7 @@ object CitationApp extends App {
   ) yield fields).toList
 
   val authors = for (
-    Int(id) :: name :: university :: level :: _ <- mathematicians;
+    Int(id) :: _ :: name :: university :: level :: _ <- mathematicians;
     if id > 0
   ) yield {
     (Author(id, name), university, level)
