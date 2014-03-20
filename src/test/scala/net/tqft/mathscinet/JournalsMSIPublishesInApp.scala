@@ -21,10 +21,10 @@ object JournalsMSIPublishesInApp extends App {
   ) yield fields).toList
 
   val authors = for (
-    Int(id) :: name :: "ANU" :: level :: _ <- mathematicians;
-    if id > 0
+    Int(mathscinetAuthorId) :: _ :: name :: "ANU" :: level :: _ <- mathematicians;
+    if mathscinetAuthorId > 0
   ) yield {
-    Author(id, name)
+    Author(mathscinetAuthorId, name)
   }
 
   val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(50))
