@@ -6,8 +6,22 @@ import net.tqft.util.CSVParser
 import net.tqft.toolkit.Extractors.Int
 import net.tqft.toolkit.Extractors.Long
 import net.tqft.citationsearch.CitationScore
+import net.tqft.util.FirefoxSlurp
+import java.io.PrintWriter
+import java.io.FileOutputStream
 
 object CompareScopusAndMathSciNetApp extends App {
+  
+  val outputFile = new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/compare.txt")
+  outputFile.delete
+  val out = new PrintWriter(new FileOutputStream(outputFile))
+  def p(s: String) = {
+    println(s)
+    out.println(s)
+    out.flush
+  }
+  
+  
   val mathematicians = (for (
     line <- io.Source.fromFile(new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/mathematicians.txt"))(Codec.UTF8).getLines;
     if line.nonEmpty && !line.startsWith("#");
@@ -22,7 +36,7 @@ object CompareScopusAndMathSciNetApp extends App {
   }
 
   for ((ma, sa) <- authors) {
-    println("Analyzing publications for " + ma.name)
+    out.println("Analyzing publications for " + ma.name)
 
     val onlyOnScopus = sa.publications.filter(_.satisfactoryMatch.isEmpty)
     val matches = sa.publications.map(p => (p, p.satisfactoryMatch)).collect({
@@ -31,23 +45,27 @@ object CompareScopusAndMathSciNetApp extends App {
     lazy val matchedMathSciNetIds = matches.map(_._2.identifier).toSet
     lazy val onlyOnMathSciNet = ma.articles.toStream.filterNot(a => matchedMathSciNetIds.contains(a.identifier))
 
-    println("  Articles found only on Scopus:")
+    p("  Articles found only on Scopus:")
     for (a <- onlyOnScopus) {
-      println("    " + a.fullCitation)
+      p("    " + a.fullCitation)
+      for(m <- a.matches.headOption)
+      p(s"      best match (${m.score}): ${m.citation.title} - ${m.citation.authors} - ${m.citation.cite} ${m.citation.MRNumber.map(n => "- MR" + n).getOrElse("")}")
     }
-    println("   ============================")
-    println("   Matching articles found:")
+    p("   ============================")
+    p("   Matching articles found:")
     for ((a1, a2) <- matches) {
-      println("    " + a1.fullCitation)
-      println("    " + a2.fullCitation)
-      println("    --------------")
+      p("    " + a1.fullCitation)
+      p("    " + a2.fullCitation)
+      p("    --------------")
     }
-    println("   ============================")
-    println("   Articles found only on MathSciNet:")
+    p("   ============================")
+    p("   Articles found only on MathSciNet:")
     for (a <- onlyOnMathSciNet) {
-      println("    " + a.fullCitation)
+      p("    " + a.fullCitation)
     }
-    println("   ============================")
+    p("   ============================")
   }
 
+  FirefoxSlurp.quit
+  
 }

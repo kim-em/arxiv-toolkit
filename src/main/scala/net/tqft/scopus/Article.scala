@@ -14,7 +14,7 @@ case class Article(id: String, title: String) {
 
   private def dataWithPrefix(prefix: String) = dataText.find(_.startsWith(prefix + ": ")).map(_.stripPrefix(prefix + ": "))
 
-  def citation = "(.*) Cited [0-9]* times.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1)).getOrElse(dataText(5))
+  def citation = "(.*) Cited [0-9]* times?.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1)).getOrElse(dataText(5))
   def ISSNOption = dataWithPrefix("ISSN").map(s => s.take(4) + "-" + s.drop(4))
   def DOIOption = dataWithPrefix("DOI")
   def authorData = dataText(3)
@@ -23,9 +23,10 @@ case class Article(id: String, title: String) {
 
   def fullCitation = title + " - " + authorData + " - " + citation + " - scopus:" + id
   lazy val matches = net.tqft.citationsearch.Search.query(title + " - " + authorData + " - " + citation + DOIOption.map(" " + _).getOrElse("")).results
+  
   lazy val satisfactoryMatch: Option[CitationScore] = {
-    matches.headOption.filter(s => s.score > 0.9).orElse(
-      matches.sliding(2).filter(p => p(0).score > 0.5 && p(0).score * p(0).score > p(1).score).toStream.headOption.map(_.head))
+    matches.headOption.filter(s => s.score > 0.8).orElse(
+      matches.sliding(2).filter(p => p(0).score > 0.38 && scala.math.pow(p(0).score, 1.5) > p(1).score).toStream.headOption.map(_.head))
   }
 
   def references = {
