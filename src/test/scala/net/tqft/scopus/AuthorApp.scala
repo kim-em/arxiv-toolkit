@@ -28,6 +28,10 @@ object AuthorApp extends App {
       println(p)
     }
 
+    for(p <- publications.headOption) {
+      println(p.dataText.mkString("\n"))
+    }
+    
     for (p <- publications) {
       println(p.dataText.mkString("\n"))
       println(p.citation)
