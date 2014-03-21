@@ -4,6 +4,7 @@ import net.tqft.util.BIBTEX
 import net.tqft.util.Slurp
 import net.tqft.toolkit.Logging
 import net.tqft.citationsearch.CitationScore
+import net.tqft.toolkit.Extractors._
 
 case class Article(id: String, title: String) {
   def URL = "http://www.scopus.com/record/display.url?eid=" + id + "&origin=resultslist"
@@ -18,6 +19,7 @@ case class Article(id: String, title: String) {
   def ISSNOption = dataWithPrefix("ISSN").map(s => s.take(4) + "-" + s.drop(4))
   def DOIOption = dataWithPrefix("DOI")
   def authorData = dataText(3)
+  def yearOption = """^\(([0-9]*)\) """.r.findFirstMatchIn(citation).map(_.group(1)).collect({ case Int(i) => i })
 
   def numberOfCitations: Option[Int] = ".* Cited ([0-9]*) times?.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1).toInt)
 
@@ -25,8 +27,8 @@ case class Article(id: String, title: String) {
   lazy val matches = net.tqft.citationsearch.Search.query(title + " - " + authorData + " - " + citation + DOIOption.map(" " + _).getOrElse("")).results
   
   lazy val satisfactoryMatch: Option[CitationScore] = {
-    matches.headOption.filter(s => s.score > 0.8).orElse(
-      matches.sliding(2).filter(p => p(0).score > 0.38 && scala.math.pow(p(0).score, 1.5) > p(1).score).toStream.headOption.map(_.head))
+    matches.headOption.filter(s => s.score > 0.85).orElse(
+      matches.sliding(2).filter(p => p(0).score > 0.42 && scala.math.pow(p(0).score, 1.6) > p(1).score).toStream.headOption.map(_.head))
   }
 
   def references = {

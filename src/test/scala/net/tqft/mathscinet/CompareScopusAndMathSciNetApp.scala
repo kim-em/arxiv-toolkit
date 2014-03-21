@@ -35,15 +35,20 @@ object CompareScopusAndMathSciNetApp extends App {
     (Author(mathscinetAuthorId, name), net.tqft.scopus.Author(scopusAuthorId, name))
   }
 
+  val firstYear = 2005
+  
   for ((ma, sa) <- authors) {
     out.println("Analyzing publications for " + ma.name)
 
-    val onlyOnScopus = sa.publications.filter(_.satisfactoryMatch.isEmpty)
+    val recentPublicationsOnScopus = sa.publications.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear)
+    val recentPublicationsOnMathSciNet = ma.articles.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear).toStream
+    
+    val onlyOnScopus = recentPublicationsOnScopus.filter(_.satisfactoryMatch.isEmpty)
     val matches = sa.publications.map(p => (p, p.satisfactoryMatch)).collect({
       case (p, Some(CitationScore(c, _))) if c.MRNumber.nonEmpty => (p, Article(c.MRNumber.get))
     })
     lazy val matchedMathSciNetIds = matches.map(_._2.identifier).toSet
-    lazy val onlyOnMathSciNet = ma.articles.toStream.filterNot(a => matchedMathSciNetIds.contains(a.identifier))
+    lazy val onlyOnMathSciNet = recentPublicationsOnMathSciNet.filterNot(a => matchedMathSciNetIds.contains(a.identifier))
 
     p("  Articles found only on Scopus:")
     for (a <- onlyOnScopus) {
