@@ -1,6 +1,5 @@
 package net.tqft.util
 
-import java.io.PrintWriter
 import scala.sys.process._
 import java.io.File
 import net.tqft.toolkit.Logging
@@ -22,16 +21,24 @@ object pandoc {
     Logging.warn("pandoc not found; not attempting to strip LaTeX")
   }
 
-  def latexToText(latex: String): String = {
+  // {On {W}alkup's class {$\scr K(d)$} and a minimal triangulation of {$(S3\mathop{\hbox{$}\times{$}\!\!\!\!\lower 3pt\hbox{--}}\ S1)^{\#3}$}}
+  
+  def latexToText(latex: String, retry: Boolean = true): String = {
     if (okay) {
-      var result = new StringBuffer()
-      val pio = new ProcessIO(
-        in => { in.write(latex getBytes "UTF-8"); in.close },
-        stdout => scala.io.Source.fromInputStream(stdout).getLines.foreach(result.append),
-        _ => ())
-      val p = pandocCommand.run(pio)
-      require(p.exitValue == 0, "pandoc failed on input: " + latex)
-      result.toString
+      try {
+        var result = new StringBuffer()
+        val pio = new ProcessIO(
+          in => { in.write(latex getBytes "UTF-8"); in.close },
+          stdout => scala.io.Source.fromInputStream(stdout).getLines.foreach(result.append),
+          _ => ())
+        val p = pandocCommand.run(pio)
+        require(p.exitValue == 0, "pandoc failed on input: " + latex)
+        result.toString
+      } catch {
+        case e: Exception if retry => {
+          latexToText(latex.replaceAllLiterally("{", "").replaceAllLiterally("}", ""), false)
+        }
+      }
     } else {
       latex
     }

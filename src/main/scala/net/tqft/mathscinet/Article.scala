@@ -136,7 +136,20 @@ trait Article { article =>
       }
     }
   }
+  def authorsText: String = {
+    import net.tqft.util.OxfordComma._
+    
+    authors.map(author => pandoc.latexToText(author.firstNameLastName)).oxfordComma
+  }
 
+  def authorsShortText: String = {
+    if(authors.size > 4) {
+      pandoc.latexToText(authors.head.firstNameLastName) + " et al."
+    } else {
+      authorsText
+    }
+  }
+  
   def journalOption = bibtex.get("JOURNAL")
   def journal = journalOption.get
 
@@ -144,10 +157,18 @@ trait Article { article =>
     (volumeOption.getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim
   }
 
-  def citation: String = {
+  def volumeYearAndIssue_markdown: String = {
+    (volumeOption.map("**" + _ + "**").getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim    
+  }
+
+  def volumeYearAndIssue_html: String = {
+    (volumeOption.map("<b>" + _ + "</b>").getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim    
+  }
+  
+  def citation_text: String = {
     def restOfCitation = " " + volumeYearAndIssue + pagesOption.map(", " + _).getOrElse("")
 
-    bibtex.documentType match {
+    val latex = bibtex.documentType match {
       case "article" => {
         journal + restOfCitation
       }
@@ -168,8 +189,61 @@ trait Article { article =>
         ???
       }
     }
+    pandoc.latexToText(latex)
   }
 
+  def citation_markdown: String = {
+    def restOfCitation = " " + volumeYearAndIssue_markdown + pagesOption.map(", " + _).getOrElse("")
+
+    bibtex.documentType match {
+      case "article" => {
+        "_" + journal + "_" + restOfCitation
+      }
+      case "book" => {
+        bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+      }
+      case "inproceedings" => {
+        bibtex.get("BOOKTITLE").map(" _" + _ + "_").getOrElse("") + journalOption.getOrElse("") + restOfCitation
+      }
+      case "proceedings" => {
+        bibtex.get("NOTE").getOrElse("")
+      }
+      case "incollection" => {
+        bibtex.get("BOOKTITLE").map("_" + _ + "_ ").getOrElse("") + pages
+      }
+      case otherwise => {
+        Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)
+        ???
+      }
+    }    
+  }
+  
+  def citation_html: String = {
+    def restOfCitation = " " + volumeYearAndIssue_html + pagesOption.map(", " + _).getOrElse("")
+
+    bibtex.documentType match {
+      case "article" => {
+        "<i>" + journal + "</i>" + restOfCitation
+      }
+      case "book" => {
+        bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+      }
+      case "inproceedings" => {
+        bibtex.get("BOOKTITLE").map(" <i>_" + _ + "</i>").getOrElse("") + journalOption.getOrElse("") + restOfCitation
+      }
+      case "proceedings" => {
+        bibtex.get("NOTE").getOrElse("")
+      }
+      case "incollection" => {
+        bibtex.get("BOOKTITLE").map("<i>" + _ + "</i> ").getOrElse("") + pages
+      }
+      case otherwise => {
+        Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)
+        ???
+      }
+    }    
+  }
+  
   def yearStringOption: Option[String] = {
     bibtex.get("YEAR").map(y => y.replace("/", "-"))
   }
@@ -586,32 +660,24 @@ trait Article { article =>
   def fullCitation = constructFilename(maxLength = None).stripSuffix(".pdf")
 
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate, maxLength: Option[Int] = Some(250)) = {
-    val authorNames = authors.map(a => pandoc.latexToText(a.name))
-    val textCitation = pandoc.latexToText(citation)
-
     ({
       val attempt = filenameTemplate
         .replaceAllLiterally("$TITLE", sanitizedTitle)
-        .replaceAllLiterally("$AUTHOR", authorNames.mkString(" and "))
-        .replaceAllLiterally("$JOURNALREF", textCitation)
+        .replaceAllLiterally("$AUTHOR", authorsText)
+        .replaceAllLiterally("$JOURNALREF", citation_text)
         .replaceAllLiterally("$MRNUMBER", identifierString)
       if (maxLength.nonEmpty && attempt.getBytes().length > maxLength.get) {
-        val shortAuthors = if (authors.size > 4) {
-          authorNames.head + " et al."
-        } else {
-          authorNames.mkString(" and ")
-        }
         val maxCitationLength = scala.math.max(maxLength.get * 9 / 25, maxLength.get - (filenameTemplate
-          .replaceAllLiterally("$AUTHOR", shortAuthors)
+          .replaceAllLiterally("$AUTHOR", authorsShortText)
           .replaceAllLiterally("$MRNUMBER", identifierString)
           .replaceAllLiterally("$TITLE", sanitizedTitle).getBytes().length - "$JOURNALREF".size))
-        val shortCitation = if (textCitation.getBytes().length > maxCitationLength) {
-          textCitation.reverse.tails.find(_.getBytes.length + 3 <= maxCitationLength).get.reverse + "..."
+        val shortCitation = if (citation_text.getBytes().length > maxCitationLength) {
+          citation_text.reverse.tails.find(_.getBytes.length + 3 <= maxCitationLength).get.reverse + "..."
         } else {
-          textCitation
+          citation_text
         }
         val partialReplacement = filenameTemplate
-          .replaceAllLiterally("$AUTHOR", shortAuthors)
+          .replaceAllLiterally("$AUTHOR", authorsShortText)
           .replaceAllLiterally("$JOURNALREF", shortCitation)
           .replaceAllLiterally("$MRNUMBER", identifierString)
         val maxTitleLength = maxLength.get - (partialReplacement.getBytes().length - "$TITLE".size)

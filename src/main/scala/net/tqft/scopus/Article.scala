@@ -38,27 +38,4 @@ case class Article(id: String, title: String) {
 
   lazy val referenceMatches = references.iterator.toStream.map(r => (r, net.tqft.citationsearch.Search.query(r).results))
 
-  //  private var bibtexData: Option[BIBTEX] = None
-  //  def bibtex = {
-  //    if (bibtexData.isEmpty) {
-  // // Fails because Scopus forces us to download...
-  //      val text = Slurp(bibtexURL).toList.drop(3).mkString("\n")
-  //      Logging.info("Found BIBTEX for " + id + ":\n" + text)
-  //      try {
-  //        bibtexData = BIBTEX.parse(text)
-  //      } catch {
-  //        case e: Exception => {
-  //          Logging.error("Exception while parsing BIBTEX for " + id + ": \n" + text, e)
-  //          try {
-  //            Slurp -= bibtexURL
-  //          } catch {
-  //            case e: Exception => Logging.warn("Failed to clean slurp database.", e)
-  //          }
-  //          ???
-  //        }
-  //      }
-  //    }
-  //    bibtexData.get
-  //  }
-
 }

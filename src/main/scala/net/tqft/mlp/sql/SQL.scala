@@ -13,16 +13,18 @@ class ArxivMathscinetMatches(tag: Tag) extends Table[(String, Int, Double, Strin
     def * = (arxivid, MRNumber, score, best)
 }
 
-class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String, Option[String], Option[String])](tag, "mathscinet_aux") {
+class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String, String, String, Option[String], Option[String])](tag, "mathscinet_aux") {
  def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
   def textTitle = column[String]("textTitle")
   def wikiTitle = column[String]("wikiTitle")
   def textAuthors = column[String]("textAuthors")
   def textCitation = column[String]("textCitation")
+  def markdownCitation = column[String]("markdownCitation")
+  def htmlCitation = column[String]("htmlCitation")
   def pdf = column[Option[String]]("pdf")
   def free = column[Option[String]]("free")
-  def * = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation, pdf, free)
-  def citationData = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation)
+  def * = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation, markdownCitation, htmlCitation, pdf, free)
+  def citationData = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation, markdownCitation, htmlCitation)
 }
 
 class MathscinetBIBTEX(tag: Tag) extends Table[Article](tag, "mathscinet_bibtex") {
