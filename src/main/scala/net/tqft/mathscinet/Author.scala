@@ -7,6 +7,14 @@ case class Author(id: Int, name: String) {
   def lastName = name.takeWhile(c => c != ',' && c != ' ')
   def articles = Search.query("pg1" -> "IID", "s1" -> id.toString)
   def hIndex(firstYear: Int = 2008) = Author.hIndex(id, firstYear)
+  
+  def firstNameLastName = {
+      name.split(",").map(_.trim).toSeq match {
+        case Seq(one) => one
+        case Seq(one, two) => two + " " + one
+        case Seq(one, suffix @ ("Jr." | "Sr." | "jr." | "jun." | "I" | "II" | "III" | "IV"), two) => two + " " + one + ", " + suffix
+      }
+    }
 }
 
 object Author {

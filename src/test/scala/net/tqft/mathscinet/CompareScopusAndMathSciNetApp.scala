@@ -9,19 +9,20 @@ import net.tqft.citationsearch.CitationScore
 import net.tqft.util.FirefoxSlurp
 import java.io.PrintWriter
 import java.io.FileOutputStream
+import net.tqft.citationsearch.Citation
+import java.io.OutputStreamWriter
 
 object CompareScopusAndMathSciNetApp extends App {
-  
-  val outputFile = new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/compare.txt")
+
+  val outputFile = new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/compare.html")
   outputFile.delete
-  val out = new PrintWriter(new FileOutputStream(outputFile))
+  val out = new OutputStreamWriter(new FileOutputStream(outputFile), "UTF-8")
   def p(s: String) = {
     println(s)
-    out.println(s)
+    out.write(s + "\n")
     out.flush
   }
-  
-  
+
   val mathematicians = (for (
     line <- io.Source.fromFile(new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/mathematicians.txt"))(Codec.UTF8).getLines;
     if line.nonEmpty && !line.startsWith("#");
@@ -29,48 +30,74 @@ object CompareScopusAndMathSciNetApp extends App {
   ) yield fields).toList
 
   val authors = for (
-    Int(mathscinetAuthorId) :: Long(scopusAuthorId) :: name :: "ANU" :: level :: _ <- mathematicians;
-    if mathscinetAuthorId > 0 && scopusAuthorId > 0
+    Int(mathscinetAuthorId) :: Long(scopusAuthorId) :: name :: "ANU" :: level :: _ <- mathematicians
   ) yield {
     (Author(mathscinetAuthorId, name), net.tqft.scopus.Author(scopusAuthorId, name))
   }
 
   val firstYear = 2005
-  
-  for ((ma, sa) <- authors) {
-    out.println("Analyzing publications for " + ma.name)
 
-    val recentPublicationsOnScopus = sa.publications.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear)
-    val recentPublicationsOnMathSciNet = ma.articles.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear).toStream
-    
-    val onlyOnScopus = recentPublicationsOnScopus.filter(_.satisfactoryMatch.isEmpty)
-    val matches = sa.publications.map(p => (p, p.satisfactoryMatch)).collect({
-      case (p, Some(CitationScore(c, _))) if c.MRNumber.nonEmpty => (p, Article(c.MRNumber.get))
-    })
-    lazy val matchedMathSciNetIds = matches.map(_._2.identifier).toSet
-    lazy val onlyOnMathSciNet = recentPublicationsOnMathSciNet.filterNot(a => matchedMathSciNetIds.contains(a.identifier))
-
-    p("  Articles found only on Scopus:")
-    for (a <- onlyOnScopus) {
-      p("    " + a.fullCitation)
-      for(m <- a.matches.headOption)
-      p(s"      best match (${m.score}): ${m.citation.title} - ${m.citation.authors} - ${m.citation.cite} ${m.citation.MRNumber.map(n => "- MR" + n).getOrElse("")}")
-    }
-    p("   ============================")
-    p("   Matching articles found:")
-    for ((a1, a2) <- matches) {
-      p("    " + a1.fullCitation)
-      p("    " + a2.fullCitation)
-      p("    --------------")
-    }
-    p("   ============================")
-    p("   Articles found only on MathSciNet:")
-    for (a <- onlyOnMathSciNet) {
-      p("    " + a.fullCitation)
-    }
-    p("   ============================")
+  def fullCitation(c: Citation) = {
+    s"${c.title} - ${c.authors} - ${c.cite} ${c.MRNumber.map(n => "- MR" + n).getOrElse("")}"
   }
 
-  FirefoxSlurp.quit
+  p("""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<head>
+<body>""")
   
+  for ((ma, sa) <- authors) {
+    p(s"<h2>Publications for <i>${ma.name}</i> since $firstYear</h2>")
+    p(s"<div id='publications-${ma.id}'>")
+
+    lazy val recentPublicationsOnScopus = sa.publications.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear)
+    lazy val recentPublicationsOnMathSciNet = ma.articles.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear).toStream
+
+    lazy val onlyOnScopus = recentPublicationsOnScopus.filter(_.satisfactoryMatch.isEmpty)
+    lazy val matches = sa.publications.map(p => (p, p.satisfactoryMatch)).collect({
+      case (p, Some(CitationScore(c, _))) if c.MRNumber.nonEmpty => (p, Article(c.MRNumber.get))
+    })
+    lazy val onlyOnMathSciNet = {
+      if (sa.id > 0) {
+        val matchedMathSciNetIds = matches.map(_._2.identifier).toSet
+        recentPublicationsOnMathSciNet.filterNot(a => matchedMathSciNetIds.contains(a.identifier))
+      } else {
+        recentPublicationsOnMathSciNet
+      }
+    }
+
+    if (sa.id > 0) {
+      p("<h3>Articles found only on Scopus:</h3>")
+      p("<dl>")
+      for (a <- onlyOnScopus) {
+        p("<dt>" + a.fullCitation + "</dt>")
+        for (m <- a.matches.headOption)
+          p(s"<dd>best match (${m.score}): ${fullCitation(m.citation)}</dd>")
+      }
+      p("</dl>")
+      p("<h3>Matching articles found:</h3>")
+      p("<dl>")
+      for ((a1, a2) <- matches) {
+        p("<dt>" + a1.fullCitation + "</dt>")
+        p("<dd>" + a2.fullCitation + "</dd>")
+      }
+      p("</dl>")
+    }
+    if (ma.id > 0) {
+      p("<h3>Articles found only on MathSciNet:</h3>")
+      p("<ul>")
+      for (a <- onlyOnMathSciNet) {
+        p("<li>" + a.fullCitation + "</li>")
+      }
+      p("</ul>")
+    }
+
+    p("</div>")
+  }
+
+  p("</body></html>")
+  FirefoxSlurp.quit
+
 }

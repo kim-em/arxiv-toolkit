@@ -10,7 +10,7 @@ import scala.collection.parallel.ForkJoinTaskSupport
 object SQLAuxPDFApp extends App {
 
   SQL { implicit session =>
-    def articlesPage(k: Int): List[(net.tqft.mathscinet.Article, (Int, String, String, String, String, Option[String], Option[String]))] = {
+    def articlesPage(k: Int): List[(net.tqft.mathscinet.Article, (Int, String, String, String, String, String, String, Option[String], Option[String]))] = {
       try {
         println("retrieving page " + k)
         (for (

@@ -25,7 +25,7 @@ object SQLAuxApp extends App {
     	println(group.size)
         for (a <- { val p = group.par; p.tasksupport = pool; p }) {
           try {
-            val data = (a.identifier, a.textTitle, a.wikiTitle, a.authors.map(a => pandoc.latexToText(a.name)).mkString(" and "), pandoc.latexToText(a.citation))
+            val data = (a.identifier, a.textTitle, a.wikiTitle, a.authorsText, a.citation_text, a.citation_markdown, a.citation_html)
              SQLTables.mathscinet_aux.citationData += (data)
              println(SQLTables.mathscinet_aux.citationData.insertStatementFor(data) + ";")
           } catch {
