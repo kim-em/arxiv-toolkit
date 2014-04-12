@@ -27,16 +27,19 @@ object VerifyJournalCompleteApp extends App {
     Seq("MR0532067", "MR0333021") // errata
 
   val missingFromElsevier = """
-A diametric theorem for edges - Ahlswede, R. and Khachatrian, L. H. - J. Combin. Theory Ser. A 92 (2000), no. 1, 1–16 - MR1783935
+Inclusion relationships among permutation problems - Bovet, Daniel P. and Panconesi, Alessandro - Discrete Appl. Math. 16 (1987), no. 2, 113–123 - MR0874910
+Vector systems of exponentials and zeroes of entire matrix-functions - Ivanov, S. A. and Pavlov, B. S. - J. Math. Anal. Appl. 74 (1980), no. 2, 25–31, 118 - MR0573400
+Model-theoretic forcing in logic with a generalized quantifier - Bruce, Kim B. - Ann. Math. Logic 13 (1978), no. 3, 225–265 - MR0491860
+""".split("\n").map(_.trim).filter(_.nonEmpty).map(_.split(" ").last).collect({ case MRIdentifier(id) => id })
+
+  val usedToBeMissing = """A diametric theorem for edges - Ahlswede, R. and Khachatrian, L. H. - J. Combin. Theory Ser. A 92 (2000), no. 1, 1–16 - MR1783935
 Longest paths in semicomplete multipartite digraphs - Volkmann, Lutz - Discrete Math. 199 (1999), no. 1-3, 279–284 - MR1675934
 Necessary conditions for Hamiltonian split graphs - Peemöller, Jürgen - Discrete Math. 54 (1985), no. 1, 39–47 - MR0787491
 Undecided Ramsey numbers for paths - Lindström, Bernt - Discrete Math. 43 (1983), no. 1, 111–112 - MR0680310
 On the existence of cyclic and pseudo-cyclic MDS codes - Maruta, Tatsuya - European J. Combin. 19 (1998), no. 2, 159–174 - MR1607933
 Characterization of antidominant solutions of linear differential equations - Hanschke, Thomas - J. Comput. Appl. Math. 40 (1992), no. 3, 351–361 - MR1170914
-Inclusion relationships among permutation problems - Bovet, Daniel P. and Panconesi, Alessandro - Discrete Appl. Math. 16 (1987), no. 2, 113–123 - MR0874910
 Dynamic programming of expectation and variance - Quelle, Gisbert - J. Math. Anal. Appl. 55 (1976), no. 1, 239–252 - MR0411651
 On the completeness of the system of functions \{e^{\alpha(n+a)x}\sin(n+a)x\}^\infty_{n=0} - Dostanić, M. R. - J. Math. Anal. Appl. 203 (1996), no. 3, 672–676 - MR1417122
-Vector systems of exponentials and zeroes of entire matrix-functions - Ivanov, S. A. and Pavlov, B. S. - J. Math. Anal. Appl. 74 (1980), no. 2, 25–31, 118 - MR0573400
 ABC candies - Ribenboim, Paulo - J. Number Theory 81 (2000), no. 1, 48–60 MR1743505
 Metric methods three examples and a theorem - Fitting, Melvin - J. Logic Programming 21 (1994), no. 3, 113–127 - MR1300126
 The stable models of a predicate logic program - Marek, V. Wiktor and Nerode, Anil and Remmel, Jeffrey B. - J. Logic Programming 21 (1994), no. 3, 129-154 - MR1300127
@@ -44,7 +47,6 @@ On the power of rule-based query languages for nested data models - Vadaparty, K
 Distributed logic programming - Brogi, Antonio and Gorrieri, Roberto - J. Logic Programming 15 (1993), no. 4, 295–335 - MR1208829
 A completeness result for SLDNF-resolution - Stroetmann, Karl - J. Logic Programming 15 (1993), no. 4, 337–355 - MR1208830
 On the existence of cyclic and pseudo-cyclic MDS codes - Maruta, Tatsuya - European J. Combin. 19 (1998), no. 2, 159–174 - MR1607933
-Model-theoretic forcing in logic with a generalized quantifier - Bruce, Kim B. - Ann. Math. Logic 13 (1978), no. 3, 225–265 - MR0491860
 Bounds on the number of fuzzy functions - Kameda, T. and Sadeh, E. - Information and Control 35 (1977), no. 2, 139–145 - MR0456965      
 Performance of heuristic bin packing algorithms with segments of random length - Shapiro, Stephen D. - Information and Control 35 (1977), no. 2, 146–158 - MR0503867    
 \aleph _{1}-trees - Devlin, Keith J. - Ann. Math. Logic 13 (1978), no. 3, 267–330 - MR0491861
