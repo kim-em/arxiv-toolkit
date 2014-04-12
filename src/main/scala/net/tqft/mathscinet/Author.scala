@@ -9,10 +9,10 @@ case class Author(id: Int, name: String) {
   def hIndex(firstYear: Int = 2008) = Author.hIndex(id, firstYear)
   
   def firstNameLastName = {
-      name.split(",").map(_.trim).toSeq match {
+      name.split(",").map(_.trim).filter(_.nonEmpty).toSeq match {
         case Seq(one) => one
         case Seq(one, two) => two + " " + one
-        case Seq(one, suffix @ ("Jr." | "Sr." | "jr." | "jun." | "I" | "II" | "III" | "IV"), two) => two + " " + one + ", " + suffix
+        case Seq(one, suffix @ ("Jr." | "Jr" | "Sr." | "jr." | "jun." | "I" | "II" | "III" | "IV" | "V"), two) => two + " " + one + ", " + suffix
       }
     }
 }
