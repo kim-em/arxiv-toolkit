@@ -138,52 +138,9 @@ The existential theory of real hyperelliptic function fields - Zahidi, Karim - J
   // TODO automatically upload them to S3 // hmm, some files are too big for j3tset.
 
   val readyToUpload = completedJournals.toSet -- Articles((missingFromElsevier ++ mysterious).map(_.toString)).map(_._2.journal)
-  for (journal <- readyToUpload) {
-    val tarFile = journal + " -2009.tar"
-    val zipFile = tarFile + ".gz"
-    import scala.sys.process._
-    if (!new File(System.getProperty("user.home") + "/Literature/" + zipFile).exists) {
-      if (!new File(System.getProperty("user.home") + "/Literature/" + tarFile).exists) {
-        println("Tar'ing " + tarFile)
-        val cmd = Seq("/opt/local/bin/gnutar", "--format=posix", "--dereference", "-cvf", tarFile, journal)
-        println(cmd.mkString(" "))
-        println(Process(cmd, Some(new File(System.getProperty("user.home") + "/Literature/"))).!!)
-      }
-      println("Gzipping ...")
-      println(Process(Seq("/usr/bin/gzip", tarFile), Some(new File(System.getProperty("user.home") + "/Literature/"))).!!)
-    }
-    //    println("Uploading " + zipFile)
-    //    S3.bytes("elsevier-open-math-archive").putIfAbsent(zipFile, IOUtils.toByteArray(new FileInputStream(System.getProperty("user.home") + "/Literature/" + zipFile)))
-  }
-
-  println("---wikitext---")
-  println((for (journal <- readyToUpload) yield {
-    val tarFile = journal + " -2009.tar"
-    val zipFile = tarFile + ".gz"
-    // https://s3.amazonaws.com/elsevier-open-math-archive/Ann.+Inst.+H.+Poincare%CC%81+Anal.+Non+Line%CC%81aire+-2009.tar.gz
-    val torrent = "https://s3.amazonaws.com/elsevier-open-math-archive/" + zipFile.replaceAll(" ", "+").replaceAll("é", "e%CC%81") + "?torrent"
-    "* [" + torrent + " " + journal + "]"
-  }).toSeq.sorted.mkString("\n"))
-  println("\n\nWe're waiting for a number of missing articles before publishing torrents for: \n" + Articles((missingFromElsevier ++ mysterious).map(_.toString)).map(_._2.journal).toSeq.distinct.sorted.mkString("* ", "\n* ", "\n"))
-  println("------")
-
-  for (journal <- readyToUpload) {
-    val tarFile = journal + " -2009.tar"
-    val zipFile = tarFile + ".gz"
-    val torrent = "https://s3.amazonaws.com/elsevier-open-math-archive/" + zipFile.replaceAll(" ", "+").replaceAll("é", "e%CC%81") + "?torrent"
-    val torrentFile = new File(System.getProperty("user.home") + "/Literature/torrents/" + zipFile + ".torrent")
-    if (!torrentFile.exists) {
-      println("Saving torrent: " + torrent)
-      try {
-        IOUtils.copy(new URL(torrent).openStream, new FileOutputStream(torrentFile))
-      } catch {
-        case e: Exception => println("Not found!")
-      }
-    }
-  }
-
-  var journalCount = 0
-  for ((issn, name) <- scala.util.Random.shuffle(elsevierJournals.toSeq); if !completedJournals.contains(name)) {
+  
+    var journalCount = 0
+  for ((issn, name) <- scala.util.Random.shuffle(elsevierJournals.toSeq); if !readyToUpload.contains(name)) {
 
     journalCount += 1
     println("Checking " + name + " " + issn + " (" + journalCount + "/" + (elsevierJournals.values.toSet -- completedJournals).size + ")")
@@ -261,4 +218,52 @@ The existential theory of real hyperelliptic function fields - Zahidi, Karim - J
       Files.delete(file)
     }
   }
+  
+  
+  
+  for (journal <- readyToUpload) {
+    val tarFile = journal + " -2009.tar"
+    val zipFile = tarFile + ".gz"
+    import scala.sys.process._
+    if (!new File(System.getProperty("user.home") + "/Literature/" + zipFile).exists) {
+      if (!new File(System.getProperty("user.home") + "/Literature/" + tarFile).exists) {
+        println("Tar'ing " + tarFile)
+        val cmd = Seq("/opt/local/bin/gnutar", "--format=posix", "--dereference", "-cvf", tarFile, journal)
+        println(cmd.mkString(" "))
+        println(Process(cmd, Some(new File(System.getProperty("user.home") + "/Literature/"))).!!)
+      }
+      println("Gzipping ...")
+      println(Process(Seq("/usr/bin/gzip", tarFile), Some(new File(System.getProperty("user.home") + "/Literature/"))).!!)
+    }
+    //    println("Uploading " + zipFile)
+    //    S3.bytes("elsevier-open-math-archive").putIfAbsent(zipFile, IOUtils.toByteArray(new FileInputStream(System.getProperty("user.home") + "/Literature/" + zipFile)))
+  }
+
+  println("---wikitext---")
+  println((for (journal <- readyToUpload) yield {
+    val tarFile = journal + " -2009.tar"
+    val zipFile = tarFile + ".gz"
+    // https://s3.amazonaws.com/elsevier-open-math-archive/Ann.+Inst.+H.+Poincare%CC%81+Anal.+Non+Line%CC%81aire+-2009.tar.gz
+    val torrent = "https://s3.amazonaws.com/elsevier-open-math-archive/" + zipFile.replaceAll(" ", "+").replaceAll("é", "e%CC%81") + "?torrent"
+    "* [" + torrent + " " + journal + "]"
+  }).toSeq.sorted.mkString("\n"))
+  println("\n\nWe're waiting for a number of missing articles before publishing torrents for: \n" + Articles((missingFromElsevier ++ mysterious).map(_.toString)).map(_._2.journal).toSeq.distinct.sorted.mkString("* ", "\n* ", "\n"))
+  println("------")
+
+  for (journal <- readyToUpload) {
+    val tarFile = journal + " -2009.tar"
+    val zipFile = tarFile + ".gz"
+    val torrent = "https://s3.amazonaws.com/elsevier-open-math-archive/" + zipFile.replaceAll(" ", "+").replaceAll("é", "e%CC%81") + "?torrent"
+    val torrentFile = new File(System.getProperty("user.home") + "/Literature/torrents/" + zipFile + ".torrent")
+    if (!torrentFile.exists) {
+      println("Saving torrent: " + torrent)
+      try {
+        IOUtils.copy(new URL(torrent).openStream, new FileOutputStream(torrentFile))
+      } catch {
+        case e: Exception => println("Not found!")
+      }
+    }
+  }
+
+
 }
