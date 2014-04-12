@@ -513,10 +513,25 @@ trait Article { article =>
             regex.findFirstMatchIn(HttpClientSlurp.getString(url.replaceAllLiterally("<", "%3C").replaceAllLiterally(">", "%3E"))).map(m => m.group(1)).map("http://www.jstor.org/stable/pdfplus/" + _ + ".pdf?acceptTC=true")
           }
           
+          case url if url.startsWith("http://nyjm.albany.edu/j/") || url.startsWith("http://nyjm.albany.edu:8000/j/") => {
+            val regex = """<a href="(.*)">view</a>""".r
+            regex.findFirstMatchIn(HttpClientSlurp.getString(url)).map(m => m.group(1)).map(url.split('/').dropRight(-1).mkString("/") + _)
+          }
+          
+          // http://jtnb.cedram.org/item?id=JTNB_2010__22_2_475_0
+          // http://jtnb.cedram.org/cedram-bin/article/JTNB_2010__22_2_475_0.pdf
+          case url if url.startsWith("http://jtnb.cedram.org/item?id=") => {
+            Some("http://jtnb.cedram.org/cedram-bin/article/" + url.stripPrefix("http://jtnb.cedram.org/item?id=") + ".pdf")
+          }
+          case url if url.startsWith("http://afst.cedram.org/item?id=") => {
+            Some("http://afst.cedram.org/cedram-bin/article/" + url.stripPrefix("http://afst.cedram.org/item?id=") + ".pdf")
+          }
+          
           // otherwise, try using DOI-direct
-          case url if url.startsWith("http://dx.doi.org/") => {
+          case url if url.startsWith("http://dx.doi.org/") || url.startsWith("http://dx.doi:") => {
             Logging.info("trying to find PDF URL via doi-direct")
-            Http.findRedirect(url.replaceAllLiterally("http://dx.doi.org/", "http://evening-headland-2959.herokuapp.com/")) match {
+            val doi = url.stripPrefix("http://dx.doi.org/").stripPrefix("http://dx.doi:")
+            Http.findRedirect("http://evening-headland-2959.herokuapp.com/" + doi) match {
               case None => None
               case Some(redirect) if redirect.startsWith("http://dx.doi.org/") => {
                 // didn't learn anything
