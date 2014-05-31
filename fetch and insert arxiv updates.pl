@@ -1,4 +1,4 @@
-#!perl
+#!/usr/bin/perl
 use strict;
 
 use DBI;		# ** need to make sure the module DBD::mysql is also installed
