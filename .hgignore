@@ -27,5 +27,8 @@ project/target
 # artifacts
 src/main/js/mathscinet-extension.zip
 
+# passwords
+arxiv_sql_password
+
 db
 db.p
