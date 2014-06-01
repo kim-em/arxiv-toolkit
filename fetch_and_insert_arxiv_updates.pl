@@ -6,6 +6,10 @@ use LWP::UserAgent;
 use IO::All;
 use Data::Dumper;
 
+use File::Basename;
+my $dirname = dirname(__FILE__);
+chdir $dirname;
+
 my $dir = 'arXiv_OAI';		# ****** directory to store output from arXiv
 
 # *************
