@@ -31,11 +31,12 @@ case class Article(id: String, title: String) {
       matches.sliding(2).filter(p => p(0).score > 0.42 && scala.math.pow(p(0).score, 1.6) > p(1).score).toStream.headOption.map(_.head))
   }
 
-  def references = {
+  def references: Seq[String] = {
     import net.tqft.toolkit.collections.TakeToFirst._
     dataText.iterator.dropWhile(!_.startsWith("REFERENCES: ")).map(_.stripPrefix("REFERENCES: ").trim).takeToFirst(!_.endsWith(";")).map(_.stripSuffix(";")).toSeq
   }
 
   lazy val referenceMatches = references.iterator.toStream.map(r => (r, net.tqft.citationsearch.Search.query(r).results))
 
+  def bestReferenceMathSciNetMatches = referenceMatches.map({ p => (p._1, net.tqft.mathscinet.Article(p._2.head.citation.MRNumber.get)) })
 }

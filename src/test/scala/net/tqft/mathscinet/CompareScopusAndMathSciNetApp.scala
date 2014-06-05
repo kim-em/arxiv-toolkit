@@ -45,12 +45,30 @@ object CompareScopusAndMathSciNetApp extends App {
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+<script type="text/x-mathjax-config">
+        MathJax.Hub.Config(
+            {
+                "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] },
+                tex2jax: {
+                    inlineMath: [ ["$", "$"], ["\\\\(","\\\\)"] ],
+                    displayMath: [ ["$$","$$"], ["\\[", "\\]"] ],
+                    processEscapes: true,
+                    ignoreClass: "tex2jax_ignore|dno"
+                },
+                TeX: {
+                    noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } }
+                },
+                messageStyle: "none"
+            });
+</script>    
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
 <head>
 <body>""")
   
   for ((ma, sa) <- authors) {
-    p(s"<h2>Publications for <i>${ma.name}</i> since $firstYear</h2>")
-    p(s"<div id='publications-${ma.id}'>")
+    p("""<h2><a onclick="$('#publications-""" + ma.id + s"""').toggle('fast')">Publications for <i>${ma.name}</i> since $firstYear</a></h2>""")
+    p(s"<div id='publications-${ma.id}' style='display: none'>")
 
     lazy val recentPublicationsOnScopus = sa.publications.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear)
     lazy val recentPublicationsOnMathSciNet = ma.articles.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear).toStream
@@ -77,13 +95,6 @@ object CompareScopusAndMathSciNetApp extends App {
           p(s"<dd>best match (${m.score}): ${fullCitation(m.citation)}</dd>")
       }
       p("</dl>")
-      p("<h3>Matching articles found:</h3>")
-      p("<dl>")
-      for ((a1, a2) <- matches) {
-        p("<dt>" + a1.fullCitation + "</dt>")
-        p("<dd>" + a2.fullCitation + "</dd>")
-      }
-      p("</dl>")
     }
     if (ma.id > 0) {
       p("<h3>Articles found only on MathSciNet:</h3>")
@@ -93,7 +104,51 @@ object CompareScopusAndMathSciNetApp extends App {
       }
       p("</ul>")
     }
-
+    if(sa.id > 0) {
+        p("<h3>Matching articles found:</h3>")
+        p("<dl>")
+        for ((a1, a2) <- matches) {
+          p("<dt>" + a1.fullCitation + "</dt>")
+          p("<dd>" + a2.fullCitation + "</dd>")
+        	 val references1 = a2.citations.toSeq
+             val candidateMatches = a1.bestReferenceMathSciNetMatches
+             val goodMatches = candidateMatches.filter(m => references1.contains(m._2))
+             val failedMatches = candidateMatches.filter(m => !references1.contains(m._2)).map(_._1)
+             val unmatched = references1.filterNot(r => candidateMatches.exists(_._2 == r))
+             p("<table>")
+             for((s, c) <- goodMatches) {
+            	 p("<tr>")
+            	 p("<td>")
+            	 p(s)
+            	 p("</td>")
+            	 p("<td>")
+            	 p(c.fullCitation)
+            	 p("</td>")
+            	 p("</tr>")
+             }
+             for(s <- failedMatches) {
+            	 p("<tr>")
+            	 p("<td>")
+            	 s
+            	 p("</td>")
+            	 p("<td>")
+            	 p("</td>")
+            	 p("</tr>")
+             }
+             for(c <- unmatched) {
+            	 p("<tr>")
+            	 p("<td>")
+            	 p("</td>")
+            	 p("<td>")
+            	 p(c.fullCitation)
+            	 p("</td>")
+            	 p("</tr>")
+             }
+             p("</table>")
+        }
+        p("</dl>")
+    }
+    
     p("</div>")
   }
 
