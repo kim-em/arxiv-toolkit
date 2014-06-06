@@ -13,6 +13,7 @@ case class Author(id: Int, name: String) {
         case Seq(one) => one
         case Seq(one, two) => two + " " + one
         case Seq(one, suffix @ ("Jr." | "Jr" | "Sr." | "jr." | "jun." | "I" | "II" | "III" | "IV" | "V"), two) => two + " " + one + ", " + suffix
+        case Seq("Cooper", "Randolph G.", "III", "Jr.") => "Randolph G. Cooper, III, Jr." // That doesn't even make sense. 
       }
     }
 }
