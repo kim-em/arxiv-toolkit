@@ -27,12 +27,13 @@ object VerifyJournalCompleteApp extends App {
     Seq("MR0532067", "MR0333021") // errata
 
   val missingFromElsevier = """
-Inclusion relationships among permutation problems - Bovet, Daniel P. and Panconesi, Alessandro - Discrete Appl. Math. 16 (1987), no. 2, 113–123 - MR0874910
 Vector systems of exponentials and zeroes of entire matrix-functions - Ivanov, S. A. and Pavlov, B. S. - J. Math. Anal. Appl. 74 (1980), no. 2, 25–31, 118 - MR0573400
 Model-theoretic forcing in logic with a generalized quantifier - Bruce, Kim B. - Ann. Math. Logic 13 (1978), no. 3, 225–265 - MR0491860
+\aleph _{1}-trees - Devlin, Keith J. - Ann. Math. Logic 13 (1978), no. 3, 267–330 - MR0491861
 """.split("\n").map(_.trim).filter(_.nonEmpty).map(_.split(" ").last).collect({ case MRIdentifier(id) => id })
 
   val usedToBeMissing = """A diametric theorem for edges - Ahlswede, R. and Khachatrian, L. H. - J. Combin. Theory Ser. A 92 (2000), no. 1, 1–16 - MR1783935
+Inclusion relationships among permutation problems - Bovet, Daniel P. and Panconesi, Alessandro - Discrete Appl. Math. 16 (1987), no. 2, 113–123 - MR0874910
 Longest paths in semicomplete multipartite digraphs - Volkmann, Lutz - Discrete Math. 199 (1999), no. 1-3, 279–284 - MR1675934
 Necessary conditions for Hamiltonian split graphs - Peemöller, Jürgen - Discrete Math. 54 (1985), no. 1, 39–47 - MR0787491
 Undecided Ramsey numbers for paths - Lindström, Bernt - Discrete Math. 43 (1983), no. 1, 111–112 - MR0680310
@@ -138,12 +139,12 @@ The existential theory of real hyperelliptic function fields - Zahidi, Karim - J
   // TODO automatically upload them to S3 // hmm, some files are too big for j3tset.
 
   val readyToUpload = completedJournals.toSet -- Articles((missingFromElsevier ++ mysterious).map(_.toString)).map(_._2.journal)
-  
-    var journalCount = 0
+
+  var journalCount = 0
   for ((issn, name) <- scala.util.Random.shuffle(elsevierJournals.toSeq); if !readyToUpload.contains(name)) {
 
     journalCount += 1
-    println("Checking " + name + " " + issn + " (" + journalCount + "/" + (elsevierJournals.values.toSet -- completedJournals).size + ")")
+    println("Checking " + name + " " + issn + " (" + journalCount + "/" + (elsevierJournals.values.toSet -- readyToUpload).size + ")")
 
     val journalPath = target.resolve(name)
 
@@ -218,11 +219,9 @@ The existential theory of real hyperelliptic function fields - Zahidi, Karim - J
       Files.delete(file)
     }
   }
-  
-  
-  
+
   for (journal <- readyToUpload) {
-    val tarFile = journal + " -2009.tar"
+    val tarFile = journal.replaceAll("é", "e") + " -2009.tar"
     val zipFile = tarFile + ".gz"
     import scala.sys.process._
     if (!new File(System.getProperty("user.home") + "/Literature/" + zipFile).exists) {
@@ -244,7 +243,7 @@ The existential theory of real hyperelliptic function fields - Zahidi, Karim - J
     val tarFile = journal + " -2009.tar"
     val zipFile = tarFile + ".gz"
     // https://s3.amazonaws.com/elsevier-open-math-archive/Ann.+Inst.+H.+Poincare%CC%81+Anal.+Non+Line%CC%81aire+-2009.tar.gz
-    val torrent = "https://s3.amazonaws.com/elsevier-open-math-archive/" + zipFile.replaceAll(" ", "+").replaceAll("é", "e%CC%81") + "?torrent"
+    val torrent = "https://s3.amazonaws.com/elsevier-open-math-archive/" + zipFile.replaceAll(" ", "+").replaceAll("é", "e") + "?torrent"
     "* [" + torrent + " " + journal + "]"
   }).toSeq.sorted.mkString("\n"))
   println("\n\nWe're waiting for a number of missing articles before publishing torrents for: \n" + Articles((missingFromElsevier ++ mysterious).map(_.toString)).map(_._2.journal).toSeq.distinct.sorted.mkString("* ", "\n* ", "\n"))
@@ -253,7 +252,7 @@ The existential theory of real hyperelliptic function fields - Zahidi, Karim - J
   for (journal <- readyToUpload) {
     val tarFile = journal + " -2009.tar"
     val zipFile = tarFile + ".gz"
-    val torrent = "https://s3.amazonaws.com/elsevier-open-math-archive/" + zipFile.replaceAll(" ", "+").replaceAll("é", "e%CC%81") + "?torrent"
+    val torrent = "https://s3.amazonaws.com/elsevier-open-math-archive/" + zipFile.replaceAll(" ", "+").replaceAll("é", "e") + "?torrent"
     val torrentFile = new File(System.getProperty("user.home") + "/Literature/torrents/" + zipFile + ".torrent")
     if (!torrentFile.exists) {
       println("Saving torrent: " + torrent)
@@ -264,6 +263,5 @@ The existential theory of real hyperelliptic function fields - Zahidi, Karim - J
       }
     }
   }
-
 
 }
