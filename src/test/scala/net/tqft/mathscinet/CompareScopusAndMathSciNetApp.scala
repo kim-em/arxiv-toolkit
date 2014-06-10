@@ -37,8 +37,8 @@ object CompareScopusAndMathSciNetApp extends App {
 
   val firstYear = 2005
 
-  def fullCitation(c: Citation) = {
-    s"${c.title} - ${c.authors} - ${c.cite} ${c.MRNumber.map(n => "- MR" + n).getOrElse("")}"
+  def fullCitation_html(c: Citation) = {
+    s"${c.title} - ${c.authors} - ${c.cite} ${c.MRNumber.map(n => "- <a href='http://www.ams.org/mathscinet-getitem?mr=" + n + "'>MR" + n + "</a>").getOrElse("")}"
   }
 
   p("""<!DOCTYPE html>
@@ -63,9 +63,20 @@ object CompareScopusAndMathSciNetApp extends App {
             });
 </script>    
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+<script type="text/css">
+      table {
+		  border-collapse: collapse;
+	  }
+      table, th, td {
+		  border: 1px solid black;     
+	  }
+      th {
+           width: 50%; 
+      }
+</script>
 <head>
 <body>""")
-  
+
   for ((ma, sa) <- authors) {
     p("""<h2><a onclick="$('#publications-""" + ma.id + s"""').toggle('fast')">Publications for <i>${ma.name}</i> since $firstYear</a></h2>""")
     p(s"<div id='publications-${ma.id}' style='display: none'>")
@@ -90,9 +101,9 @@ object CompareScopusAndMathSciNetApp extends App {
       p("<h3>Articles found only on Scopus:</h3>")
       p("<dl>")
       for (a <- onlyOnScopus) {
-        p("<dt>" + a.fullCitation + "</dt>")
+        p("<dt>" + a.fullCitation_html + "</dt>")
         for (m <- a.matches.headOption)
-          p(s"<dd>best match (${m.score}): ${fullCitation(m.citation)}</dd>")
+          p(s"<dd>best match (${m.score}): ${fullCitation_html(m.citation)}</dd>")
       }
       p("</dl>")
     }
@@ -104,51 +115,92 @@ object CompareScopusAndMathSciNetApp extends App {
       }
       p("</ul>")
     }
-    if(sa.id > 0) {
-        p("<h3>Matching articles found:</h3>")
-        p("<dl>")
-        for ((a1, a2) <- matches) {
-          p("<dt>" + a1.fullCitation + "</dt>")
-          p("<dd>" + a2.fullCitation + "</dd>")
-        	 val references1 = a2.citations.toSeq
-             val candidateMatches = a1.bestReferenceMathSciNetMatches
-             val goodMatches = candidateMatches.filter(m => references1.contains(m._2))
-             val failedMatches = candidateMatches.filter(m => !references1.contains(m._2)).map(_._1)
-             val unmatched = references1.filterNot(r => candidateMatches.exists(_._2 == r))
-             p("<table>")
-             for((s, c) <- goodMatches) {
-            	 p("<tr>")
-            	 p("<td>")
-            	 p(s)
-            	 p("</td>")
-            	 p("<td>")
-            	 p(c.fullCitation)
-            	 p("</td>")
-            	 p("</tr>")
-             }
-             for(s <- failedMatches) {
-            	 p("<tr>")
-            	 p("<td>")
-            	 s
-            	 p("</td>")
-            	 p("<td>")
-            	 p("</td>")
-            	 p("</tr>")
-             }
-             for(c <- unmatched) {
-            	 p("<tr>")
-            	 p("<td>")
-            	 p("</td>")
-            	 p("<td>")
-            	 p(c.fullCitation)
-            	 p("</td>")
-            	 p("</tr>")
-             }
-             p("</table>")
+    if (sa.id > 0) {
+      p("<h3>Matching articles found:</h3>")
+      p("<dl>")
+      for ((a1, a2) <- matches) {
+        p("<dt>" + a1.fullCitation_html + "</dt>")
+        p("<dd>" + a2.fullCitation_html)
+
+        val citations1 = a2.citations.toSeq
+        val candidateMatches = a1.bestCitationMathSciNetMatches
+        val goodMatches = candidateMatches.filter(m => m._2.nonEmpty && citations1.contains(m._2.get)).map(p => (p._1, p._2.get))
+        val failedMatches = candidateMatches.filter(m => m._2.isEmpty || !citations1.contains(m._2.get)).map(_._1)
+        val unmatched = citations1.filterNot(r => candidateMatches.exists(_._2 == Some(r)))
+        p("<table>")
+        p("<tr><th>" + candidateMatches.size + " citations on Scopus</th><th>" + citations1.size + " citations on MathSciNet</th></tr>")
+        for ((s, c) <- goodMatches) {
+          p("<tr>")
+          p("<td>")
+          p(s.fullCitation_html)
+          p("</td>")
+          p("<td>")
+          p(c.fullCitation_html)
+          p("</td>")
+          p("</tr>")
         }
-        p("</dl>")
+        for (s <- failedMatches) {
+          p("<tr>")
+          p("<td>")
+          p(s.fullCitation_html)
+          p("</td>")
+          p("<td>")
+          p("</td>")
+          p("</tr>")
+        }
+        for (c <- unmatched) {
+          p("<tr>")
+          p("<td>")
+          p("</td>")
+          p("<td>")
+          p(c.fullCitation_html)
+          p("</td>")
+          p("</tr>")
+        }
+        p("</table>")
+
+        //        val references1 = a2.bestReferenceMathSciNetMatches.toSeq.map(_._2)
+        //        if (references1.nonEmpty) {
+        //          val candidateMatches = a1.bestReferenceMathSciNetMatches
+        //          val goodMatches = candidateMatches.filter(m => references1.contains(m._2))
+        //          val failedMatches = candidateMatches.filter(m => !references1.contains(m._2)).map(_._1)
+        //          val unmatched = references1.filterNot(r => candidateMatches.exists(_._2 == r))
+        //          p("<table>")
+        //          for ((s, c) <- goodMatches) {
+        //            p("<tr>")
+        //            p("<td>")
+        //            p(s)
+        //            p("</td>")
+        //            p("<td>")
+        //            p(c.fullCitation)
+        //            p("</td>")
+        //            p("</tr>")
+        //          }
+        //          for (s <- failedMatches) {
+        //            p("<tr>")
+        //            p("<td>")
+        //            p(s)
+        //            p("</td>")
+        //            p("<td>")
+        //            p("</td>")
+        //            p("</tr>")
+        //          }
+        //          for (c <- unmatched) {
+        //            p("<tr>")
+        //            p("<td>")
+        //            p("</td>")
+        //            p("<td>")
+        //            p(c.fullCitation)
+        //            p("</td>")
+        //            p("</tr>")
+        //          }
+        //          p("</table>")
+        //        }
+      }
+      p("</dd>")
+      p("</dl>")
     }
-    
+
     p("</div>")
   }
 

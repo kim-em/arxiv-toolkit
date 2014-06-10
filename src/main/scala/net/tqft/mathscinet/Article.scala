@@ -39,6 +39,13 @@ trait Article { article =>
   def identifierString = "MR" + ("0000000" + identifier.toString).takeRight(7)
   //  def shortIdentifierString = "MR" + identifier.toString
 
+  override def equals(other: Any) = {
+    other match {
+      case other: Article => other.identifier == identifier
+      case _ => false
+    }
+  }
+  
   def MathSciNetURL = "http://www.ams.org/mathscinet-getitem?mr=" + identifier
   def bibtexURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=bibtex&pg1=MR&s1=" + identifier
   def endnoteURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=endnote&pg1=MR&s1=" + identifier
@@ -138,18 +145,18 @@ trait Article { article =>
   }
   def authorsText: String = {
     import net.tqft.util.OxfordComma._
-    
+
     authors.map(author => pandoc.latexToText(author.firstNameLastName)).oxfordComma
   }
 
   def authorsShortText: String = {
-    if(authors.size > 4) {
+    if (authors.size > 4) {
       pandoc.latexToText(authors.head.firstNameLastName) + " et al."
     } else {
       authorsText
     }
   }
-  
+
   def journalOption = bibtex.get("JOURNAL")
   def journal = journalOption.get
 
@@ -158,13 +165,13 @@ trait Article { article =>
   }
 
   def volumeYearAndIssue_markdown: String = {
-    (volumeOption.map("**" + _ + "**").getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim    
+    (volumeOption.map("**" + _ + "**").getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim
   }
 
   def volumeYearAndIssue_html: String = {
-    (volumeOption.map("<b>" + _ + "</b>").getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim    
+    (volumeOption.map("<b>" + _ + "</b>").getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim
   }
-  
+
   def citation_text: String = {
     def restOfCitation = " " + volumeYearAndIssue + pagesOption.map(", " + _).getOrElse("")
 
@@ -215,9 +222,9 @@ trait Article { article =>
         Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)
         ???
       }
-    }    
+    }
   }
-  
+
   def citation_html: String = {
     def restOfCitation = " " + volumeYearAndIssue_html + pagesOption.map(", " + _).getOrElse("")
 
@@ -241,9 +248,9 @@ trait Article { article =>
         Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)
         ???
       }
-    }    
+    }
   }
-  
+
   def yearStringOption: Option[String] = {
     bibtex.get("YEAR").map(y => y.replace("/", "-"))
   }
@@ -316,6 +323,12 @@ trait Article { article =>
     slurp.flatMap(line => regex.findFirstMatchIn(line).map(_.group(1).toInt)).headOption.getOrElse(0)
   }
   def citations: Iterator[Article] = Search.citing(identifier)
+
+  lazy val references: Seq[String] = {
+    slurp.dropWhile(l => !l.contains("<strong>References</strong>")).filter(_.startsWith("<li>")).map(_.replaceAll("<[^>]*>", ""))
+  }
+  lazy val referenceMatches = references.iterator.toStream.map(r => (r, net.tqft.citationsearch.Search.query(r).results))
+  def bestReferenceMathSciNetMatches = referenceMatches.flatMap({ p => (MRIdentifier.unapply(p._1.split(" ").last) ++ p._2.filter(_.score > 0.6).flatMap(_.citation.MRNumber)).headOption.map(i => (p._1, net.tqft.mathscinet.Article(i))) })
 
   def correctedISSN = ISSN match {
     case "0890-5401" if yearOption.nonEmpty && year <= 1986 => "0019-9958"
@@ -512,12 +525,12 @@ trait Article { article =>
             val regex = """<div class="stable">Stable URL: http://www.jstor.org/stable/(.*)</div>""".r
             regex.findFirstMatchIn(HttpClientSlurp.getString(url.replaceAllLiterally("<", "%3C").replaceAllLiterally(">", "%3E"))).map(m => m.group(1)).map("http://www.jstor.org/stable/pdfplus/" + _ + ".pdf?acceptTC=true")
           }
-          
+
           case url if url.startsWith("http://nyjm.albany.edu/j/") || url.startsWith("http://nyjm.albany.edu:8000/j/") => {
             val regex = """<a href="(.*)">view</a>""".r
             regex.findFirstMatchIn(HttpClientSlurp.getString(url)).map(m => m.group(1)).map(url.split('/').dropRight(-1).mkString("/") + _)
           }
-          
+
           // http://jtnb.cedram.org/item?id=JTNB_2010__22_2_475_0
           // http://jtnb.cedram.org/cedram-bin/article/JTNB_2010__22_2_475_0.pdf
           case url if url.startsWith("http://jtnb.cedram.org/item?id=") => {
@@ -526,7 +539,7 @@ trait Article { article =>
           case url if url.startsWith("http://afst.cedram.org/item?id=") => {
             Some("http://afst.cedram.org/cedram-bin/article/" + url.stripPrefix("http://afst.cedram.org/item?id=") + ".pdf")
           }
-          
+
           // otherwise, try using DOI-direct
           case url if url.startsWith("http://dx.doi.org/") || url.startsWith("http://dx.doi:") => {
             Logging.info("trying to find PDF URL via doi-direct")
@@ -560,18 +573,18 @@ trait Article { article =>
           // http://www.combinatorics.org/Volume_12/Abstracts/v12i1n3.html
           // http://www.combinatorics.org/ojs/index.php/eljc/article/view/v12i1n3/pdf
           case url if url.startsWith("http://www.combinatorics.org/") => Some("http://www.combinatorics.org/ojs/index.php/eljc/article/view/" + url.split("/").last.stripSuffix(".html") + "/pdf")
-          
-          case url if url.startsWith("http://stacks.iop.org/") => 
+
+          case url if url.startsWith("http://stacks.iop.org/") =>
             // http://stacks.iop.org/0305-4470/16/2187
             // redirects to http://iopscience.iop.org/0305-4470/16/10/015/
             // links to http://iopscience.iop.org/0305-4470/16/10/015/pdf/0305-4470_16_10_015.pdf
-            Http.findRedirect(url) match { 
+            Http.findRedirect(url) match {
               case None => None
               case Some(redirect) => {
                 Some(redirect + "pdf/" + redirect.split("/").drop(3).mkString("_") + ".pdf")
               }
             }
-            // TODO http://nyjm.albany.edu:8000/j/2010/16_387.html
+          // TODO http://nyjm.albany.edu:8000/j/2010/16_387.html
         }
       }
     }
@@ -581,11 +594,11 @@ trait Article { article =>
 
   def correctedURL = URL match {
     case Some(url) if url.startsWith("http://projecteuclid.org/getRecord?id=") => {
-      Some(url.replaceAllLiterally("http://projecteuclid.org/getRecord?id=",  "http://projecteuclid.org/"))
+      Some(url.replaceAllLiterally("http://projecteuclid.org/getRecord?id=", "http://projecteuclid.org/"))
     }
     case other => other
   }
-  
+
   def stablePDFURL = {
     if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
       None
@@ -595,7 +608,7 @@ trait Article { article =>
       pdfURL
     }
   }
-  
+
   def pdfInputStream: Option[InputStream] = {
     lazy val result = if (DOI.nonEmpty && DOI.get.startsWith("10.1215")) {
       // Duke expects to see a Referer field.
@@ -673,6 +686,7 @@ trait Article { article =>
   }
 
   def fullCitation = constructFilename(maxLength = None).stripSuffix(".pdf")
+  def fullCitation_html = fullCitation.replaceAllLiterally(identifierString, "<a href='" + MathSciNetURL + "'>" + identifierString + "</a>")
 
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate, maxLength: Option[Int] = Some(250)) = {
     ({
@@ -737,14 +751,7 @@ object Article {
     apply(identifierString.stripPrefix("MR").toInt)
   }
 
-  val apply = {
-    //    import net.tqft.toolkit.functions.Memo._
-    //    (_apply _).memo
-
-    _apply _
-  }
-
-  def _apply(identifier: Int): Article = {
+  def apply(identifier: Int): Article = {
     import scala.slick.driver.MySQLDriver.simple._
     val lookup = SQL { implicit session =>
       (for (
@@ -755,9 +762,14 @@ object Article {
 
     lookup.getOrElse({
       val identifier_ = identifier
-      new Article {
+      val article = new Article {
         override val identifier = identifier_
       }
+      SQL {
+        implicit session =>
+          SQLTables.mathscinet.insert(article)
+      }
+      article
     })
   }
 
