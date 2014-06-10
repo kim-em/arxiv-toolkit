@@ -25,7 +25,7 @@ case class Author(id: Long, name: String) {
 
     val r = """<a onclick="javascript:submitRecord\('(.*)','[0-9]*','[0-9]*'\);" title="Show document details" href=".*">(.*)</a>""".r
     (for (line <- Slurp(publicationsURL); if line.contains("Show document details"); m <- r.findAllMatchIn(line)) yield {
-      Article(m.group(1), m.group(2))
+      Article(m.group(1), Some(m.group(2)))
     }).toStream
   }
 }
