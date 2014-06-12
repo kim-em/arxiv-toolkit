@@ -37,7 +37,7 @@ libraryDependencies ++= Seq(
 	"be.roam.hue" % "hue" % "1.1",
 	"eu.medsea.mimeutil" % "mime-util" % "2.1.3",
 	"mysql" % "mysql-connector-java" % "5.1.24",
-	"com.typesafe.slick" %% "slick" % "2.0.0-RC1",
+	"com.typesafe.slick" %% "slick" % "2.1.0-M2",
 	"uk.ac.shef.wit" % "simmetrics" % "1.6.2",
 	"org.apache.pdfbox" % "pdfbox" % "1.8.3"
 )

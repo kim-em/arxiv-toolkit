@@ -38,7 +38,7 @@ object CompareScopusAndMathSciNetApp extends App {
   val firstYear = 2005
 
   def fullCitation_html(c: Citation) = {
-    s"${c.title} - ${c.authors} - ${c.cite} ${c.MRNumber.map(n => "- <a href='http://www.ams.org/mathscinet-getitem?mr=" + n + "'>MR" + n + "</a>").getOrElse("")}"
+    s"${c.title} - ${c.authors} - ${c.citation_html} ${c.MRNumber.map(n => "- <a href='http://www.ams.org/mathscinet-getitem?mr=" + n + "'>MR" + n + "</a>").getOrElse("")}"
   }
 
   p("""<!DOCTYPE html>
@@ -76,6 +76,8 @@ object CompareScopusAndMathSciNetApp extends App {
 </script>
 <head>
 <body>""")
+
+var unmatchedCount = 0
 
   for ((ma, sa) <- authors) {
     p("""<h2><a onclick="$('#publications-""" + ma.id + s"""').toggle('fast')">Publications for <i>${ma.name}</i> since $firstYear</a></h2>""")
@@ -127,6 +129,8 @@ object CompareScopusAndMathSciNetApp extends App {
         val goodMatches = candidateMatches.filter(m => m._2.nonEmpty && citations1.contains(m._2.get)).map(p => (p._1, p._2.get))
         val failedMatches = candidateMatches.filter(m => m._2.isEmpty || !citations1.contains(m._2.get)).map(_._1)
         val unmatched = citations1.filterNot(r => candidateMatches.exists(_._2 == Some(r)))
+        unmatchedCount = unmatchedCount + unmatched.size
+        
         p("<table>")
         p("<tr><th>" + candidateMatches.size + " citations on Scopus</th><th>" + citations1.size + " citations on MathSciNet</th></tr>")
         for ((s, c) <- goodMatches) {
@@ -204,6 +208,8 @@ object CompareScopusAndMathSciNetApp extends App {
     p("</div>")
   }
 
+  p("Found a total of " + unmatchedCount + " citations recorded in MathSciNet which Scopus doesn't seem to know about.")
+  
   p("</body></html>")
   FirefoxSlurp.quit
 

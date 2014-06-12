@@ -139,7 +139,7 @@ trait Article { article =>
     } else {
       bibtex.get("AUTHOR") match {
         case None => List()
-        case Some(a) => a.split(" and ").toList.map(a => Author(0, a /*Accents.LaTeXToUnicode(a)*/ ))
+        case Some(a) => a.split("( |})and ").toList.map(a => Author(0, a /*Accents.LaTeXToUnicode(a)*/ ))
       }
     }
   }
@@ -510,7 +510,7 @@ trait Article { article =>
           // anyway, the following scraping seems to work
           case url if url.startsWith("http://dx.doi.org/10.1002/") => {
             val regex = """id="pdfDocument" src="([^"]*)"""".r
-            val url2 = "http://onlinelibrary.wiley.com/doi/" + url.stripPrefix("http://dx.doi.org/") + "/pdf"
+            val url2 = "http://onlinelibrary.wiley.com/doi/" + url.stripPrefix("http://dx.doi.org/").replaceAllLiterally("<", "%3C").replaceAllLiterally(">", "%3E") + "/pdf"
             val slurped = HttpClientSlurp(url2).mkString("\n")
             regex.findFirstMatchIn(slurped).map(m => m.group(1))
           }
