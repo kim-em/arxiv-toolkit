@@ -10,13 +10,9 @@ import net.tqft.wiki.WikiMap
 import net.tqft.util.Throttle
 import net.tqft.util.PDF
 
-object Scholar extends App {
+object Scholar {
 
-  private lazy val scholarbot = {
-    val b = WikiMap("http://tqft.net/mlp/index.php")
-    b.login("scholarbot", "zytopex")
-    b
-  }
+  case class ScholarResults(arxivLinks: Seq[String], pdfURLs: Iterator[String], webOfScienceAccessionNumber: Option[String])
 
   def fromDOI(doi: String) = {
     def driver = FirefoxDriver.driverInstance
@@ -49,9 +45,9 @@ object Scholar extends App {
       val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala.toSeq
 
       val arxivURLs: Seq[String] = arxivLinks.map(_.getAttribute("href"))
-      val pdfLinks = driver.findElements(By.partialLinkText("[PDF]")).asScala.toSeq
-      val pdfURLs: Seq[String] = if (arxivURLs.isEmpty) {
-        for (
+      val pdfLinks = driver.findElements(By.partialLinkText("[PDF]")).asScala.toIterator
+      val pdfURLs: Iterator[String] = if (arxivURLs.isEmpty) {
+        (for (
           link <- pdfLinks.map(_.getAttribute("href"));
           if !link.startsWith("ftp");
           if !link.startsWith("http://link.springer.com/");
@@ -59,11 +55,19 @@ object Scholar extends App {
           if !link.startsWith("http://www.researchgate.net/");
           bytes <- PDF.getBytes(link);
           if PDF.portrait_?(bytes)
-        ) yield { link }
-      } else { Seq.empty }
+        ) yield { link })
+      } else { Iterator.empty }
 
-      Some((arxivURLs,
-        pdfURLs))
+      val webOfScienceLinks = driver.findElements(By.partialLinkText("Web of Science")).asScala.toSeq
+      val accessionNumberRegex = "UT=([A-Z0-9]*)&".r
+      val webOfScienceAccessionNumber = 
+        for(link <- webOfScienceLinks.headOption;
+            url = link.getAttribute("href");
+            _ = { println(url); None };
+            matches <- accessionNumberRegex.findFirstMatchIn(url)
+        ) yield matches.group(1)
+      
+      Some(ScholarResults(arxivURLs, pdfURLs, webOfScienceAccessionNumber))
     } catch {
       case e: Exception => {
         Logging.warn("Exception while reading from Google Scholar", e)
@@ -72,60 +76,5 @@ object Scholar extends App {
     }
   }
 
-  for (
-    g <- ( /* net.tqft.mlp.extendedCoverage ++ */ net.tqft.mlp.topJournals(100)).grouped(1000);
-    a <- scala.util.Random.shuffle(g)
-  ) {
-    println(a.DOI)
-    for (doi <- a.DOI) {
-      if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
-        println("searching...")
-        for (r <- fromDOI(doi)) {
-          for (link <- r._1.headOption) {
-            println("posting arxiv link: " + link)
-            scholarbot("Data:" + a.identifierString + "/FreeURL") = link
-          }
-          if (r._1.isEmpty && r._2.isEmpty) {
-            println("none available")
-            scholarbot("Data:" + a.identifierString + "/FreeURL") = "none available, according to Google Scholar"
-          }
-          if (r._1.isEmpty && r._2.nonEmpty) {
-            for (link <- r._2.headOption) {
-              println("posting PDF link: " + link)
-              scholarbot("Data:" + a.identifierString + "/FreeURL") = "Google Scholar suggests: " + link
-            }
-          }
-          println("done")
-        }
-      } else {
-        println("already done")
-      }
-    }
-  }
-
-  net.tqft.wiki.FirefoxDriver.quit
-  FirefoxDriver.quit
 }
 
-object FirefoxDriver {
-  private var driverOption: Option[WebDriver] = None
-
-  def driverInstance = {
-    if (driverOption.isEmpty) {
-      Logging.info("Starting Firefox/webdriver")
-      driverOption = Some(new org.openqa.selenium.firefox.FirefoxDriver( /*profile*/ ))
-      Logging.info("   ... finished starting Firefox")
-    }
-    driverOption.get
-  }
-
-  def quit = {
-    try {
-      driverOption.map(_.quit)
-    } catch {
-      case e: Exception => Logging.error("Exception occurred while trying to quit Firefox:", e)
-    }
-    driverOption = None
-  }
-
-}

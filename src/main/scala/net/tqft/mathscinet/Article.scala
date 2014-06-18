@@ -686,6 +686,7 @@ trait Article { article =>
   }
 
   def fullCitation = constructFilename(maxLength = None).stripSuffix(".pdf")
+  def fullCitation_withoutIdentifier = fullCitation.replaceAllLiterally(identifierString, "").stripSuffix(" - ")
   def fullCitation_html = fullCitation.replaceAllLiterally(identifierString, "<a href='" + MathSciNetURL + "'>" + identifierString + "</a>")
 
   def constructFilename(filenameTemplate: String = defaultFilenameTemplate, maxLength: Option[Int] = Some(250)) = {
