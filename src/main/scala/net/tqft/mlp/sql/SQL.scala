@@ -103,6 +103,26 @@ class Arxiv(tag: Tag) extends Table[(String, Date, Date, String, String, String,
   def * = (arxivid, created, updated, authors, title, categories, comments, proxy, reportno, mscclass, acmclass, journalref, doi, license, `abstract`)
 }
 
+class WebOfScienceMathSciNetMatches(tag: Tag) extends Table[(String, Int, String, Date)](tag, "webofscience_mathscinet_matches") {
+  def accessionNumber = column[String]("accession_number", O.PrimaryKey)
+  def identifier = column[Int]("mathscinet_identifier")
+  def source = column[String]("source")
+  def date = column[Date]("date")
+  def * = (accessionNumber, identifier, source, date)
+  def insertView = (accessionNumber, identifier, source)
+}
+
+class WebOfScienceAux(tag: Tag) extends Table[(String, String, String, String, String, String)](tag, "webofscience_aux") {
+  def accessionNumber = column[String]("accession_number", O.PrimaryKey)
+  def title = column[String]("title")
+  def authors = column[String]("authors")
+  def citation = column[String]("citation")
+  def citations_records = column[String]("citations_records")
+  def doi = column[String]("doi")
+  def * = (accessionNumber, title, authors, citation, citations_records, doi)
+  def citations_recordsView = (accessionNumber, citations_records)
+}
+
 object Wiki {
   val _tablePrefix = "mlp_"
   class Revision(tag: Tag, tablePrefix: String) extends Table[(Int, Int)](tag, tablePrefix + "revision") {
@@ -135,6 +155,12 @@ object SQLTables {
   val mathscinet = TableQuery[MathscinetBIBTEX]
   val arxiv = TableQuery[Arxiv]
   val arxiv_mathscinet_matches = TableQuery[ArxivMathscinetMatches]
+  object webofscience_aux extends TableQuery(new WebOfScienceAux(_)) {
+    def citations_recordsView = map(aux => aux.citations_recordsView)
+  }
+  object webofscience_mathscinet_matches extends TableQuery(new WebOfScienceMathSciNetMatches(_)) {
+    def insertView = map(matches => matches.insertView)
+  }
   object mathscinet_aux extends TableQuery(new MathscinetAux(_)) {
     def citationData = map(aux => aux.citationData)
   }
