@@ -32,7 +32,7 @@ case class Article(accessionNumber: String) {
 
   lazy val citations = {
     for (record <- citations_records) yield {
-      println(record)
+      try {
       val map = record.split("\n").toSeq.groupBy(line => line.takeWhile(_ != ':')).map(p => (p._1, p._2.head.stripPrefix(p._1 + ": ")))
       val title = map("Title")
       val authorRegex = ".*(\\(.*\\))".r
@@ -44,6 +44,11 @@ case class Article(accessionNumber: String) {
       }
       val accessionNumber = map.get("Accession Number").map(_.stripPrefix("WOS:"))
       Citation(title, authors, citation, doi, accessionNumber)
+      } catch {
+        case e: Exception => {
+          throw new Exception(e.getMessage() + "\n" + record)
+        }
+      }
     }
   }
 
@@ -54,7 +59,7 @@ case class Article(accessionNumber: String) {
     val lookup = SQL { implicit session =>
       (for (a <- SQLTables.webofscience_aux; if a.accessionNumber === accessionNumber; if a.citations_records.isNotNull) yield {
         a.citations_records
-      }).run.headOption.map(_.split("-----<<-->>-----").toSeq)
+      }).run.headOption.map(_.split("-----<<-->>-----").toSeq.map(_.trim).filter(_.nonEmpty))
     }
     lookup match {
       case Some(result) => result
