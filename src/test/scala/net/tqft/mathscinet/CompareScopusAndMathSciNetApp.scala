@@ -170,7 +170,7 @@ object CompareScopusAndMathSciNetApp extends App {
           p(c.fullCitation_html)
           p("</td>")
           p("</tr>")
-          reportMissing(sa.id, a1.fullCitation, c.fullCitation_withoutIdentifier)
+          reportMissing(sa.id, a1.fullCitation, c.fullCitation)
         }
         p("</table>")
       }
