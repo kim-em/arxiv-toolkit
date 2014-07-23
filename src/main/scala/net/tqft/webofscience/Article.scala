@@ -8,6 +8,7 @@ import org.openqa.selenium.support.ui.Select
 import net.tqft.util.Html
 import scala.collection.JavaConverters._
 import net.tqft.util.pandoc
+import net.tqft.toolkit.Logging
 
 case class Article(accessionNumber: String) {
   def url = s"http://apps.webofknowledge.com/InboundService.do?product=WOS&UT=$accessionNumber&action=retrieve&mode=FullRecord"
@@ -31,19 +32,23 @@ case class Article(accessionNumber: String) {
   }
 
   lazy val citations = {
-    for (record <- citations_records) yield {
+    val authorRegex = ".*(\\(.*\\))".r
+
+    for (
+      record <- citations_records;
+      map = record.split("\n").toSeq.groupBy(line => line.takeWhile(_ != ':')).map(p => (p._1, p._2.head.stripPrefix(p._1 + ": ")));
+      title <- map.get("Title");
+      authorsField <- map.get("Author(s)").orElse(map.get("Book Author(s)"));
+      sourceField <- map.get("Source")
+    ) yield {
       try {
-      val map = record.split("\n").toSeq.groupBy(line => line.takeWhile(_ != ':')).map(p => (p._1, p._2.head.stripPrefix(p._1 + ": ")))
-      val title = map("Title")
-      val authorRegex = ".*(\\(.*\\))".r
-      val authors = map.get("Author(s)").getOrElse(map("Book Author(s)")).split("; ").toList.collect({ case authorRegex(name) => name.stripPrefix("(").stripSuffix(")") })
-      val rawSource = map("Source")
-      val (citation, doi) = {
-        val head +: tail = rawSource.split("Â Â ").toSeq
-        (head + " " + tail.filter(!_.startsWith("DOI: ")).map(_.split(":").tail.mkString(" ").trim).mkString(" "), tail.find(_.startsWith("DOI: ")).map(_.stripPrefix("DOI: ")))
-      }
-      val accessionNumber = map.get("Accession Number").map(_.stripPrefix("WOS:"))
-      Citation(title, authors, citation, doi, accessionNumber)
+        val authors = authorsField.split("; ").toList.collect({ case authorRegex(name) => name.stripPrefix("(").stripSuffix(")") })
+        val (citation, doi) = {
+          val head +: tail = sourceField.split("Â Â ").toSeq
+          (head + " " + tail.filter(!_.startsWith("DOI: ")).map(_.split(":").tail.mkString(" ").trim).mkString(" "), tail.find(_.startsWith("DOI: ")).map(_.stripPrefix("DOI: ")))
+        }
+        val accessionNumber = map.get("Accession Number").map(_.stripPrefix("WOS:"))
+        Citation(title, authors, citation, doi, accessionNumber)
       } catch {
         case e: Exception => {
           throw new Exception(e.getMessage() + "\n" + record)
@@ -85,35 +90,44 @@ case class Article(accessionNumber: String) {
     driver.get("http://webofknowledge.com/")
 
     driver.get(url)
-    driver.findElement(By.partialLinkText("Times Cited")).click()
+    try {
+      driver.findElement(By.partialLinkText("Times Cited")).click()
 
-    val results = ListBuffer[String]()
-    def scrapePage {
-      driver.findElement(By.name("formatForPrint")).click()
-      Thread.sleep(1000)
+      val results = ListBuffer[String]()
+      def scrapePage {
+        driver.findElement(By.name("formatForPrint")).click()
+        Thread.sleep(1000)
 
-      driver.findElements(By.name("formatForPrint")).asScala.last.click()
+        driver.findElements(By.name("formatForPrint")).asScala.last.click()
 
-      val currentWindow = driver.getWindowHandle
-      // Switch to new window opened
-      (driver.getWindowHandles.asScala - currentWindow).headOption.map(driver.switchTo().window)
-      val result = driver.getPageSource
-      driver.close
-      driver.switchTo().window(currentWindow)
-      results += result
-    }
+        val currentWindow = driver.getWindowHandle
+        // Switch to new window opened
+        (driver.getWindowHandles.asScala - currentWindow).headOption.map(driver.switchTo().window)
+        val result = driver.getPageSource
+        driver.close
+        driver.switchTo().window(currentWindow)
+        results += result
+      }
 
-    if (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
-      new Select(driver.findElement(By.id("selectPageSize_.bottom"))).selectByVisibleText("50 per page")
-    }
+      if (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
+        new Select(driver.findElement(By.id("selectPageSize_.bottom"))).selectByVisibleText("50 per page")
+      }
 
-    scrapePage
-    while (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
-      driver.findElement(By.className("paginationNext")).click
       scrapePage
+      while (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
+        driver.findElement(By.className("paginationNext")).click
+        scrapePage
+      }
+
+      results.toSeq
+    } catch {
+      case e: org.openqa.selenium.NoSuchElementException => {
+        Logging.warn("No 'Times Cited' link found for " + url, e)
+        Seq.empty
+      }
+
     }
 
-    results.toSeq
   }
 }
 
