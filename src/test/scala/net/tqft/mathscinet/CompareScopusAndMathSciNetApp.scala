@@ -40,7 +40,8 @@ object CompareScopusAndMathSciNetApp extends App {
   ) yield fields).toList
 
   val authors = for (
-    Int(mathscinetAuthorId) :: Long(scopusAuthorId) :: name :: "ANU" :: level :: _ <- mathematicians
+    Int(mathscinetAuthorId) :: Long(scopusAuthorId) :: name :: "ANU" :: level :: _ <- mathematicians//;
+//    if mathscinetAuthorId == 40355
   ) yield {
     (Author(mathscinetAuthorId, name), net.tqft.scopus.Author(scopusAuthorId, name))
   }
