@@ -31,6 +31,7 @@ object CompareWebOfScienceAndMathSciNetApp extends App {
     missing_out.write(source + "\n")
     missing_out.write("\n")
     missing_out.flush
+  }
  
 
   val mathematicians = (for (
