@@ -42,8 +42,8 @@ case class Article(id: String, titleHint: Option[String] = None) {
   lazy val matches = net.tqft.citationsearch.Search.query(title + " - " + authorData + " - " + citation + DOIOption.map(" " + _).getOrElse("")).results
 
   lazy val satisfactoryMatch: Option[CitationScore] = {
-    matches.headOption.filter(s => s.score > 0.85).orElse(
-      matches.sliding(2).filter(p => p(0).score > 0.42 && scala.math.pow(p(0).score, 1.6) > p(1).score).toStream.headOption.map(_.head))
+    matches.headOption.filter(s => s.score > 0.89).orElse(
+      matches.sliding(2).filter(p => p(0).score > 0.48 && scala.math.pow(p(0).score, 1.75) > p(1).score).toStream.headOption.map(_.head))
   }
 
   lazy val citations: Seq[Article] = {
