@@ -1,0 +1,220 @@
+A characterization of hyperbolic affine iterated function systems - Ross Atkins, Michael F. Barnsley, Andrew Vince, and David C. Wilson - Topology Proc. 36 (2010), 189–211 - MR2609349
+Measure-valued images, associated fractal transforms, and the affine self-similarity of images - D. La Torre, E. R. Vrscay, M. Ebrahimi, and M. F. Barnsley - SIAM J. Imaging Sci. 2 (2009), no. 2, 470–507 - MR2519920
+Variational approach to the scaling function of the 2D Ising model in a magnetic field - Vladimir V. Mangazeev, Murray T. Batchelor, Vladimir V. Bazhanov, and Michael Yu. Dudalev - J. Phys. A 42 (2009), no. 4, 042005, 10 - MR2525336
+The quantum inverse scattering method with anyonic grading - M. T. Batchelor, A. Foerster, X.-W. Guan, J. Links, and H.-Q. Zhou - J. Phys. A 41 (2008), no. 46, 465201, 13 - MR2515847
+One-dimensional anyons with competing \delta-function and derivative \delta-function potentials - M. T. Batchelor, X.-W. Guan, and A. Kundu - J. Phys. A 41 (2008), no. 35, 352002, 8 - MR2426009
+SLE(\kappa,\rho) processes, hiding exponents and self-avoiding walks in a wedge - Nathan Deutscher and Murray T. Batchelor - J. Phys. A 41 (2008), no. 3, 035001, 10 - MR2449300
+The Bethe ansatz for 1D interacting anyons - M. T. Batchelor, X.-W. Guan, and J.-S. He - J. Stat. Mech. Theory Exp. (2007), no. 3, P03007, 20 - MR2318431
+Bethe ansatz study of one-dimensional Bose and Fermi gases with periodic and hard wall boundary conditions - N. Oelkers, M. T. Batchelor, M. Bortz, and X.-W. Guan - J. Phys. A 39 (2006), no. 5, 1073–1098 - MR2200427
+The 1D interacting Bose gas in a hard wall box - M. T. Batchelor, X. W. Guan, N. Oelkers, and C. Lee - J. Phys. A 38 (2005), no. 36, 7787–7806 - MR2185413
+Evidence for the super Tonks-Girardeau gas - M. T. Batchelor, M. Bortz, X. W. Guan, and N. Oelkers - J. Stat. Mech. Theory Exp. (2005), no. 10, L10001, 9 - MR2185400
+On the analyticity of the bivariant JLO cocycle - Moulay-Tahar Benameur and Alan L. Carey - Electron. Res. Announc. Math. Sci. 16 (2009), 37–43 - MR2520878
+Thom isomorphism and push-forward map in twisted K-theory - Alan L. Carey and Bai-Ling Wang - J. K-Theory 1 (2008), no. 2, 357–393 - MR2434190
+The Chern character of semifinite spectral triples - Alan L. Carey, John Phillips, Adam Rennie, and Fyodor A. Sukochev - J. Noncommut. Geom. 2 (2008), no. 2, 141–193 - MR2383362
+The local index formula in semifinite von Neumann algebras. II. The even case - Alan L. Carey, John Phillips, Adam Rennie, and Fyodor A. Sukochev - Adv. Math. 202 (2006), no. 2, 517–554 - MR2222359
+The local index formula in semifinite von Neumann algebras. I. Spectral flow - Alan L. Carey, John Phillips, Adam Rennie, and Fyodor A. Sukochev - Adv. Math. 202 (2006), no. 2, 451–516 - MR2222358
+Examples of odd index theorems - Alan L. Carey - Rep. Math. Phys. 57 (2006), no. 1, 41–51 - MR2209780
+Bundle gerbes for Chern-Simons and Wess-Zumino-Witten theories - Alan L. Carey, Stuart Johnson, Michael K. Murray, Danny Stevenson, and Bai-Ling Wang - Comm. Math. Phys. 259 (2005), no. 3, 577–613 - MR2174418
+L^2 torsion without the determinant class condition and extended L^2 cohomology - Maxim Braverman, Alan Carey, Michael Farber, and Varghese Mathai - Commun. Contemp. Math. 7 (2005), no. 4, 421–462 - MR2166660
+Riesz meets Sobolev - Thierry Coulhon and Adam Sikora - Colloq. Math. 118 (2010), no. 2, 685–704 - MR2602174
+Extracting invariants of isolated hypersurface singularities from their moduli algebras - M. G. Eastwood and A. V. Isaev - Math. Ann. 356 (2013), no. 1, 73–98 - MR3038122
+Geometric Poisson brackets on Grassmannians and conformal spheres - M. Eastwood and G. Marí Beffa - Proc. Roy. Soc. Edinburgh Sect. A 142 (2012), no. 3, 525–561 - MR2945971
+Branching of representations to symmetric subgroups - Michael G. Eastwood and Joseph A. Wolf - Münster J. Math. 4 (2011), 1–27 - MR2869251
+Ricci curvature and the mechanics of solids - Michael Eastwood - Austral. Math. Soc. Gaz. 37 (2010), no. 4, 238–241 - MR2730448
+Thomas P. Branson (1953–2006) - Alice Chang, Mike Eastwood, Rod Gover, and et al. - Acta Appl. Math. 102 (2008), no. 2-3, 127–129 - MR2407526
+Cayley hypersurfaces - M. Eastwood and V. Ezhov - Tr. Mat. Inst. Steklova 253 (2006), no. Kompleks. Anal. i Prilozh., 241–244 - MR2338700
+Higher symmetries of the Laplacian - Michael Eastwood - Ann. of Math. (2) 161 (2005), no. 3, 1645–1665 - MR2180410
+Examples of unbounded homogeneous domains in complex space - Michael Eastwood and Alexander Isaev - Sci. China Ser. A 48 (2005), no. suppl., 248–261 - MR2156506
+Prolongations of linear overdetermined systems on affine and Riemannian manifolds - Michael Eastwood - Rend. Circ. Mat. Palermo (2) Suppl. (2005), no. 75, 89–108 - MR2152357
+Smoothly parameterized Čech cohomology of complex manifolds - Toby Bailey, Michael Eastwood, and Simon Gindikin - J. Geom. Anal. 15 (2005), no. 1, 9–23 - MR2132263
+What is quantum unique ergodicity? - Andrew Hassell - Austral. Math. Soc. Gaz. 38 (2011), no. 3, 158–167 - MR2849591
+Microlocal propagation near radial points and scattering for symbolic potentials of order zero - Andrew Hassell, Richard Melrose, and András Vasy - Anal. PDE 1 (2008), no. 2, 127–196 - MR2472888
+A Strichartz inequality for the Schrödinger equation on nontrapping asymptotically conic manifolds - Andrew Hassell, Terence Tao, and Jared Wunsch - Comm. Partial Differential Equations 30 (2005), no. 1-3, 157–205 - MR2131050
+A stabilised mixed finite element method for thin plate splines based on biorthogonal systems - Bishnu P. Lamichhane and Markus Hegland - ANZIAM J. Electron. Suppl. 54 (2012), no. (C), C72–C87 - MR3062618
+A finite element method for density estimation with Gaussian process priors - Michael Griebel and Markus Hegland - SIAM J. Numer. Anal. 47 (2010), no. 6, 4759–4792 - MR2595057
+Approximate maximum a posteriori with Gaussian process priors - Markus Hegland - Constr. Approx. 26 (2007), no. 2, 205–224 - MR2327599
+A solver for the stochastic master equation applied to gene regulatory networks - Markus Hegland, Conrad Burden, Lucia Santoso, Shev MacNamara, and Hilary Booth - J. Comput. Appl. Math. 205 (2007), no. 2, 708–724 - MR2329647
+The combination technique and some generalisations - Markus Hegland, Jochen Garcke, and Vivien Challis - Linear Algebra Appl. 420 (2007), no. 2-3, 249–275 - MR2278207
+Resolution enhancement of spectra using differentiation - Markus Hegland and Robert S. Anderssen - Inverse Problems 21 (2005), no. 3, 915–934 - MR2144811
+Markov process modelling of gene regulation - Hilary S. Booth, Conrad J. Burden, Markus Hegland, and Lucia Santoso - Austral. Math. Soc. Gaz. 32 (2005), no. 1, 31–41 - MR2131575
+The COGARCH꞉ a review, with news on option pricing and statistical inference - Claudia Klüppelberg, Ross Maller, and Alexander Szimayer - Surveys in stochastic processes 29–58 - MR2883852
+GARCH modelling in continuous time for irregularly spaced time series data - Ross A. Maller, Gernot Müller, and Alex Szimayer - Bernoulli 14 (2008), no. 2, 519–542 - MR2544100
+Convergence in distribution of Lévy processes at small times with self-normalization - Ross Maller and David M. Mason - Acta Sci. Math. (Szeged) 74 (2008), no. 1-2, 315–347 - MR2431109
+An almost sure functional limit theorem at zero for a class of Lévy processes normed by the square root function, and applications - Boris Buchmann, Ross Maller, and Alex Szimayer - Probab. Theory Related Fields 142 (2008), no. 1-2, 219–247 - MR2413271
+On the distribution tail of an integrated risk model꞉ a numerical approach - M. Brokate, C. Klüppelberg, R. Kostadinova, R. Maller, and R. C. Seydel - Insurance Math. Econom. 42 (2008), no. 1, 101–106 - MR2392074
+Passage of Lévy processes across power law boundaries at small times - J. Bertoin, R. A. Doney, and R. A. Maller - Ann. Probab. 36 (2008), no. 1, 160–197 - MR2370602
+Finite approximation schemes for Lévy processes, and their application to optimal stopping problems - Alex Szimayer and Ross A. Maller - Stochastic Process. Appl. 117 (2007), no. 10, 1422–1447 - MR2353034
+Curve crossing for random walks reflected at their maximum - Ron Doney and Ross Maller - Ann. Probab. 35 (2007), no. 4, 1351–1373 - MR2330975
+Finiteness of integrals of functions of Lévy processes - K. Bruce Erickson and Ross A. Maller - Proc. Lond. Math. Soc. (3) 94 (2007), no. 2, 386–420 - MR2308232
+Almost sure relative stability of the overshoot of power law boundaries - R. A. Doney and R. A. Maller - J. Theoret. Probab. 20 (2007), no. 1, 47–63 - MR2297850
+A multinomial approximation for American option prices in Lévy process models - Ross A. Maller, David H. Solomon, and Alex Szimayer - Math. Finance 16 (2006), no. 4, 613–633 - MR2253120
+Passage times of random walks and Lévy processes across power law boundaries - R. A. Doney and R. A. Maller - Probab. Theory Related Fields 133 (2005), no. 1, 57–70 - MR2197137
+Lévy integrals and the stationarity of generalised Ornstein-Uhlenbeck processes - Alexander Lindner and Ross Maller - Stochastic Process. Appl. 115 (2005), no. 10, 1701–1722 - MR2165340
+Drift to infinity and the strong law for subordinated random walks and Lévy processes - K. B. Erickson and Ross A. Maller - J. Theoret. Probab. 18 (2005), no. 2, 359–375 - MR2137448
+Cramér’s estimate for a reflected Lévy process - R. A. Doney and R. A. Maller - Ann. Appl. Probab. 15 (2005), no. 2, 1445–1450 - MR2134110
+Boundedness and applications of singular integrals and square functions꞉ a survey - Steve Hofmann and Alan McIntosh - Bull. Math. Sci. 1 (2011), no. 2, 201–244 - MR2901001
+Alan McIntosh and the Kato conjecture - Pedro J. Miana - Gac. R. Soc. Mat. Esp. 10 (2007), no. 3, 597–609 - MR2396620
+Reconstruction and subgaussian operators in asymptotic geometric analysis - Shahar Mendelson, Alain Pajor, and Nicole Tomczak-Jaegermann - Geom. Funct. Anal. 17 (2007), no. 4, 1248–1282 - MR2373017
+Gaussian averages of interpolated bodies and applications to approximate reconstruction - Y. Gordon, A. E. Litvak, S. Mendelson, and A. Pajor - J. Approx. Theory 149 (2007), no. 1, 59–73 - MR2371614
+Complexity measures of sign matrices - Nati Linial, Shahar Mendelson, Gideon Schechtman, and Adi Shraibman - Combinatorica 27 (2007), no. 4, 439–463 - MR2359826
+Subspaces and orthogonal decompositions generated by bounded orthogonal systems - Olivier Guédon, Shahar Mendelson, Alain Pajor, and Nicole Tomczak-Jaegermann - Positivity 11 (2007), no. 2, 269–283 - MR2321621
+Lipschitz representations of subsets of the cube - Shahar Mendelson - Proc. Amer. Math. Soc. 135 (2007), no. 5, 1455–1463 (electronic) - MR2276655
+On singular values of matrices with independent rows - Shahar Mendelson and Alain Pajor - Bernoulli 12 (2006), no. 5, 761–773 - MR2265341
+Empirical minimization - Peter L. Bartlett and Shahar Mendelson - Probab. Theory Related Fields 135 (2006), no. 3, 311–334 - MR2240689
+Local Rademacher complexities - Peter L. Bartlett, Olivier Bousquet, and Shahar Mendelson - Ann. Statist. 33 (2005), no. 4, 1497–1537 - MR2166554
+The geometry of random \{-1,1\}-polytopes - S. Mendelson, A. Pajor, and M. Rudelson - Discrete Comput. Geom. 34 (2005), no. 3, 365–379 - MR2160043
+Reconstruction and subgaussian processes - Shahar Mendelson, Alain Pajor, and Nicole Tomczak-Jaegermann - C. R. Math. Acad. Sci. Paris 340 (2005), no. 12, 885–888 - MR2152273
+Empirical processes and random projections - B. Klartag and S. Mendelson - J. Funct. Anal. 225 (2005), no. 1, 229–245 - MR2149924
+Embedding with a Lipschitz function - Shahar Mendelson - Random Structures Algorithms 27 (2005), no. 1, 25–45 - MR2149294
+A probabilistic approach to the geometry of the l^n_p-ball - Franck Barthe, Olivier Guédon, Shahar Mendelson, and Assaf Naor - Ann. Probab. 33 (2005), no. 2, 480–513 - MR2123199
+Matrix factorisations - Amnon Neeman - Austral. Math. Soc. Gaz. 38 (2011), no. 1, 37–41 - MR2807924
+Brown representability follows from Rosický’s theorem - Amnon Neeman - J. Topol. 2 (2009), no. 2, 262–276 - MR2529296
+Nonparametric inference in multivariate mixtures - Peter Hall, Amnon Neeman, Reza Pakyari, and Ryan Elmore - Biometrika 92 (2005), no. 3, 667–678 - MR2202653
+On Hessian measures for non-commuting vector fields - Neil S. Trudinger - Pure Appl. Math. Q. 2 (2006), no. 1, part 1, 147–161 - MR2217569
+Regularity of potential functions of the optimal transportation problem - Xi-Nan Ma, Neil S. Trudinger, and Xu-Jia Wang - Arch. Ration. Mech. Anal. 177 (2005), no. 2, 151–183 - MR2188047
+The affine Plateau problem - Neil S. Trudinger and Xu-Jia Wang - J. Amer. Math. Soc. 18 (2005), no. 2, 253–289 - MR2137978
+An Alexsandrov type theorem for k-convex functions - Nirmalendu Chaudhuri and Neil S. Trudinger - Bull. Austral. Math. Soc. 71 (2005), no. 2, 305–314 - MR2133413
+Singularity profile in the mean curvature flow - Weimin Sheng and Xu-Jia Wang - Methods Appl. Anal. 16 (2009), no. 2, 139–155 - MR2563745
+Geometric analysis and PDEs - Matthew J. Gursky, Ermanno Lanconelli, Andrea Malchiodi, Gabriella Tarantello, Xu-Jia Wang, and Paul C. Yang - ISBN: 978-3-642-01673-8 - MR1500285
+A class of Sobolev type inequalities - Gu-Ji Tian and Xu-Jia Wang - Methods Appl. Anal. 15 (2008), no. 2, 263–276 - MR2481683
+Schauder estimates for elliptic and parabolic equations - Xu-Jia Wang - Chinese Ann. Math. Ser. B 27 (2006), no. 6, 637–642 - MR2273802
+The L_p-Minkowski problem and the Minkowski problem in centroaffine geometry - Kai-Seng Chou and Xu-Jia Wang - Adv. Math. 205 (2006), no. 1, 33–83 - MR2254308
+A priori estimates and existence for a class of fully nonlinear elliptic equations in conformal geometry - Xu-Jia Wang - Chinese Ann. Math. Ser. B 27 (2006), no. 2, 169–178 - MR2243678
+Enclosed convex hypersurfaces with maximal affine area - Weimin Sheng, Neil S. Trudinger, and Xu-Jia Wang - Math. Z. 252 (2006), no. 3, 497–510 - MR2207756
+A note on the Yamabe problem - Xujia Wang - J. Partial Differential Equations 18 (2005), no. 4, 322–326 - MR2188231
+Regularity of potential functions of the optimal transportation problem - Xi-Nan Ma, Neil S. Trudinger, and Xu-Jia Wang - Arch. Ration. Mech. Anal. 177 (2005), no. 2, 151–183 - MR2188047
+The affine Plateau problem - Neil S. Trudinger and Xu-Jia Wang - J. Amer. Math. Soc. 18 (2005), no. 2, 253–289 - MR2137978
+Modelling epidemic diseases - J. Gani - Aust. N. Z. J. Stat. 52 (2010), no. 3, 321–337 - MR2744577
+Model-based inferences from adaptive cluster sampling - V. E. Rapley and A. H. Welsh - Bayesian Anal. 3 (2008), no. 4, 717–736 - MR2469797
+Estimating the retransformed mean in a heteroscedastic two-part model - A. H. Welsh and X. H. Zhou - J. Statist. Plann. Inference 136 (2006), no. 3, 860–881 - MR2181980
+Outlier robust model selection in linear regression - Samuel Müller and A. H. Welsh - J. Amer. Statist. Assoc. 100 (2005), no. 472, 1297–1310 - MR2236443
+Application of classical invariant theory to biholomorphic classification of plane curve singularities, and associated binary forms - A. V. Isaev - Tr. Mat. Inst. Steklova 279 (2012), no. Analiticheskie i Geometricheskie Voprosy Kompleksnogo Analiza, 257–268 - MR3086769
+Complex manifolds admitting proper actions of high-dimensional groups - Alexander Isaev - J. Lie Theory 18 (2008), no. 1, 141–160 - MR2413956
+On Chern-Moser normal forms of strongly pseudoconvex hypersurfaces with high-dimensional stability group - A. V. Isaev - Pacific J. Math. 235 (2008), no. 2, 235–244 - MR2386221
+Proper actions of high-dimensional groups on complex manifolds - A. V. Isaev - J. Geom. Anal. 17 (2007), no. 4, 649–667 - MR2365662
+Hyperbolic n-dimensional manifolds with automorphism group of dimension n^2 - Alexander V. Isaev - Geom. Funct. Anal. 17 (2007), no. 1, 192–219 - MR2306656
+Hyperbolic manifolds with high-dimensional automorphism group - A. V. Isaev - Tr. Mat. Inst. Steklova 253 (2006), no. Kompleks. Anal. i Prilozh., 245–266 - MR2338701
+Analogues of Rossi’s map and E. Cartan’s classification of homogeneous strongly pseudoconvex 3-dimensional hypersurfaces - Alexander Isaev - J. Lie Theory 16 (2006), no. 3, 407–426 - MR2248138
+Proper holomorphic maps between Reinhardt domains in C^2 - A. V. Isaev and N. G. Kruzhilin - Michigan Math. J. 54 (2006), no. 1, 33–63 - MR2214787
+On the dimension of the stability group for a Levi non-degenerate hypersurface - V. V. Ezhov and A. V. Isaev - Illinois J. Math. 49 (2005), no. 4, 1155–1169 - MR2210357
+Examples of unbounded homogeneous domains in complex space - Michael Eastwood and Alexander Isaev - Sci. China Ser. A 48 (2005), no. suppl., 248–261 - MR2156506
+Hyperbolic manifolds of dimension n with automorphism group of dimension n^2-1 - A. V. Isaev - J. Geom. Anal. 15 (2005), no. 2, 239–259 - MR2152482
+On hyperbolic n-dimensional manifolds with automorphism group of dimension n^2 - A. V. Isaev - Complex Var. Theory Appl. 50 (2005), no. 5, 345–355 - MR2141753
+Behaviour of the numerical entropy production of the one-and-a-half-dimensional shallow water equations - Sudi Mungkasi and Stephen G. Roberts - ANZIAM J. Electron. Suppl. 54 (2012), no. (C), C18–C33 - MR3062615
+A note on the convergence analysis of a sparse grid multivariate probability density estimator - Stephen G. Roberts and Sarah Bolt - ANZIAM J. 50 (2008), no. (C), C858–C870 - MR2492719
+Stochastic Galerkin and collocation methods for quantifying uncertainty in differential equations꞉ a review - J. D. Jakeman and S. G. Roberts - ANZIAM J. 50 (2008), no. (C), C815–C830 - MR2492717
+Parallelisation of a finite volume method for hydrodynamic inundation modelling - S. G. Roberts, L. Stals, and O. M. Nielsen - ANZIAM J. 48 (2007), no. (C), C558–C572 (2008) - MR2354189
+Knot polynomial identities and quantum group coincidences - Scott Morrison, Emily Peters, and Noah Snyder - Quantum Topol. 2 (2011), no. 2, 101–156 - MR2783128
+Man and machine thinking about the smooth 4-dimensional Poincaré conjecture - Michael Freedman, Robert Gompf, Scott Morrison, and Kevin Walker - Quantum Topol. 1 (2010), no. 2, 171–208 - MR2657647
+The Karoubi envelope and Lee’s degeneration of Khovanov homology - Dror Bar-Natan and Scott Morrison - Algebr. Geom. Topol. 6 (2006), 1459–1469 - MR2253455
+Hecke algebras, finite general linear groups, and Heisenberg categorification - Anthony Licata and Alistair Savage - Quantum Topol. 4 (2013), no. 2, 125–185 - MR3032820
+A survey of Heisenberg categorification via graphical calculus - Anthony Licata and Alistair Savage - Bull. Inst. Math. Acad. Sin. (N.S.) 7 (2012), no. 2, 291–321 - MR3024895
+Invariant rings through categories - Jarod Alper and A. J. de Jong - J. Algebra 375 (2013), 235–257 - MR2998955
+Legendrian contact homology in Seifert fibered spaces - Joan E. Licata and Joshua M. Sabloff - Quantum Topol. 4 (2013), no. 3, 265–301 - MR3073564
+On the K-theory of truncated polynomial algebras over the integers - Vigleik Angeltveit, Teena Gerhardt, and Lars Hesselholt - J. Topol. 2 (2009), no. 2, 277–294 - MR2529297
+Hopf algebra structure on topological Hochschild homology - Vigleik Angeltveit and John Rognes - Algebr. Geom. Topol. 5 (2005), 1223–1290 (electronic) - MR2171809
+Modelling gene regulatory networks using Galerkin techniques based on state space aggregation and sparse grids - Markus Hegland, Conrad Burden, and Lucia Santoso - Modeling, simulation and optimization of complex processes 259–272 - MR2766698
+Approximate word matches between two random sequences - Conrad J. Burden, Miriam R. Kantorovitz, and Susan R. Wilson - Ann. Appl. Probab. 18 (2008), no. 1, 1–21 - MR2380889
+Asymptotic behavior of k-word matches between two uniformly distributed sequences - M. R. Kantorovitz, H. S. Booth, C. J. Burden, and S. R. Wilson - J. Appl. Probab. 44 (2007), no. 3, 788–805 - MR2355592
+A solver for the stochastic master equation applied to gene regulatory networks - Markus Hegland, Conrad Burden, Lucia Santoso, Shev MacNamara, and Hilary Booth - J. Comput. Appl. Math. 205 (2007), no. 2, 708–724 - MR2329647
+Markov process modelling of gene regulation - Hilary S. Booth, Conrad J. Burden, Markus Hegland, and Lucia Santoso - Austral. Math. Soc. Gaz. 32 (2005), no. 1, 31–41 - MR2131575
+Interior gradient estimates for anisotropic mean-curvature flow - Julie Clutterbuck - Pacific J. Math. 229 (2007), no. 1, 119–136 - MR2276504
+An assessment of modelling capacity to identify the impacts of climate variability on catchment hydrology - H. S. Kim, B. F. W. Croke, A. J. Jakeman, and F. H. S. Chiew - Math. Comput. Simulation 81 (2011), no. 7, 1419–1429 - MR2781672
+Including the influence of groundwater exchanges in a lumped rainfall-runoff model - Natasha Herron and Barry Croke - Math. Comput. Simulation 79 (2009), no. 9, 2689–2700 - MR2750891
+Model design for the hydrology of tree belt plantations on hillslopes - J. L. Ticehurst, B. F. W. Croke, and A. J. Jakeman - Math. Comput. Simulation 69 (2005), no. 1-2, 188–212 - MR2119449
+Implementation of a mathematical protein folding model - Yi Fang and Junmei Jing - Int. J. Pure Appl. Math. 42 (2008), no. 4, 481–488 - MR2389659
+Purely periodic nearest square continued fractions - Keith R. Matthews and John P. Robertson - J. Comb. Number Theory 2 (2010), no. 3, 239–244 - MR2906642
+On the rarity of quasinormal subgroups - John Cossey and Stewart Stonehewer - Rend. Semin. Mat. Univ. Padova 125 (2011), 81–105 - MR2866121
+A characterization via graphs of the soluble groups in which permutability is transitive - A. Ballester-Bolinches, John Cossey, and R. Esteban-Romero - Algebra Discrete Math. (2009), no. 4, 10–17 - MR2681479
+New results on products of finite groups - A. Ballester-Bolinches, John Cossey, and M. C. Pedraza-Aguilera - Groups St. Andrews 2005. Vol. 1 199–202 - MR2328158
+Mutually permutable products of two nilpotent groups - A. Ballester-Bolinches, J. C. Beidleman, J. Cossey, H. Heineken, and M. C. Pedraza-Aguilera - Rend. Sem. Mat. Univ. Padova 115 (2006), 273–279 - MR2245601
+Algebraic cycles on an abelian variety - Peter O’Sullivan - J. Reine Angew. Math. 654 (2011), 1–81 - MR2795752
+The generalised Jacobson-Morosov theorem - Peter O’Sullivan - Mem. Amer. Math. Soc. 207 (2010), no. 973, viii+119 - MR2667427
+The structure of certain rigid tensor categories - Peter O’Sullivan - C. R. Math. Acad. Sci. Paris 340 (2005), no. 8, 557–562 - MR2138703
+Log geometry and exploded manifolds - Brett Parker - Abh. Math. Semin. Univ. Hambg. 82 (2012), no. 1, 43–81 - MR2922725
+Hecke operators on differential modular forms mod p - Alexandru Buium and Arnab Saha - J. Number Theory 132 (2012), no. 5, 966–997 - MR2890522
+The ring of differential Fourier expansions - Alexandru Buium and Arnab Saha - J. Number Theory 132 (2012), no. 5, 896–937 - MR2890519
+Twin progress in number theory - T. S. Trudgian - Austral. Math. Soc. Gaz. 40 (2013), no. 3, 202–207 - MR3113708
+Selberg’s method and the multiplicities of the zeroes of the Riemann zeta-function - Timothy S. Trudgian - Comment. Math. Univ. St. Pauli 60 (2011), no. 1-2, 227–229 - MR2951934
+Twisted longitudinal index theorem for foliations and wrong way functoriality - Paulo Carrillo Rouse and Bai-Ling Wang - Adv. Math. 226 (2011), no. 6, 4933–4986 - MR2775891
+Twisted index theory for foliations - Paulo Carrillo Rouse and Bai-Ling Wang - C. R. Math. Acad. Sci. Paris 348 (2010), no. 23-24, 1297–1301 - MR2745343
+Differential twisted K-theory and applications - Alan L. Carey, Jouko Mickelsson, and Bai-Ling Wang - J. Geom. Phys. 59 (2009), no. 5, 632–653 - MR2518992
+Geometric cycles, index theory and twisted K-homology - Bai-Ling Wang - J. Noncommut. Geom. 2 (2008), no. 4, 497–552 - MR2438341
+Thom isomorphism and push-forward map in twisted K-theory - Alan L. Carey and Bai-Ling Wang - J. K-Theory 1 (2008), no. 2, 357–393 - MR2434190
+Fusion of symmetric D-branes and Verlinde rings - Alan L. Carey and Bai-Ling Wang - Comm. Math. Phys. 277 (2008), no. 3, 577–625 - MR2365446
+On the relationship of gerbes to the odd families index theorem - Alan L. Carey and Bai-Ling Wang - J. Geom. Phys. 57 (2006), no. 1, 23–38 - MR2265457
+Bundle gerbes for Chern-Simons and Wess-Zumino-Witten theories - Alan L. Carey, Stuart Johnson, Michael K. Murray, Danny Stevenson, and Bai-Ling Wang - Comm. Math. Phys. 259 (2005), no. 3, 577–613 - MR2174418
+Seiberg-Witten-Floer homology of a surface times a circle for non-torsion spin^C structures - Vicente Muñoz and Bai-Ling Wang - Math. Nachr. 278 (2005), no. 7-8, 844–863 - MR2141962
+Variants of equivariant Seiberg-Witten Floer homology - Matilde Marcolli and Bai-Ling Wang - Spectral geometry of manifolds with boundary and decomposition of manifolds 225–238 - MR2114490
+Modeling the positioning of trichomes on the leaves of plants - Robert S. Anderssen, Maureen P. Edwards, and Sergiy Pereverzyev, Jr. - Mathematics and life sciences 215–228 - MR3059758
+Modelling microbial growth in a closed environment - Maureen P. Edwards, Ulrike Schumann, and Robert S. Anderssen - J. Math-for-Ind. 5 (2013), 33–40 - MR3072333
+Mathematical modelling in the science and technology of plant breeding - R. S. Anderssen and M. P. Edwards - Int. J. Numer. Anal. Model. Ser. B 3 (2012), no. 3, 242–258 - MR3000180
+Kernel perturbations for a class of second-kind convolution Volterra equations with non-negative kernels - F. R. de Hoog and R. S. Anderssen - Appl. Math. Lett. 25 (2012), no. 9, 1222–1225 - MR2930750
+Kernel perturbations for convolution first kind Volterra integral equations - Frank R. de Hoog and Robert S. Anderssen - J. Math-for-Ind. 4 (2012), 1–4 - MR2912025
+Performance of robust GCV and modified GCV for spline smoothing - Mark A. Lukas, Frank R. De Hoog, and Robert S. Anderssen - Scand. J. Stat. 39 (2012), no. 1, 97–115 - MR2896793
+Understanding the abnormal brain activity in epilepsy as a potential predictor of the onset of an epileptic seizure - J. M. Dunn, R. A. J. Masterton, D. F. Abbott, and R. S. Anderssen - ANZIAM J. Electron. Suppl. 52 (2010), no. (M), M36–M118 - MR2836670
+The challenge for the piano maker - R. S. Anderssen and W. D. Stuart - Math. Sci. 32 (2007), no. 2, 71–82 - MR2371159
+Joint additive Kullback-Leibler residual minimization and regularization for linear inverse problems - Elena Resmerita and Robert S. Anderssen - Math. Methods Appl. Sci. 30 (2007), no. 13, 1527–1544 - MR2340906
+On the interconversion integral equation for relaxation and creep - R. S. Anderssen, A. R. Davies, and F. R. de Hoog - ANZIAM J. 48 (2006-07), no. (C), C346–C363 (2009) - MR2346167
+Regularization of first kind integral equations with application to Couette viscometry - F. R. de Hoog and R. S. Anderssen - J. Integral Equations Appl. 18 (2006), no. 2, 249–265 - MR2273350
+Approximate solutions for the Couette viscometry equation - F. R. de Hoog and R. S. Anderssen - Bull. Austral. Math. Soc. 72 (2005), no. 3, 461–470 - MR2199647
+Resolution enhancement of spectra using differentiation - Markus Hegland and Robert S. Anderssen - Inverse Problems 21 (2005), no. 3, 915–934 - MR2144811
+Convex hypersurfaces with pinched principal curvatures and flow of convex hypersurfaces by high powers of curvature - Ben Andrews and James McCoy - Trans. Amer. Math. Soc. 364 (2012), no. 7, 3427–3447 - MR2901219
+Bounds on minors of binary matrices - Richard P. Brent and Judy-Anne H. Osborn - Bull. Aust. Math. Soc. 88 (2013), no. 2, 280–285 - MR3109717
+General lower bounds on maximal determinants of binary matrices - Richard P. Brent and Judy-anne H. Osborn - Electron. J. Combin. 20 (2013), no. 2, Paper 15, 12 - MR3066354
+On minors of maximal determinant matrices - Richard P. Brent and Judy-anne H. Osborn - J. Integer Seq. 16 (2013), no. 4, Art. 13.4.2, 30 - MR3056626
+Finding D-optimal designs by randomised decomposition and switching - Richard P. Brent - Australas. J. Combin. 55 (2013), 15–30 - MR3051516
+Some long-period random number generators using shifts and xors - Richard P. Brent - ANZIAM J. 48 (2006-07), no. (C), C188–C202 (2009) - MR3113574
+Modern computer arithmetic - Warren E. Ferguson - SIAM Rev. 53 (2011), no. 4, 809–810 - MR2896104
+The great trinomial hunt - Richard P. Brent and Paul Zimmermann - Notices Amer. Math. Soc. 58 (2011), no. 2, 233–239 - MR2768116
+Ten new primitive binary trinomials - Richard P. Brent and Paul Zimmermann - Math. Comp. 78 (2009), no. 266, 1197–1199 - MR2476580
+Error bounds on complex floating-point multiplication - Richard Brent, Colin Percival, and Paul Zimmermann - Math. Comp. 76 (2007), no. 259, 1469–1481 (electronic) - MR2299783
+Some long-period random number generators using shifts and xors - Richard P. Brent - ANZIAM J. 48 (2006-07), no. (C), C188–C202 (2009) - MR3113574
+A primitive trinomial of degree 6972593 - Richard P. Brent, Samuli Larvala, and Paul Zimmermann - Math. Comp. 74 (2005), no. 250, 1001–1002 (electronic) - MR2114660
+Some remarks on groups with nilpotent minimal covers - R. A. Bryce and L. Serena - J. Aust. Math. Soc. 85 (2008), no. 3, 353–365 - MR2476446
+Ensuring a finite group is supersoluble - R. A. Bryce - Bull. Austral. Math. Soc. 74 (2006), no. 2, 219–226 - MR2260490
+Revisiting queueing output processes꞉ a point process viewpoint - D. J. Daley - Queueing Syst. 68 (2011), no. 3-4, 395–405 - MR2834211
+Dietrich Stoyan꞉ a tribute on the occasion of his seventieth birthday - Daryl Daley, Wilfrid S. Kendall, Ilya Molchanov, and Eva Vedel Jensen - Adv. in Appl. Probab. 42 (2010), no. 3, i–iv - MR2779550
+Long-range dependence in a Cox process directed by an alternating renewal process - D. J. Daley - Probability and mathematical genetics 169–184 - MR2744239
+Modelling epidemic diseases - J. Gani - Aust. N. Z. J. Stat. 52 (2010), no. 3, 321–337 - MR2744577
+David George Kendall and applied probability - D. J. Daley and D. Vere-Jones - J. Appl. Probab. 45 (2008), no. 2, 293–296 - MR2426832
+The tail behaviour of a random sum of subexponential random variables and vectors - D. J. Daley, Edward Omey, and Rein Vesilo - Extremes 10 (2007), no. 1-2, 21–39 - MR2397550
+Long-range dependence of Markov chains in discrete time on countable state space - K. J. E. Carpio and D. J. Daley - J. Appl. Probab. 44 (2007), no. 4, 1047–1055 - MR2382944
+Long-range dependence in a Cox process directed by a Markov renewal process - D. J. Daley, T. Rolski, and R. Vesilo - J. Appl. Math. Decis. Sci. (2007), Art. ID 83852, 15 - MR2377300
+The moment index of minima. II - D. J. Daley and Charles M. Goldie - Statist. Probab. Lett. 76 (2006), no. 8, 831–837 - MR2266097
+Harvesting in seasonal environments - Cailin Xu, Mark S. Boyce, and Daryl J. Daley - J. Math. Biol. 50 (2005), no. 6, 663–682 - MR2211641
+Descending chains, the lilypond model, and mutual-nearest-neighbour matching - Daryl J. Daley and Günter Last - Adv. in Appl. Probab. 37 (2005), no. 3, 604–628 - MR2156551
+Random breakage of a rod into unit lengths - Joe Gani and Randall Swift - College Math. J. 42 (2011), no. 3, 201–205 - MR2801824
+On the Kermack-McKendrick approximation for removals from an epidemic - J. Gani and R. J. Swift - Math. Sci. 35 (2010), no. 1, 29–36 - MR2668440
+Models for the interaction of HIV infectives with AIDS patients - J. Gani and L. Stals - Bull. Inst. Combin. Appl. 58 (2010), 17–28 - MR2591065
+C. C. Heyde, 1939–2008 - Joe Gani - J. Roy. Statist. Soc. Ser. A 172 (2009), no. 1, 278–280 - MR2603243
+The contribution of Sir Ronald Ross to epidemic modelling - J. Gani - Math. Sci. 34 (2009), no. 1, 11–14 - MR2532148
+A population of HIV infectives partially treated with anti-retroviral drugs - J. Gani and R. J. Swift - Int. J. Mod. Math. 4 (2009), no. 1, 95–108 - MR2508945
+A simple approach to the integrals under three stochastic processes - J. Gani and R. J. Swift - J. Stat. Theory Pract. 2 (2008), no. 4, 559–568 - MR2655431
+Life and work of Christopher Charles Heyde꞉ in memoriam - Joe Gani - J. Stat. Theory Pract. 2 (2008), no. 2, 327–329 - MR2524468
+An epidemic model approximating the spread of the common cold - J. Gani and R. J. Swift - Austral. Math. Soc. Gaz. 35 (2008), no. 2, 115–120 - MR2419241
+Population processes subject to a mass movement - J. Gani and R. J. Swift - Int. J. Pure Appl. Math. 43 (2008), no. 3, 449–463 - MR2398569
+Death and birth-death and immigration processes with catastrophes - J. Gani and R. J. Swift - J. Stat. Theory Pract. 1 (2007), no. 1, 39–48 - MR2354615
+A simple approach to birth processes with random catastrophes - J. Gani and R. J. Swift - J. Comb. Inf. Syst. Sci. 31 (2006), no. 1-4, 325–331 - MR2351729
+Epidemics caused by two encounters with infectives - J. Gani and L. Stals - Bull. Inst. Combin. Appl. 48 (2006), 5–18 - MR2259697
+Moran’s Department of Statistics at the ANU, 1952–1982 - Joe Gani - Austral. Math. Soc. Gaz. 33 (2006), no. 3, 167–171 - MR2248553
+A counter-intuitive result in the AIDS epidemic - J. Gani - Math. Sci. 31 (2006), no. 1, 60–62 - MR2188952
+Allocating infected needles randomly among susceptibles - J. Gani and R. J. Swift - Int. J. Appl. Math. Sci. 2 (2005), no. 2, 220–229 - MR2229909
+PyCCSM꞉ prototyping a python-based community climate system model - Michael Tobis, Michael Steder, J. Walter Larson, Raymond T. Pierrehumbert, Robert L. Jacob, and Everest T. Ong - ANZIAM J. 48 (2006-07), no. (C), C1112–C1130 (2009) - MR2857991
+Ten organising principles for coupling in multiphysics and multiscale models - J. Walter Larson - ANZIAM J. 48 (2006-07), no. (C), C1090–C1111 (2009) - MR2482352
+Can compatible discretization, finite element methods, and discrete Clifford analysis be fruitfully combined? - Paul Leopardi - Clifford Anal. Clifford Algebr. Appl. 1 (2012), no. 1, 57–64 - MR3112869
+Diameter bounds for equal area partitions of the unit sphere - Paul Leopardi - Electron. Trans. Numer. Anal. 35 (2009), 1–16 - MR2582801
+Porting a sphere optimization program from LAPACK to ScaLAPACK - Paul C. Leopardi and Robert S. Womersley - ANZIAM J. 50 (2008), no. (C), C204–C219 - MR2457244
+Addendum to “Contractive projections on Banach algebras” [J. Funct. Anal. 254 (10) (2008) 2513–2533] - Anthony To-Ming Lau and Richard J. Loy - J. Funct. Anal. 258 (2010), no. 3, 1070–1072 - MR2558190
+Prolongation on regular infinitesimal flag manifolds - Katharina Neusser - Internat. J. Math. 23 (2012), no. 4, 1250007, 41 - MR2903185
+Universal prolongation of linear partial differential equations on filtered manifolds - Katharina Neusser - Arch. Math. (Brno) 45 (2009), no. 4, 289–300 - MR2591683
+On automorphism groups of some types of generic distributions - Andreas Čap and Katharina Neusser - Differential Geom. Appl. 27 (2009), no. 6, 769–779 - MR2552685
+On one-relator quotients of the modular group - Marston Conder, George Havas, and M. F. Newman - Groups St Andrews 2009 in Bath. Volume 1 183–197 - MR2858857
+On estimation algorithms for ordinary differential equations - M. R. Osborne - ANZIAM J. 50 (2008), no. (C), C107–C120 - MR2446265
+Thin film models with constant source꞉ model selection in a stochastic setting - T. Prvan and M. R. Osborne - ANZIAM J. 49 (2007-08), no. (C), C392–C406 - MR2383320
+Numerical questions in ODE boundary value problems - M. R. Osborne - ANZIAM J. 48 (2006-07), no. (C), C899–C926 (2009) - MR2383316
+From percolation to logarithmic conformal field theory - Pierre Mathieu and David Ridout - Phys. Lett. B 657 (2007), no. 1-3, 120–129 - MR2406363
+Presentations of Wess-Zumino-Witten fusion rings - Peter Bouwknegt and David Ridout - Rev. Math. Phys. 18 (2006), no. 2, 201–232 - MR2228924
+Markov uniqueness of degenerate elliptic operators - Derek W. Robinson and Adam Sikora - Ann. Sc. Norm. Super. Pisa Cl. Sci. (5) 10 (2011), no. 3, 683–710 - MR2905383
+Conservation and invariance properties of submarkovian semigroups - A. F. M. ter Elst and Derek W. Robinson - J. Ramanujan Math. Soc. 24 (2009), no. 3, 285–297 - MR2568058
+Degenerate elliptic operators꞉ capacity, flux and separation - Derek W. Robinson and Adam Sikora - J. Ramanujan Math. Soc. 22 (2007), no. 4, 385–408 - MR2376809
