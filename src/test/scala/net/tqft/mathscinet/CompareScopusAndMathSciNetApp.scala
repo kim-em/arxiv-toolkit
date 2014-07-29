@@ -33,6 +33,15 @@ object CompareScopusAndMathSciNetApp extends App {
     missing_out.flush
   }
 
+  val notFound = new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/not-found-on-scopus")
+  notFound.delete
+  val notFound_out = new OutputStreamWriter(new FileOutputStream(notFound), "UTF-8")
+  def reportNotFound(citation: String) = {
+    notFound_out.write(citation + "\n")
+    missing_out.write("\n")
+    missing_out.flush
+  }
+  
   val mathematicians = (for (
     line <- io.Source.fromFile(new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/mathematicians.txt"))(Codec.UTF8).getLines;
     if line.nonEmpty && !line.startsWith("#");
@@ -41,7 +50,7 @@ object CompareScopusAndMathSciNetApp extends App {
 
   val authors = for (
     Int(mathscinetAuthorId) :: Long(scopusAuthorId) :: name :: "ANU" :: level :: _ <- mathematicians//;
-//    if mathscinetAuthorId == 40355
+    //if mathscinetAuthorId == 40355
   ) yield {
     (Author(mathscinetAuthorId, name), net.tqft.scopus.Author(scopusAuthorId, name))
   }
@@ -98,9 +107,10 @@ object CompareScopusAndMathSciNetApp extends App {
     lazy val recentPublicationsOnMathSciNet = ma.articles.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear).toStream
 
     lazy val onlyOnScopus = recentPublicationsOnScopus.filter(_.satisfactoryMatch.isEmpty)
-    lazy val matches = sa.publications.map(p => (p, p.satisfactoryMatch)).collect({
+    lazy val tentativeMatches = sa.publications.map(p => (p, p.satisfactoryMatch)).collect({
       case (p, Some(CitationScore(c, _))) if c.MRNumber.nonEmpty => (p, Article(c.MRNumber.get))
     })
+    lazy val matches = tentativeMatches.groupBy(_._2.identifier).filter(_._2.size == 1).map(_._2.head)
     lazy val onlyOnMathSciNet = {
       if (sa.id > 0) {
         val matchedMathSciNetIds = matches.map(_._2.identifier).toSet
@@ -125,6 +135,7 @@ object CompareScopusAndMathSciNetApp extends App {
       p("<ul>")
       for (a <- onlyOnMathSciNet) {
         p("<li>" + a.fullCitation + "</li>")
+        reportNotFound(a.fullCitation)
       }
       p("</ul>")
     }
