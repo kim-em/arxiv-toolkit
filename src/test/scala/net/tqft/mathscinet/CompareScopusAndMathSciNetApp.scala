@@ -50,7 +50,8 @@ object CompareScopusAndMathSciNetApp extends App {
 
   val authors = for (
     Int(mathscinetAuthorId) :: Long(scopusAuthorId) :: name :: "ANU" :: level :: _ <- mathematicians//;
-    //if mathscinetAuthorId == 40355
+//    if mathscinetAuthorId == 40355 //Peter
+//    if mathscinetAuthorId == 32465
   ) yield {
     (Author(mathscinetAuthorId, name), net.tqft.scopus.Author(scopusAuthorId, name))
   }
@@ -107,7 +108,7 @@ object CompareScopusAndMathSciNetApp extends App {
     lazy val recentPublicationsOnMathSciNet = ma.articles.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= firstYear).toStream
 
     lazy val onlyOnScopus = recentPublicationsOnScopus.filter(_.satisfactoryMatch.isEmpty)
-    lazy val tentativeMatches = sa.publications.map(p => (p, p.satisfactoryMatch)).collect({
+    lazy val tentativeMatches = recentPublicationsOnScopus.map(p => (p, p.satisfactoryMatch)).collect({
       case (p, Some(CitationScore(c, _))) if c.MRNumber.nonEmpty => (p, Article(c.MRNumber.get))
     })
     lazy val matches = tentativeMatches.groupBy(_._2.identifier).filter(_._2.size == 1).map(_._2.head)
