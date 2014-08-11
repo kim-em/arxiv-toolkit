@@ -122,6 +122,11 @@ class WebOfScienceAux(tag: Tag) extends Table[(String, String, String, String, S
   def * = (accessionNumber, title, authors, citation, citations_records, doi)
   def citations_recordsView = (accessionNumber, citations_records)
 }
+class ScopusAuthorships(tag: Tag) extends Table[(Long, String)](tag, "scopus_authorships") {
+  def author_id = column[Long]("author_id", O.PrimaryKey)
+  def scopus_id = column[String]("scopus_id")
+  def * = (author_id, scopus_id)
+}
 
 object Wiki {
   val _tablePrefix = "mlp_"
@@ -155,6 +160,7 @@ object SQLTables {
   val mathscinet = TableQuery[MathscinetBIBTEX]
   val arxiv = TableQuery[Arxiv]
   val arxiv_mathscinet_matches = TableQuery[ArxivMathscinetMatches]
+  val scopus_authorships = TableQuery[ScopusAuthorships]
   object webofscience_aux extends TableQuery(new WebOfScienceAux(_)) {
     def citations_recordsView = map(aux => aux.citations_recordsView)
   }

@@ -31,20 +31,26 @@ import org.openqa.selenium.firefox.FirefoxProfile
 import org.apache.http.impl.conn.PoolingClientConnectionManager
 import scala.annotation.tailrec
 import net.tqft.scopus.Scopus
+import java.nio.charset.Charset
+import java.nio.charset.CodingErrorAction
+import scala.io.Codec
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
   final def getBytes(url: String) = IOUtils.toByteArray(getStream(url))
 
-  final def apply(url: String) = {
-    val bis = new BufferedInputStream(getStream(url));
-    val cd = new CharsetDetector();
-    cd.setText(bis);
-    val cm = cd.detect();
+  def apply(url: String) = {
+    val bis = new BufferedInputStream(getStream(url))
+    val cd = new CharsetDetector()
+    cd.setText(bis)
+    val cm = cd.detect()
 
     if (cm != null) {
-      val reader = cm.getReader();
-      val charset = cm.getName();
+      val reader = cm.getReader()
+      val charset = cm.getName()
+      val codec = Codec(charset)
+      codec.onMalformedInput(CodingErrorAction.REPLACE)
+      codec.onUnmappableCharacter(CodingErrorAction.REPLACE)
       //      Logging.info("reading stream in charset " + charset)
 
       class ClosingIterator[A](i: Iterator[A]) extends Iterator[A] {
@@ -63,7 +69,7 @@ trait Slurp {
         override def next = i.next
       }
 
-      new ClosingIterator(Source.fromInputStream(bis, charset).getLines): Iterator[String]
+      new ClosingIterator(Source.fromInputStream(bis)(codec).getLines): Iterator[String]
     } else {
       throw new UnsupportedCharsetException("")
     }
@@ -99,7 +105,7 @@ trait HttpClientSlurp extends Slurp {
   override def getStream(url: String) = getStream(url, None)
   def getStream(url: String, referer: Option[String]): InputStream = {
     println("HttpClient slurping: " + url)
-    
+
     val get = new HttpGet(url)
     get.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
     referer.map(r => get.setHeader("Referer", r))
@@ -123,14 +129,14 @@ trait FirefoxSlurp extends Slurp {
   private def driver = FirefoxSlurp.driverInstance
 
   var throttle = 0
-  
+
   override def getStream(url: String) = {
     import scala.collection.JavaConverters._
 
     if (FirefoxSlurp.enabled_?) {
       try {
-        if(url.startsWith("http://www.scopus.com/")) Scopus.preload
-        
+        if (url.startsWith("http://www.scopus.com/")) Scopus.preload
+
         driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
           case Some(element) => {
             Logging.info("webdriver: clicking an available link")
@@ -143,7 +149,7 @@ trait FirefoxSlurp extends Slurp {
         driver.getTitle match {
           case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => {
             Logging.error("Exception accessing " + url, new HttpException(e))
-            if(throttle == 0) throttle = 5000 else throttle *= 2
+            if (throttle == 0) throttle = 5000 else throttle *= 2
             Thread.sleep(throttle)
             getStream(url)
           }
@@ -268,7 +274,7 @@ object FirefoxSlurp extends FirefoxSlurp {
 
 trait MathSciNetMirrorSlurp extends Slurp {
   val offset = Random.nextInt(10 * 60 * 1000)
-  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ /* "ams.rice.edu", *//*"ams.impa.br", */"ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
+  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ /* "ams.rice.edu", */ /*"ams.impa.br", */ "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {
@@ -278,6 +284,18 @@ trait MathSciNetMirrorSlurp extends Slurp {
       url
     }
     super.getStream(newURL)
+  }
+}
+
+trait ScopusSlurp extends CachingSlurp {
+  override def apply(url: String) = {
+    super.apply(url).map({ line =>
+      if(line.contains("Scopus cannot re-create the page that you bookmarked.")) {
+        -=(url)
+        throw new Exception("Scopus won't allow bookmarking this page! (I've attempt to remove the result from the cache.)")
+      }
+      line
+    })
   }
 }
 
@@ -295,6 +313,8 @@ trait CachingSlurp extends Slurp {
     })
     new ByteArrayInputStream(bytes)
   }
+  
+  def -=(url: String): this.type
 }
 
 trait S3CachingSlurp extends CachingSlurp {
@@ -367,7 +387,7 @@ object Throttle extends Logging {
   }
 }
 
-object Slurp extends FirefoxSlurp with MathSciNetMirrorSlurp with S3CachingSlurp {
+object Slurp extends FirefoxSlurp with MathSciNetMirrorSlurp with S3CachingSlurp with ScopusSlurp {
   override val s3 = AnonymousS3
   override val bucketSuffix = ".cache"
 }

@@ -13,6 +13,8 @@ case class Article(id: String, titleHint: Option[String] = None) {
   def citationsURL(page: Int) = "http://www.scopus.com/results/results.url?cc=10&sort=plf-f&cite=" + id + "&src=s&nlo=&nlr=&nls=&imp=t&sot=cite&sdt=a&sl=0&ss=plf-f&ps=r-f&" + (if (page > 0) { "offset=" + (20 * page + 1) + "&" } else { "" }) + "origin=resultslist&zone=resultslist"
   // http://www.scopus.com/results/results.url?cc=10&sort=plf-f&cite=2-s2.0-46049118990&src=s&nlo=&nlr=&nls=&imp=t&sot=cite&sdt=a&sl=0&ss=plf-f&ps=r-f&origin=resultslist&zone=resultslist
 
+  // http://www.scopus.com/results/results.url?sort=plf-f&src=s&sot=aut&sdt=a&sl=17&s=AU-ID%287004335929%29
+  
   def getDataText: Stream[String] = {
     val slurp = Slurp(textURL).toStream
     if (slurp.mkString("\n").contains("getElementById")) {
@@ -39,7 +41,7 @@ case class Article(id: String, titleHint: Option[String] = None) {
 
   def fullCitation = title + " - " + authorData + " - " + citation + " - scopus:" + id
   def fullCitation_html = title + " - " + authorData + " - " + citation + " - <a href='" + URL + "'>scopus:" + id + "</a>"
-  lazy val matches = net.tqft.citationsearch.Search.query(title + " - " + authorData + " - " + citation + DOIOption.map(" " + _).getOrElse("")).results
+  lazy val matches = net.tqft.citationsearch.Search.query(title + " - " + authorData + " - " + citation + DOIOption.map(" " + _).getOrElse("")).results.sortBy(- _.score)
 
   lazy val satisfactoryMatch: Option[CitationScore] = {
     matches.headOption.filter(s => s.score > 0.89).orElse(
