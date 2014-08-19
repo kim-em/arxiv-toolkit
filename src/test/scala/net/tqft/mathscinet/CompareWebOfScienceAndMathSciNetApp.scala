@@ -25,8 +25,9 @@ object CompareWebOfScienceAndMathSciNetApp extends App {
   val missing = new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/missing-from-webofscience")
   missing.delete
   val missing_out = new OutputStreamWriter(new FileOutputStream(missing), "UTF-8")
-  def reportMissing(author: Int, target: String, source: String) = {
+  def reportMissing(author: Int, accession: String, target: String, source: String) = {
     missing_out.write(author + "\n")
+    missing_out.write(accession + "\n")
     missing_out.write(target + "\n")
     missing_out.write(source + "\n")
     missing_out.write("\n")
@@ -154,7 +155,7 @@ object CompareWebOfScienceAndMathSciNetApp extends App {
           p(c.fullCitation_html)
           p("</td>")
           p("</tr>")
-          reportMissing(author.id, a2.fullCitation, c.fullCitation)
+          reportMissing(author.id, a1.accessionNumber, a2.fullCitation, c.fullCitation)
         }
         p("</table>")
       }
