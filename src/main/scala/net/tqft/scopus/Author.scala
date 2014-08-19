@@ -57,9 +57,9 @@ case class Author(id: Long, name: String) {
 
     driver.get(url)
     Thread.sleep(1000)
-    driver.findElement(By.partialLinkText("in search results format")).click
-    
+
     try {
+      driver.findElement(By.partialLinkText("in search results format")).click
       val results = ListBuffer[String]()
       def scrapePage {
         Thread.sleep(1000)
@@ -78,10 +78,8 @@ case class Author(id: Long, name: String) {
       results.toSeq
     } catch {
       case e: org.openqa.selenium.NoSuchElementException => {
-        ???
-        Seq.empty
+        throw new Exception("could not locate element with link text 'in search results format' on page " + url, e)
       }
-
     }
 
   }
