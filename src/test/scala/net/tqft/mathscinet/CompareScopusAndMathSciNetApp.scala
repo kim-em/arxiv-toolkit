@@ -99,6 +99,8 @@ object CompareScopusAndMathSciNetApp extends App {
 <body>""")
 
   var unmatchedCount = 0
+  var citationsOnMathSciNet = 0
+  var citationsOnScopus = 0
 
   for ((ma, sa) <- authors) {
     p("""<h2><a onclick="$('#publications-""" + ma.id + s"""').toggle('fast')">Publications for <i>${ma.name}</i> since $firstYear</a></h2>""")
@@ -125,6 +127,7 @@ object CompareScopusAndMathSciNetApp extends App {
       p("<h3>Articles found only on Scopus:</h3>")
       p("<dl>")
       for (a <- onlyOnScopus) {
+        citationsOnScopus = citationsOnScopus + a.citations.size
         p("<dt>" + a.fullCitation_html + "</dt>")
         for (m <- a.matches.headOption)
           p(s"<dd>best match (${m.score}): ${fullCitation_html(m.citation)}</dd>")
@@ -135,6 +138,7 @@ object CompareScopusAndMathSciNetApp extends App {
       p("<h3>Articles found only on MathSciNet:</h3>")
       p("<ul>")
       for (a <- onlyOnMathSciNet) {
+        citationsOnMathSciNet = citationsOnMathSciNet + a.citations.size
         p("<li>" + a.fullCitation + "</li>")
         reportNotFound(a.fullCitation)
       }
@@ -144,6 +148,9 @@ object CompareScopusAndMathSciNetApp extends App {
       p("<h3>Matching articles found:</h3>")
       p("<dl>")
       for ((a1, a2) <- matches) {
+        citationsOnScopus = citationsOnScopus + a1.citations.size
+                citationsOnMathSciNet = citationsOnMathSciNet + a2.citations.size
+
         p("<dt>" + a1.fullCitation_html + "</dt>")
         p("<dd>" + a2.fullCitation_html)
 
@@ -195,6 +202,8 @@ object CompareScopusAndMathSciNetApp extends App {
   }
 
   p("Found a total of " + unmatchedCount + " citations recorded in MathSciNet which Scopus doesn't seem to know about.")
+  p("Scopus records a total of " + citationsOnScopus + " citations")
+  p("MathSciNet records a total of " + citationsOnMathSciNet + " citations")
 
   p("</body></html>")
   FirefoxSlurp.quit
