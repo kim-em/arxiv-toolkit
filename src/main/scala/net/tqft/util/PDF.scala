@@ -45,13 +45,13 @@ object PDF {
     }
     mimetype match {
       case "application/pdf" => {
-        Logging.info("Obtained bytes for PDF.")
+//        Logging.info("Obtained bytes for PDF.")
         val result = Some(IOUtils.toByteArray(bis))
         bis.close
         result
       }
       case t => {
-        Logging.warn("Content does not appear to be a PDF! (File begins with " + prefixString + " and MIME type detected as " + t + ".)")
+//        Logging.warn("Content does not appear to be a PDF! (File begins with " + prefixString + " and MIME type detected as " + t + ".)")
         //        Logging.warn(IOUtils.toString(bis))
         bis.close
         None
