@@ -27,6 +27,7 @@ libraryDependencies ++= Seq(
 	"com.ibm.icu" % "icu4j" % "51.1",
 	"rome" % "rome" % "1.0",
 	"org.apache.httpcomponents" % "httpclient" % "4.3.2",
+	"org.apache.commons" % "commons-compress" % "1.5",
 	"commons-io" % "commons-io" % "2.4",
 	"com.google.code.findbugs" % "jsr305" % "2.0.1",
 	"net.sourceforge.htmlunit" % "htmlunit" % "2.12",
