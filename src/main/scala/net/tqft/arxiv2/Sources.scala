@@ -106,5 +106,6 @@ trait SourcesFromLocalCopy extends Sources {
 }
 
 object Sources extends SourcesFromLocalCopy {
-  override val basePath = "/Users/scott/scratch/arxiv/"
+  override val basePath = "/Volumes/scott/scratch/arxiv/"
+//  override val basePath = "/Users/scott/scratch/arxiv/"
 }
