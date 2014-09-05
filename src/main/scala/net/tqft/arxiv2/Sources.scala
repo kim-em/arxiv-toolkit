@@ -71,7 +71,7 @@ trait Sources {
       if (line.startsWith("\\bibitem")) {
         post
         key = line.trim.stripPrefix("\\bibitem{").takeWhile(_ != '}')
-        entryBuffer += line.trim.stripPrefix("\\bibitem{").dropWhile(_ != '}').tail
+        entryBuffer += line.trim.stripPrefix("\\bibitem{").dropWhile(_ != '}').stripPrefix("{")
       } else {
         entryBuffer += line
       }
