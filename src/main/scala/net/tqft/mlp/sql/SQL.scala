@@ -10,11 +10,11 @@ class ArxivMathscinetMatches(tag: Tag) extends Table[(String, Int, Double, Strin
   def MRNumber = column[Int]("MRNumber")
   def score = column[Double]("score")
   def best = column[String]("best")
-    def * = (arxivid, MRNumber, score, best)
+  def * = (arxivid, MRNumber, score, best)
 }
 
 class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String, String, String, Option[String], Option[String])](tag, "mathscinet_aux") {
- def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
+  def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
   def textTitle = column[String]("textTitle")
   def wikiTitle = column[String]("wikiTitle")
   def textAuthors = column[String]("textAuthors")
@@ -127,6 +127,16 @@ class ScopusAuthorships(tag: Tag) extends Table[(Long, String)](tag, "scopus_aut
   def scopus_id = column[String]("scopus_id")
   def * = (author_id, scopus_id)
 }
+class Portico(tag: Tag) extends Table[(String, String, String, String, String, String, String)](tag, "portico") {
+  def id = column[String]("id", O.PrimaryKey)
+  def title = column[String]("title")
+  def author = column[String]("author")
+  def citation = column[String]("citation")
+  def doi = column[String]("doi")
+  def content_set = column[String]("content_set")
+  def issn = column[String]("issn")
+  def * = (id, title, author, citation, doi, content_set, issn)
+}
 
 object Wiki {
   val _tablePrefix = "mlp_"
@@ -153,11 +163,11 @@ object Wiki {
   def Texts = TableQuery(tag => new Text(tag, _tablePrefix))
   def Pages = TableQuery(tag => new Page(tag, _tablePrefix))
 
-  
 }
 
 object SQLTables {
   val mathscinet = TableQuery[MathscinetBIBTEX]
+  val portico = TableQuery[Portico]
   val arxiv = TableQuery[Arxiv]
   val arxiv_mathscinet_matches = TableQuery[ArxivMathscinetMatches]
   val scopus_authorships = TableQuery[ScopusAuthorships]
