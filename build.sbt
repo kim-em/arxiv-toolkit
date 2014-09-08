@@ -62,7 +62,7 @@ libraryDependencies ++= Seq(
 // Sometimes it's useful to see debugging out from the typer (e.g. to resolve slow compiles)
 // scalacOptions += "-Ytyper-debug"
 
-// EclipseKeys.withSource := true
+EclipseKeys.withSource := true
 
 publishTo := Some(Resolver.sftp("tqft.net", "tqft.net", "tqft.net/releases") as ("scottmorrison", new java.io.File("/Users/scott/.ssh/id_rsa")))
 
