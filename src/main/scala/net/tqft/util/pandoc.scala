@@ -22,7 +22,7 @@ object pandoc {
   }
 
   // {On {W}alkup's class {$\scr K(d)$} and a minimal triangulation of {$(S3\mathop{\hbox{$}\times{$}\!\!\!\!\lower 3pt\hbox{--}}\ S1)^{\#3}$}}
-  
+
   def latexToText(latex: String, retry: Boolean = true): String = {
     if (okay) {
       try {
@@ -32,8 +32,12 @@ object pandoc {
           stdout => scala.io.Source.fromInputStream(stdout).getLines.foreach(result.append),
           _ => ())
         val p = pandocCommand.run(pio)
-        require(p.exitValue == 0, "pandoc failed on input: " + latex)
-        result.toString
+        if (p.exitValue != 0) {
+          Logging.warn("pandoc failed on input: " + latex)
+          latex
+        } else {
+          result.toString
+        }
       } catch {
         case e: Exception if retry => {
           latexToText(latex.replaceAllLiterally("{", "").replaceAllLiterally("}", ""), false)

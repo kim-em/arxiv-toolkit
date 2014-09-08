@@ -160,6 +160,9 @@ trait Article { article =>
   def journalOption = bibtex.get("JOURNAL")
   def journal = journalOption.get
 
+  def fullJournalOption = bibtex.get("FJOURNAL")
+  def fullJournal = fullJournalOption.get
+
   def volumeYearAndIssue: String = {
     (volumeOption.getOrElse("") + yearStringOption.map(" (" + _ + "), ").getOrElse("") + numberOption.map("no. " + _ + ", ").getOrElse("")).stripSuffix(", ").trim
   }

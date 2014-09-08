@@ -48,6 +48,7 @@ trait Sources {
     val lines = apply(identifier).collect({ case (name, bytes) if name.toLowerCase.endsWith(".tex") || name.toLowerCase.endsWith(".bbl") => Source.fromBytes(bytes).getLines }).iterator.flatten
     var state = false
     val bibitemLines = lines.filter({ line =>
+      // TODO allow whitespace after 'begin' and 'end'
       if (line.contains("\\begin{thebibliography}")) {
         state = true
         false
@@ -70,8 +71,29 @@ trait Sources {
     for (line <- bibitemLines) {
       if (line.startsWith("\\bibitem")) {
         post
-        key = line.trim.stripPrefix("\\bibitem{").takeWhile(_ != '}')
-        entryBuffer += line.trim.stripPrefix("\\bibitem{").dropWhile(_ != '}').stripPrefix("{")
+        
+        val tail = line.stripPrefix("\\bibitem").trim
+        
+        val (key_, remainder) = {
+          if(tail.startsWith("{")) {
+            (
+            		line.stripPrefix("{").takeWhile(_ != '}'),
+            		line.stripPrefix("{").dropWhile(_ != '}').stripPrefix("}")
+            )
+          } else if(tail.startsWith("[")) {
+            (
+                line.stripPrefix("[").takeWhile(_ != ']').stripPrefix("{").stripSuffix("}"),
+                line.stripPrefix("[").dropWhile(_ != ']').stripPrefix("[").dropWhile(_ != '}').stripPrefix("}")
+            )
+          } else {
+            println("I don't know how to parse this bibitem line:")
+            println(line)
+            ???
+          }
+        }
+        
+        key = key_
+        entryBuffer += remainder
       } else {
         entryBuffer += line
       }
