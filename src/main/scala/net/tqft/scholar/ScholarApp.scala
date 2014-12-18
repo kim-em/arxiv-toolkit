@@ -6,7 +6,7 @@ import net.tqft.toolkit.Logging
 import org.openqa.selenium.By
 import net.tqft.journals.ISSNs
 import net.tqft.mathscinet.Search
-import net.tqft.wiki.WikiMap
+import net.tqft.toolkit.wiki.WikiMap
 import net.tqft.util.Throttle
 import net.tqft.util.PDF
 
@@ -18,7 +18,7 @@ object ScholarApp extends App {
   }
 
   for (
-    g <- ( /* net.tqft.mlp.extendedCoverage ++ */ net.tqft.mlp.topJournals(100)).grouped(1000);
+    g <- (  net.tqft.mlp.extendedCoverage ++  net.tqft.mlp.topJournals(100)).grouped(1000);
     a <- scala.util.Random.shuffle(g)
   ) {
     println(a.DOI)
@@ -47,7 +47,7 @@ object ScholarApp extends App {
     }
   }
 
-  net.tqft.wiki.FirefoxDriver.quit
+  net.tqft.toolkit.wiki.FirefoxDriver.quit
   FirefoxDriver.quit
 }
 

@@ -1,6 +1,6 @@
 package net.tqft.mlp
 
-import net.tqft.wiki.WikiMap
+import net.tqft.toolkit.wiki.WikiMap
 import net.tqft.mathscinet.Search
 import net.tqft.journals.ISSNs
 import net.tqft.mathscinet.Article
@@ -76,7 +76,6 @@ object TOCBot extends App {
     })
   }
 
-  import net.tqft.toolkit.collections.LexicographicOrdering._
   implicit val eitherOrdering = new Ordering[Either[String, Int]] {
     def compare(x: Either[String, Int], y: Either[String, Int]) = {
       (x, y) match {
@@ -100,6 +99,7 @@ object TOCBot extends App {
         summarize(issues(issue).iterator).mkString("{{progress|", "|", "}}")
       }
       val yearSummary = yearSummaries(Some(journal))(Some(year))
+      import Ordering.Implicits._
       issues.keySet.toSeq.sortBy(tokenizeIssue).map(i => "* " + s(i) + " [[" + j + "/" + i + "]]").mkString("==" + year + " " + yearSummary.mkString("{{progress|", "|", "}}") + "==\n" + (now :: yearSummary.sum :: yearSummary).mkString("{{progress-text|", "|", "}}\n"), "\n", "\n")
     }).toSeq.mkString("\n")
     println("writing journal page: " + j)
@@ -119,6 +119,6 @@ object TOCBot extends App {
 
   println("All finished!")
 
-  net.tqft.wiki.FirefoxDriver.quit
+  net.tqft.toolkit.wiki.FirefoxDriver.quit
 
 }

@@ -3,9 +3,8 @@ package net.tqft.mlp
 import scala.io.Source
 import java.io.File
 import net.tqft.mathscinet.MRef
-import net.tqft.toolkit.collections.Split.splittableIterator
-import net.tqft.wiki.WikiMap
-import net.tqft.wiki.FirefoxDriver
+import net.tqft.toolkit.wiki.WikiMap
+import net.tqft.toolkit.wiki.FirefoxDriver
 import net.tqft.mlp.sql.SQL
 import net.tqft.mlp.sql.SQLTables
 import net.tqft.toolkit.Logging

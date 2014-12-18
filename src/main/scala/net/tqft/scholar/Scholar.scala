@@ -6,7 +6,7 @@ import net.tqft.toolkit.Logging
 import org.openqa.selenium.By
 import net.tqft.journals.ISSNs
 import net.tqft.mathscinet.Search
-import net.tqft.wiki.WikiMap
+import net.tqft.toolkit.wiki.WikiMap
 import net.tqft.util.Throttle
 import net.tqft.util.PDF
 
