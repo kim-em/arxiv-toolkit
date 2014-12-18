@@ -18,7 +18,8 @@ package object mlp {
     ISSNs.`Journal of Combinatorial Theory A`,
     ISSNs.`Journal of Combinatorial Theory B`,
     ISSNs.`Journal of Algebra`,
-    ISSNs.`Journal of Pure and Applied Algebra`)
+    ISSNs.`Journal of Pure and Applied Algebra`,
+    ISSNs.`Journal of K-Theory`)
 
   val selectedYears = Seq(2013)
 
@@ -29,7 +30,7 @@ package object mlp {
     }
   }
 
-  def extendedJournals = ISSNs.Elsevier.iterator ++ Iterator() ++ selectedJournals
+  def extendedJournals = selectedJournals ++ ISSNs.Elsevier.iterator 
   def extendedYears = Seq(2010, 2013)
 
   // TODO pull from the database

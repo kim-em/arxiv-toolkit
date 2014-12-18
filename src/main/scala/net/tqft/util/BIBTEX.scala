@@ -12,11 +12,12 @@ case class BIBTEX(documentType: String, identifier: String, data: List[(String, 
       data.map(p => ("          " + p._1).takeRight(10) + " = {" + p._2 + "},\n").mkString + "}\n"
   }
 
-  def save = BIBTEX.save(this)
+//  def save = BIBTEX.save(this)
 }
 
 object BIBTEX extends Logging {
-  lazy val cache = AnonymousS3("LoM-bibtex")
+  val cache = scala.collection.mutable.Map[String, String]()
+//  lazy val cache = AnonymousS3("LoM-bibtex")
   lazy val DOI2mathscinet = AnonymousS3("DOI2mathscinet")
 
   
@@ -28,18 +29,18 @@ object BIBTEX extends Logging {
 //    info("   ... finished, found " + result.size + " keys")
 //    result
 //  }
-  private def save(item: BIBTEX) = {
-//    if (!cachedKeys.contains(item.identifier)) {
-      info("Storing BIBTEX for " + item.identifier + " to S3")
-      cache.putIfAbsent(item.identifier, item.toBIBTEXString)
-      item.data.find(_._1 == "DOI").map({
-        case ("DOI", doi) =>
-          DOI2mathscinet.putIfAbsent(doi, item.identifier)
-      })
-//    } else {
-//      false
-//    }
-  }
+//  private def save(item: BIBTEX) = {
+////    if (!cachedKeys.contains(item.identifier)) {
+//      info("Storing BIBTEX for " + item.identifier + " to S3")
+//      cache.putIfAbsent(item.identifier, item.toBIBTEXString)
+//      item.data.find(_._1 == "DOI").map({
+//        case ("DOI", doi) =>
+//          DOI2mathscinet.putIfAbsent(doi, item.identifier)
+//      })
+////    } else {
+////      false
+////    }
+//  }
 
   // this is just parses mathscinet BIBTEX, which is particularly easy.
   def parse(bibtexString: String): Option[BIBTEX] = {

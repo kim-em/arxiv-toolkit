@@ -45,7 +45,7 @@ trait Article { article =>
       case _ => false
     }
   }
-  
+
   def MathSciNetURL = "http://www.ams.org/mathscinet-getitem?mr=" + identifier
   def bibtexURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=bibtex&pg1=MR&s1=" + identifier
   def endnoteURL = "http://www.ams.org/mathscinet/search/publications.html?fmt=endnote&pg1=MR&s1=" + identifier
@@ -494,9 +494,14 @@ trait Article { article =>
           //						   ---resolves to something like---> http://journals.cambridge.org/download.php?file=%2FFLM%2FFLM655%2FS0022112010001734a.pdf&code=ac265aacb742b93fa69d566e33aeaf5e
           // We also need to grab some 10.1112 DOIs, for LMS journals run by CMP e.g. 10.1112/S0010437X04001034
           case url if url.startsWith("http://dx.doi.org/10.1017/S") || url.startsWith("http://dx.doi.org/10.1017/is") || url.startsWith("http://dx.doi.org/10.1051/S") || url.startsWith("http://dx.doi.org/10.1112/S0010437X") || url.startsWith("http://dx.doi.org/10.1112/S14611570") || url.startsWith("http://dx.doi.org/10.1112/S00255793") => {
-            val regex = """<a href="([^"]*)"[ \t\n]*title="View PDF" class="article-pdf">""".r
+            val regex = """<a class="typePDF" href="([^"]*)"[ \t\n]*title="View PDF.*""".r
             try {
-              regex.findFirstMatchIn(HttpClientSlurp(url).mkString("\n")).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
+              val text = HttpClientSlurp(url).mkString("\n")
+              val result = regex.findFirstMatchIn(text).map(m => "http://journals.cambridge.org/action/" + m.group(1).replaceAll("\n", "").replaceAll("\t", "").replaceAll(" ", ""))
+              if (result.isEmpty) {
+                println(text)
+              }
+              result
             } catch {
               case e: Exception => {
                 Logging.error("Exception while reading from CUP", e)
@@ -726,15 +731,15 @@ trait Article { article =>
     })
   }
 
-  def savePDF(directory: File, filenameTemplate: String = defaultFilenameTemplate) {
+  def savePDF(directory: String, filenameTemplate: String = defaultFilenameTemplate) {
     val fileName = constructFilename(filenameTemplate)
     val file = new File(directory, fileName)
-    val existingFiles = Article.fileNamesCache(Paths.get(directory.toURI)).find(_.contains(identifierString))
+    val existingFiles = Article.fileNamesCache(Paths.get(directory)).find(_.contains(identifierString))
     if (existingFiles.nonEmpty) {
       Logging.info("PDF for " + identifierString + " already exists in " + directory + ", renaming...")
       Logging.info("  " + existingFiles.get)
       Logging.info("  " + fileName)
-      Files.move(Paths.get(directory.toURI).resolve(existingFiles.get), Paths.get(file.toURI))
+      Files.move(Paths.get(directory).resolve(existingFiles.get), Paths.get(file.toURI))
     } else {
       Logging.info("Downloading PDF from " + pdfURL + " ...")
       pdf match {
@@ -771,7 +776,11 @@ object Article {
       }
       SQL {
         implicit session =>
-          SQLTables.mathscinet.insert(article)
+          try {
+            SQLTables.mathscinet.insert(article)
+          } catch {
+            case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException => {}
+          }
       }
       article
     })
@@ -794,7 +803,7 @@ object Article {
   def fromBibtex(bibtexString: String): Option[Article] = {
     BIBTEX.parse(bibtexString).map({
       case b @ BIBTEX(_, identifierString @ MRIdentifier(id), data) =>
-        if (saving_?) b.save
+        //        if (saving_?) b.save
         val result = new Article {
           override val identifier = id
         }

@@ -2,7 +2,7 @@ package net.tqft.mlp
 
 import net.tqft.mathscinet.Search
 import net.tqft.journals.ISSNs
-import net.tqft.wiki.WikiMap
+import net.tqft.toolkit.wiki.WikiMap
 import net.tqft.mathscinet.Article
 import net.tqft.util.pandoc
 import net.tqft.eigenfactor.Eigenfactor
@@ -30,5 +30,5 @@ object AuthorBot extends App {
 
   println("Done entering authors!")
 
-  net.tqft.wiki.FirefoxDriver.quit
+  net.tqft.toolkit.wiki.FirefoxDriver.quit
 }

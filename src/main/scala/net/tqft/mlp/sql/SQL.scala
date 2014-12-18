@@ -84,24 +84,43 @@ class MathscinetBIBTEX(tag: Tag) extends Table[Article](tag, "mathscinet_bibtex"
   }
 }
 
-class Arxiv(tag: Tag) extends Table[(String, Date, Date, String, String, String, String, String, String, String, String, String, String, String, String)](tag, "arxiv") {
+class Arxiv(tag: Tag) extends Table[net.tqft.arxiv2.Article](tag, "arxiv") {
   def arxivid = column[String]("arxivid", O.PrimaryKey)
   def created = column[Date]("created")
-  def updated = column[Date]("updated")
+  def updated = column[Option[Date]]("updated")
   def authors = column[String]("authors")
   def title = column[String]("title")
   def categories = column[String]("categories")
-  def comments = column[String]("comments")
-  def proxy = column[String]("proxy")
-  def reportno = column[String]("reportno")
-  def mscclass = column[String]("mscclass")
-  def acmclass = column[String]("acmclass")
-  def journalref = column[String]("journalref")
-  def doi = column[String]("doi")
-  def license = column[String]("license")
+  def comments = column[Option[String]]("comments")
+  def proxy = column[Option[String]]("proxy")
+  def reportno = column[Option[String]]("reportno")
+  def mscclass = column[Option[String]]("mscclass")
+  def acmclass = column[Option[String]]("acmclass")
+  def journalref = column[Option[String]]("journalref")
+  def doi = column[Option[String]]("doi")
+  def license = column[Option[String]]("license")
   def `abstract` = column[String]("abstract")
-  def * = (arxivid, created, updated, authors, title, categories, comments, proxy, reportno, mscclass, acmclass, journalref, doi, license, `abstract`)
+  def * = (arxivid, created, updated, authors, title, categories, comments, proxy, reportno, mscclass, acmclass, journalref, doi, license, `abstract`) <> ((net.tqft.arxiv2.Article.apply _).tupled, { a: net.tqft.arxiv2.Article => Some(a.sqlRow) })
 }
+
+class ArxivAuthorNames(tag: Tag) extends Table[net.tqft.arxiv2.Author](tag, "arxiv_author_names") {
+  def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
+  def keyname = column[String]("keyname")
+  def forenames = column[String]("forenames")
+  def suffix = column[Option[String]]("suffix")
+  def affiliation = column[Option[String]]("affiliation")
+  def * = (id, keyname, forenames, suffix, affiliation)  <> ((net.tqft.arxiv2.Author.apply _).tupled, { a: net.tqft.arxiv2.Author => Some(a.sqlRow) })
+  def insertView = (keyname, forenames, suffix, affiliation)
+}
+
+class ArxivAuthorshipsByName(tag: Tag) extends Table[(Int, String, Int)](tag, "arxiv_authorships_by_name") {
+  def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
+  def arxiv_id = column[String]("arxiv_id")
+  def author_name_id = column[Int]("author_name_id")
+  def * = (id, arxiv_id, author_name_id)
+  def insertView = (arxiv_id, author_name_id)
+}
+
 
 class WebOfScienceMathSciNetMatches(tag: Tag) extends Table[(String, Int, String, Date)](tag, "webofscience_mathscinet_matches") {
   def accessionNumber = column[String]("accession_number", O.PrimaryKey)
@@ -169,6 +188,13 @@ object SQLTables {
   val mathscinet = TableQuery[MathscinetBIBTEX]
   val portico = TableQuery[Portico]
   val arxiv = TableQuery[Arxiv]
+  object  arxivAuthorNames extends TableQuery(new ArxivAuthorNames(_)) {
+    def insertView = map(name => name.insertView)
+    
+  }
+  object arxivAuthorshipsByName extends TableQuery(new ArxivAuthorshipsByName(_)) {
+    def insertView = map(authorship => authorship.insertView)
+  }
   val arxiv_mathscinet_matches = TableQuery[ArxivMathscinetMatches]
   val scopus_authorships = TableQuery[ScopusAuthorships]
   object webofscience_aux extends TableQuery(new WebOfScienceAux(_)) {

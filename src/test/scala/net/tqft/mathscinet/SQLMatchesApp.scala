@@ -19,7 +19,7 @@ object SQLMatchesApp extends App {
         a <- SQLTables.arxiv;
         if a.doi.isNull;
         if !SQLTables.arxiv_mathscinet_matches.filter(_.arxivid === a.arxivid).exists
-      ) yield (a.arxivid, a.title, a.authors, a.journalref.?)).drop(k * 100).take(100).list
+      ) yield (a.arxivid, a.title, a.authors, a.journalref)).drop(k * 100).take(100).list
     } catch {
       case e: Exception => {
         Logging.warn(e)

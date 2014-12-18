@@ -4,8 +4,8 @@ import net.tqft.mlp.sql.SQLTables
 import scala.slick.driver.MySQLDriver.simple._
 import net.tqft.mlp.sql.SQL
 import net.tqft.mathscinet.Article
-import net.tqft.wiki.WikiMap
-import net.tqft.wiki.FirefoxDriver
+import net.tqft.toolkit.wiki.WikiMap
+import net.tqft.toolkit.wiki.FirefoxDriver
 import net.tqft.util.FirefoxSlurp
 
 object DOIMatchBot extends App {

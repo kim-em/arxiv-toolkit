@@ -184,7 +184,7 @@ The existential theory of real hyperelliptic function fields - Zahidi, Karim - J
           println("Not found in source directory: ")
           println(filename)
           println(article.bibtex.toBIBTEXString)
-          article.savePDF(source.toFile())
+          article.savePDF(source.normalize.toString)
         }
         if (Files.exists(sourceFile)) {
           val targetFile = journalPath.resolve(filename)
