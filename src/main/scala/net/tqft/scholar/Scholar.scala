@@ -12,13 +12,39 @@ import net.tqft.util.PDF
 
 object Scholar {
 
-  case class ScholarResults(arxivLinks: Seq[String], pdfURLs: Iterator[String], webOfScienceAccessionNumber: Option[String])
+  case class ScholarResults(query: String, cluster: String, webOfScienceAccessionNumber: Option[String], arxivLinks: Seq[String], pdfURLs: Iterator[String]) {
+    def sqlRow = (query, cluster, webOfScienceAccessionNumber, arxivLinks.headOption.map(_.stripPrefix("http://arxiv.org/").stripPrefix("abs/").stripPrefix("pdf/")), pdfURLs.toStream.headOption)
+  }
 
-  def fromDOI(doi: String) = {
+  def fromDOI(doi: String): Option[ScholarResults] = apply("http://dx.doi.org/" + doi)
+
+  def cached(queryString: String): Option[ScholarResults] = {
+    import net.tqft.mlp.sql.SQL
+    import net.tqft.mlp.sql.SQLTables
+    import scala.slick.driver.MySQLDriver.simple._
+
+    SQL { implicit session =>
+      (for (a <- SQLTables.scholar_queries; if a.query === queryString) yield {
+        a
+      }).run.headOption
+    } match {
+      case Some(result) => Some(result)
+      case None => {
+        val lookup = apply(queryString)
+        SQL {
+          implicit session => lookup.map(SQLTables.scholar_queries.+=)
+        }
+        lookup
+      }
+    }
+
+  }
+
+  def apply(queryString: String): Option[ScholarResults] = {
     def driver = FirefoxDriver.driverInstance
 
     try {
-      driver.get("http://scholar.google.com/scholar?q=http://dx.doi.org/" + doi)
+      driver.get("http://scholar.google.com/scholar?q=" + queryString)
 
       println(driver.getCurrentUrl())
 
@@ -42,6 +68,8 @@ object Scholar {
         println("Oops, we've hit google's robot detector. Please kill this job, or be a nice human and do the captcha.")
       }
 
+      val cluster = "cluster=([0-9]*)&".r.findFirstMatchIn(driver.getCurrentUrl()).get.group(1)
+
       val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala.toSeq
 
       val arxivURLs: Seq[String] = arxivLinks.map(_.getAttribute("href"))
@@ -60,14 +88,15 @@ object Scholar {
 
       val webOfScienceLinks = driver.findElements(By.partialLinkText("Web of Science")).asScala.toSeq
       val accessionNumberRegex = "UT=([A-Z0-9]*)&".r
-      val webOfScienceAccessionNumber = 
-        for(link <- webOfScienceLinks.headOption;
-            url = link.getAttribute("href");
-            _ = { println(url); None };
-            matches <- accessionNumberRegex.findFirstMatchIn(url)
+      val webOfScienceAccessionNumber =
+        for (
+          link <- webOfScienceLinks.headOption;
+          url = link.getAttribute("href");
+          _ = { println(url); None };
+          matches <- accessionNumberRegex.findFirstMatchIn(url)
         ) yield matches.group(1)
-      
-      Some(ScholarResults(arxivURLs, pdfURLs, webOfScienceAccessionNumber))
+
+      Some(ScholarResults(queryString, cluster, webOfScienceAccessionNumber, arxivURLs, pdfURLs))
     } catch {
       case e: Exception => {
         Logging.warn("Exception while reading from Google Scholar", e)
