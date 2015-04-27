@@ -18,14 +18,14 @@ object ScholarApp extends App {
   }
 
   for (
-    g <- (  net.tqft.mlp.extendedCoverage ++  net.tqft.mlp.topJournals(100)).grouped(1000);
+    g <- (net.tqft.mlp.extendedCoverage ++ net.tqft.mlp.topJournals(100)).grouped(1000);
     a <- scala.util.Random.shuffle(g)
   ) {
     println(a.DOI)
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
         println("searching...")
-        for (Scholar.ScholarResults(arxivLinks, pdfURLs, _) <- Scholar.fromDOI(doi)) {
+        for (Scholar.ScholarResults(_, _, _, arxivLinks, pdfURLs) <- Scholar.fromDOI(doi)) {
           for (link <- arxivLinks.headOption) {
             println("posting arxiv link: " + link)
             scholarbot("Data:" + a.identifierString + "/FreeURL") = link

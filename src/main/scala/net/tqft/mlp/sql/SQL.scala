@@ -3,6 +3,7 @@ package net.tqft.mlp.sql
 import scala.slick.driver.MySQLDriver.simple._
 import net.tqft.mathscinet.Article
 import net.tqft.util.BIBTEX
+import net.tqft.scholar.Scholar
 import java.sql.Date
 
 class ArxivMathscinetMatches(tag: Tag) extends Table[(String, Int, Double, String)](tag, "arxiv_mathscinet_matches") {
@@ -157,6 +158,19 @@ class Portico(tag: Tag) extends Table[(String, String, String, String, String, S
   def * = (id, title, author, citation, doi, content_set, issn)
 }
 
+class ScholarQueries(tag: Tag) extends Table[Scholar.ScholarResults](tag, "scholar_queries") {
+  def query = column[String]("query", O.PrimaryKey)
+  def cluster = column[String]("cluster")
+  def webOfScienceAccessionNumber = column[Option[String]]("webOfScienceAccessionNumber")
+  def arxivid = column[Option[String]]("arxivid")
+  def pdfurl = column[Option[String]]("pdfurl")
+  def * = (query, cluster, webOfScienceAccessionNumber, arxivid, pdfurl) <> (buildScholarResults, { a: Scholar.ScholarResults => Some(a.sqlRow) })
+  
+  def buildScholarResults(data: (String, String, Option[String], Option[String], Option[String])) = {
+    Scholar.ScholarResults(data._1, data._2, data._3, data._4.map("http://arxiv.org/abs/" + _).toSeq, data._5.iterator)
+  }
+}
+
 object Wiki {
   val _tablePrefix = "mlp_"
   class Revision(tag: Tag, tablePrefix: String) extends Table[(Int, Int)](tag, tablePrefix + "revision") {
@@ -197,6 +211,7 @@ object SQLTables {
   }
   val arxiv_mathscinet_matches = TableQuery[ArxivMathscinetMatches]
   val scopus_authorships = TableQuery[ScopusAuthorships]
+  val scholar_queries = TableQuery[ScholarQueries]
   object webofscience_aux extends TableQuery(new WebOfScienceAux(_)) {
     def citations_recordsView = map(aux => aux.citations_recordsView)
   }

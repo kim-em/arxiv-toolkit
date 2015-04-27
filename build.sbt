@@ -4,7 +4,7 @@ organization := "net.tqft"
 
 version := "0.1.1-SNAPSHOT"
 
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.6"
 
 scalacOptions += "-target:jvm-1.7"
 
@@ -24,28 +24,28 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "toolkit-amazon" % "0.1.18-SNAPSHOT",
 	"net.tqft" %% "toolkit-wiki" % "0.1.18-SNAPSHOT",
 	"net.tqft" %% "citation-search" % "0.2-SNAPSHOT",
-	"com.ibm.icu" % "icu4j" % "51.1",
+	"com.ibm.icu" % "icu4j" % "55.1",
 	"rome" % "rome" % "1.0",
 	"org.apache.httpcomponents" % "httpclient" % "4.3.2",
 	"org.apache.commons" % "commons-compress" % "1.5",
 	"commons-io" % "commons-io" % "2.4",
 	"com.google.code.findbugs" % "jsr305" % "2.0.1",
-	"net.sourceforge.htmlunit" % "htmlunit" % "2.12",
-	"org.seleniumhq.selenium" % "selenium-support" % "2.40.0",
-	"org.seleniumhq.selenium" % "selenium-htmlunit-driver" % "2.40.0",
-	"org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.40.0",
-	"org.seleniumhq.selenium" % "selenium-chrome-driver" % "2.40.0",
+	"net.sourceforge.htmlunit" % "htmlunit" % "2.16",
+	"org.seleniumhq.selenium" % "selenium-support" % "2.45.0",
+	"org.seleniumhq.selenium" % "selenium-htmlunit-driver" % "2.45.0",
+	"org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.45.0",
+	"org.seleniumhq.selenium" % "selenium-chrome-driver" % "2.45.0",
 	"be.roam.hue" % "hue" % "1.1",
 	"eu.medsea.mimeutil" % "mime-util" % "2.1.3",
 	"mysql" % "mysql-connector-java" % "5.1.24",
-	"com.typesafe.slick" %% "slick" % "2.1.0",
+	"com.typesafe.slick" %% "slick" % "3.0.0-RC3",
 	"uk.ac.shef.wit" % "simmetrics" % "1.6.2",
-	"org.apache.pdfbox" % "pdfbox" % "1.8.3"
+	"org.apache.pdfbox" % "pdfbox" % "1.8.9"
 )
 
 // lift-json
 libraryDependencies ++= {
-  val liftVersion = "2.6-RC2" // Put the current/latest lift version here
+  val liftVersion = "2.6" // Put the current/latest lift version here
   Seq(
     "net.liftweb" %% "lift-util" % liftVersion,
     "net.liftweb" %% "lift-json" % liftVersion,
@@ -55,8 +55,8 @@ libraryDependencies ++= {
 
 // Test dependencies
 libraryDependencies ++= Seq(
-	"junit" % "junit" % "4.8" % "test",
-	"org.scalatest" %% "scalatest" % "2.1.4" % "compile,test"
+	"junit" % "junit" % "4.12" % "test",
+	"org.scalatest" %% "scalatest" % "2.2.4" % "compile,test"
 )
 
 // Sometimes it's useful to see debugging out from the typer (e.g. to resolve slow compiles)
