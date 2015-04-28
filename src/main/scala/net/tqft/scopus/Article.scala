@@ -5,6 +5,7 @@ import net.tqft.util.Slurp
 import net.tqft.toolkit.Logging
 import net.tqft.citationsearch.CitationScore
 import net.tqft.toolkit.Extractors._
+import net.tqft.util.pandoc
 
 case class Article(id: String, titleHint: Option[String] = None) {
   def URL = "http://www.scopus.com/record/display.url?eid=" + id + "&origin=resultslist"
@@ -36,15 +37,22 @@ case class Article(id: String, titleHint: Option[String] = None) {
   def DOIOption = dataWithPrefix("DOI")
   private def removeFootnotes(author: String): String = {
     val trimmed = author.trim
-    if(trimmed.last.isLower && (trimmed.takeRight(2).head == '.' || trimmed.takeRight(2).head == ' ')) {
+    if (trimmed.last.isLower && (trimmed.takeRight(2).head == '.' || trimmed.takeRight(2).head == ' ')) {
       removeFootnotes(trimmed.dropRight(2))
     } else {
       trimmed
     }
   }
   def authorData = {
-    dataText(3).split(",").map(removeFootnotes).mkString(", ")
+    dataText(3)
   }
+  def authors = authorData.split(",").map(removeFootnotes).toSeq
+
+  def authorsText = {
+    import net.tqft.util.OxfordComma._
+    authors.map(author => pandoc.latexToText(net.tqft.mathscinet.Author(0, author).firstNameLastName)).oxfordComma
+  }
+
   lazy val authorAffiliationKeys = {
     val r = ".*?((?: *[a-z])*)".r
     authorData.split(" , ").toList.map(_.trim).map({ case a @ r(keys) => (a.stripSuffix(keys), keys.split(" ").toList.map(_.trim).filter(_.nonEmpty)) }).toMap
@@ -53,12 +61,12 @@ case class Article(id: String, titleHint: Option[String] = None) {
 
   lazy val affiliations: Seq[String] = {
     import net.tqft.toolkit.collections.TakeToFirst._
-    
+
     def separateCamelCase(s: String) = {
       val r = "([a-z][a-z])([A-Z][a-z])".r
       r.replaceAllIn(s, "\\1 \\2")
     }
-    
+
     dataText.iterator.dropWhile(!_.startsWith("AFFILIATIONS: ")).map(_.stripPrefix("AFFILIATIONS: ").trim).takeToFirst(!_.endsWith(";")).map(_.stripSuffix(";").ensuring(_.nonEmpty)).toSeq.map(separateCamelCase)
   }
 
@@ -66,9 +74,21 @@ case class Article(id: String, titleHint: Option[String] = None) {
 
   def numberOfCitations: Option[Int] = ".* Cited ([0-9]*) times?.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1).toInt)
 
-  def fullCitationWithoutIdentifier = title + " - " + authorData + " - " + citation
-  def fullCitation =  fullCitationWithoutIdentifier + " - scopus:" + id
-  def fullCitation_html = title + " - " + authorData + " - " + citation + " - <a href='" + URL + "'>scopus:" + id + "</a>"
+  def fullCitationWithoutIdentifier = title + " - " + authorsText + " - " + citation
+  def fullCitation = fullCitationWithoutIdentifier + " - scopus:" + id
+  def fullCitation_html = title + " - " + authorsText + " - " + citation + " - <a href='" + URL + "'>scopus:" + id + "</a>"
+
+  def onWebOfScience: Option[net.tqft.webofscience.Article] = {
+    DOIOption match {
+      case Some(doi) => {
+        net.tqft.webofscience.Article.fromDOI(doi)
+      }
+      case None => {
+        net.tqft.scholar.Scholar(this).flatMap(r => r.webOfScienceAccessionNumber).map(an => net.tqft.webofscience.Article(an))
+      }
+    }
+  }
+
   lazy val matches = net.tqft.citationsearch.Search.query(title + " - " + authorData + " - " + citation + DOIOption.map(" " + _).getOrElse("")).results.sortBy(-_.score)
 
   lazy val satisfactoryMatch: Option[CitationScore] = {
