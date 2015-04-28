@@ -104,7 +104,7 @@ trait HttpClientSlurp extends Slurp {
 
   override def getStream(url: String) = getStream(url, None)
   def getStream(url: String, referer: Option[String]): InputStream = {
-//    println("HttpClient slurping: " + url)
+    //    println("HttpClient slurping: " + url)
 
     val get = new HttpGet(url)
     get.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
@@ -224,6 +224,7 @@ object HtmlUnitSlurp extends HtmlUnitSlurp {
     if (driverOption.isEmpty) {
       Logging.info("Starting HtmlUnit/webdriver")
       driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_31))
+      java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF)
       Logging.info("   ... finished starting HTMLUnit")
     }
     driverOption.get
@@ -290,7 +291,7 @@ trait MathSciNetMirrorSlurp extends Slurp {
 trait ScopusSlurp extends CachingSlurp {
   override def apply(url: String) = {
     super.apply(url).map({ line =>
-      if(line.contains("Scopus cannot re-create the page that you bookmarked.")) {
+      if (line.contains("Scopus cannot re-create the page that you bookmarked.")) {
         -=(url)
         throw new Exception("Scopus won't allow bookmarking this page! (I've attempt to remove the result from the cache.)")
       }
@@ -313,7 +314,7 @@ trait CachingSlurp extends Slurp {
     })
     new ByteArrayInputStream(bytes)
   }
-  
+
   def -=(url: String): this.type
 }
 
