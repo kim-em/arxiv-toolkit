@@ -6,13 +6,15 @@ import be.roam.hue.doj.Doj
 
 trait Html {
 
+  java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF)
+
   def client = {
-    val result = new WebClient(BrowserVersion.FIREFOX_17)
+    val result = new WebClient(BrowserVersion.FIREFOX_31)
     result.getOptions.setThrowExceptionOnFailingStatusCode(false);
     result.getOptions.setThrowExceptionOnScriptError(false)
     result
   }
-  
+
   def apply(url: String): HtmlPage = {
     client.getPage(url)
   }
@@ -22,7 +24,7 @@ trait Html {
   }
 
   def jQuery(page: HtmlPage) = Doj.on(page)
-  
+
   def preloaded(url: String, content: String): HtmlPage = {
     val response = new StringWebResponse(content, new URL(url));
     HTMLParser.parseHtml(response, client.getCurrentWindow());

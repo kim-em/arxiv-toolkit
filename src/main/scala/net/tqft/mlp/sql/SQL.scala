@@ -160,14 +160,15 @@ class Portico(tag: Tag) extends Table[(String, String, String, String, String, S
 
 class ScholarQueries(tag: Tag) extends Table[Scholar.ScholarResults](tag, "scholar_queries") {
   def query = column[String]("query", O.PrimaryKey)
+  def title = column[String]("title")
   def cluster = column[String]("cluster")
   def webOfScienceAccessionNumber = column[Option[String]]("webOfScienceAccessionNumber")
   def arxivid = column[Option[String]]("arxivid")
   def pdfurl = column[Option[String]]("pdfurl")
-  def * = (query, cluster, webOfScienceAccessionNumber, arxivid, pdfurl) <> (buildScholarResults, { a: Scholar.ScholarResults => Some(a.sqlRow) })
+  def * = (query, title, cluster, webOfScienceAccessionNumber, arxivid, pdfurl) <> (buildScholarResults, { a: Scholar.ScholarResults => Some(a.sqlRow) })
   
-  def buildScholarResults(data: (String, String, Option[String], Option[String], Option[String])) = {
-    Scholar.ScholarResults(data._1, data._2, data._3, data._4.map("http://arxiv.org/abs/" + _).toSeq, data._5.iterator)
+  def buildScholarResults(data: (String, String, String, Option[String], Option[String], Option[String])) = {
+    Scholar.ScholarResults(data._1, data._2, data._3, data._4, data._5.map("http://arxiv.org/abs/" + _).toSeq, data._6.iterator)
   }
 }
 

@@ -21,6 +21,7 @@ syntax: glob
 
 # sbt stuff
 target
+.target
 project/project
 project/target
 

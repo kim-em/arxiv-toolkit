@@ -120,7 +120,7 @@ object CompareWebOfScienceAndMathSciNetApp extends App {
         p("<dd>")
 
         val citations1 = a2.citations.toSeq
-        val candidateMatches = a1.citations.map(c => c -> c.bestCitationMathSciNetMatch)
+        val candidateMatches = a1.citations.map(c => c -> c.bestMathSciNetMatch)
         val goodMatches = candidateMatches.filter(m => m._2.nonEmpty && citations1.contains(m._2.get)).map(p => (p._1, p._2.get))
         val failedMatches = candidateMatches.filter(m => m._2.isEmpty || !citations1.contains(m._2.get)).map(_._1)
         val unmatched = citations1.filterNot(r => candidateMatches.exists(_._2 == Some(r)))
