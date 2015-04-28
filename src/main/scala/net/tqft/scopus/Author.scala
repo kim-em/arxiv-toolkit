@@ -68,7 +68,7 @@ case class Author(id: Long, name: String) {
 
       scrapePage
 
-      var nextLink = driver.findElements(By.cssSelector("a[title='Next page']")).asScala.headOption
+      var nextLink = driver.findElements(By.cssSelector("a[title='Next page']")).asScala.headOption.filter(_.getAttribute("href") != null)
       while (nextLink.nonEmpty) {
         nextLink.get.click
         nextLink = driver.findElements(By.cssSelector("a[title='Next page']")).asScala.headOption
