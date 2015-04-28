@@ -23,7 +23,7 @@
         3) SocketAppender, if you're using Eclipse and have the Ganymede log4j plugin
          To change options, simply remove the comments from the appropriate lines below.
     -->
-    <priority value="info"/>
+    <priority value="warn"/>
     <!--<appender-ref ref="NullAppender"/>-->
     <appender-ref ref="ConsoleAppender"/>
     <!--<appender-ref ref="SocketAppender"/>-->

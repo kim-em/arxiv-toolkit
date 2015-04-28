@@ -10,28 +10,29 @@ import scala.collection.JavaConverters._
 import net.tqft.util.pandoc
 import net.tqft.toolkit.Logging
 
+case class Citation(title: String, authors: List[String], citation: String, DOIOption: Option[String], accessionNumber: Option[String]) {
+  override def toString = s"Citation(\n title = $title,\n authors = $authors,\n citation = $citation,\n DOI = $DOIOption,\n accessionNumber = $accessionNumber\n)"
+
+  def authorsText = {
+    import net.tqft.util.OxfordComma._
+    authors.map(author => pandoc.latexToText(net.tqft.mathscinet.Author(0, author).firstNameLastName)).oxfordComma
+  }
+
+  def fullCitationWithoutIdentifier = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "")
+  def fullCitation = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "")  + (if (accessionNumber.nonEmpty) " WOS:" + accessionNumber.get else "") 
+  def fullCitation_html = fullCitationWithoutIdentifier + (accessionNumber match {
+    case Some(a) => " - <a href=\"" + Article(a).url + "\">WOS:" + a + "</a>"
+    case None => ""
+  })
+
+  def mathSciNetMatches = net.tqft.citationsearch.Search.query(fullCitation).results
+  def bestMathSciNetMatch = mathSciNetMatches.headOption.flatMap(_.citation.MRNumber).map(i => net.tqft.mathscinet.Article(i))
+}
+
 case class Article(accessionNumber: String) {
   def url = s"http://apps.webofknowledge.com/InboundService.do?product=WOS&UT=$accessionNumber&action=retrieve&mode=FullRecord"
 
-  case class Citation(title: String, authors: List[String], citation: String, DOI: Option[String], accessionNumber: Option[String]) {
-    override def toString = s"Citation(\n title = $title,\n authors = $authors,\n citation = $citation,\n DOI = $DOI,\n accessionNumber = $accessionNumber\n)"
-
-    def authorsText = {
-      import net.tqft.util.OxfordComma._
-      authors.map(author => pandoc.latexToText(net.tqft.mathscinet.Author(0, author).firstNameLastName)).oxfordComma
-    }
-
-    def fullCitation = title + " - " + authorsText + " - " + citation + (if (DOI.nonEmpty) " DOI:" + DOI.get else "")
-    def fullCitation_html = fullCitation + (accessionNumber match {
-      case Some(a) => " - <a href=\"" + Article(a).url + "\">WOS:" + a + "</a>"
-      case None => ""
-    })
-
-    def matches = net.tqft.citationsearch.Search.query(fullCitation).results
-    def bestCitationMathSciNetMatch = matches.headOption.flatMap(_.citation.MRNumber).map(i => net.tqft.mathscinet.Article(i))
-  }
-
-  lazy val citations = {
+  lazy val citations: Seq[Citation] = {
     val authorRegex = ".*(\\(.*\\))".r
 
     for (

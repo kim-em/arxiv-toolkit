@@ -25,7 +25,7 @@ object ScholarApp extends App {
     for (doi <- a.DOI) {
       if (scholarbot.get("Data:" + a.identifierString + "/FreeURL").isEmpty) {
         println("searching...")
-        for (Scholar.ScholarResults(_, _, _, arxivLinks, pdfURLs) <- Scholar.fromDOI(doi)) {
+        for (Scholar.ScholarResults(_, _, _, _, arxivLinks, pdfURLs) <- Scholar.fromDOI(doi)) {
           for (link <- arxivLinks.headOption) {
             println("posting arxiv link: " + link)
             scholarbot("Data:" + a.identifierString + "/FreeURL") = link

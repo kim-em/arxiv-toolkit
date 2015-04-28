@@ -32,10 +32,11 @@ case class Author(id: Long, name: String) {
         a.scopus_id
       }).run
     }
+    
     (if (lookup.isEmpty) {
-      val r = """<a onclick="return:submitRecord\('(.*)','[0-9]*','[0-9]*'\);" title="Show document details" href=".*">(.*)</a>""".r
+      val r = """<a onclick="return submitRecord\('(.*)','[0-9]*','[0-9]*'\);" title="Show document details" href=".*">(.*)</a>""".r
       val lines = publications_results
-      println(lines.mkString("\n"))
+//      println(lines.mkString("\n"))
       val records = (for (line <- lines; if line.contains("Show document details"); m <- r.findAllMatchIn(line)) yield {
         Article(m.group(1), Some(m.group(2)))
       }).toStream.distinct
@@ -68,10 +69,10 @@ case class Author(id: Long, name: String) {
 
       scrapePage
 
-      var nextLink = driver.findElements(By.cssSelector("a[title='Next page']")).asScala.headOption
+      var nextLink = driver.findElements(By.cssSelector("a[title='Next page']")).asScala.headOption.filter(_.getAttribute("href") != null)
       while (nextLink.nonEmpty) {
         nextLink.get.click
-        nextLink = driver.findElements(By.cssSelector("a[title='Next page']")).asScala.headOption
+        nextLink = driver.findElements(By.cssSelector("a[title='Next page']")).asScala.headOption.filter(_.getAttribute("href") != null)
         scrapePage
       }
 
