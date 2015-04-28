@@ -78,7 +78,7 @@ case class Article(id: String, titleHint: Option[String] = None) {
   def fullCitation = fullCitationWithoutIdentifier + " - scopus:" + id
   def fullCitation_html = title + " - " + authorsText + " - " + citation + " - <a href='" + URL + "'>scopus:" + id + "</a>"
 
-  def onWebOfScience: Option[net.tqft.webofscience.Article] = {
+  lazy val onWebOfScience: Option[net.tqft.webofscience.Article] = {
     DOIOption match {
       case Some(doi) => {
         net.tqft.webofscience.Article.fromDOI(doi)
