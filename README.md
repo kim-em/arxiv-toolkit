@@ -56,6 +56,9 @@ Output:
 	Found the following citations on Web of Science, which do not appear on Scopus:
 	---
 
+The same script can be used to process all articles by a given author, as in:
+
+	./sbt "test:run-main net.tqft.scopus.MatchCitationsAgainstWebOfScienceApp 7404498930 Andrew Roberts"
 
 ## Producing all the text citations for an given article on Scopus
 
