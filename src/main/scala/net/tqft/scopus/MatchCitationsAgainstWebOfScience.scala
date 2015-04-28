@@ -5,7 +5,10 @@ import net.tqft.scholar.Scholar
 
 object MatchCitationsAgainstWebOfScience {
   def apply(scopusArticle: Article): (Seq[(Article, webofscience.Citation)], Seq[Article], Seq[webofscience.Citation]) = {
-    apply(scopusArticle, scopusArticle.onWebOfScience.get)
+    scopusArticle.onWebOfScience match {
+      case Some(onWebOfScience) => apply(scopusArticle, onWebOfScience)
+      case None => (Seq.empty, scopusArticle.citations, Seq.empty)
+    }
   }
 
   def apply(scopusArticle: Article, webOfScienceArticle: webofscience.Article): (Seq[(Article, webofscience.Citation)], Seq[Article], Seq[webofscience.Citation]) = {
