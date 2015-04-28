@@ -113,7 +113,7 @@ object Scholar {
       Some(ScholarResults(queryString, title, cluster, webOfScienceAccessionNumber, arxivURLs, pdfURLs))
     } catch {
       case e: Exception => {
-        Logging.warn("Exception while reading from Google Scholar", e)
+//        Logging.warn("Exception while reading from Google Scholar", e)
         None
       }
     }
