@@ -7,7 +7,7 @@ import be.roam.hue.doj.Doj
 trait Html {
 
   def client = {
-    val result = new WebClient(BrowserVersion.FIREFOX_17)
+    val result = new WebClient(BrowserVersion.FIREFOX_31)
     result.getOptions.setThrowExceptionOnFailingStatusCode(false);
     result.getOptions.setThrowExceptionOnScriptError(false)
     result

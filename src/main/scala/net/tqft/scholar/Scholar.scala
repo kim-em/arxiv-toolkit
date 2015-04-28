@@ -12,8 +12,8 @@ import net.tqft.util.PDF
 
 object Scholar {
 
-  case class ScholarResults(query: String, cluster: String, webOfScienceAccessionNumber: Option[String], arxivLinks: Seq[String], pdfURLs: Iterator[String]) {
-    def sqlRow = (query, cluster, webOfScienceAccessionNumber, arxivLinks.headOption.map(_.stripPrefix("http://arxiv.org/").stripPrefix("abs/").stripPrefix("pdf/")), pdfURLs.toStream.headOption)
+  case class ScholarResults(query: String, title: String, cluster: String, webOfScienceAccessionNumber: Option[String], arxivLinks: Seq[String], pdfURLs: Iterator[String]) {
+    def sqlRow = (query, title, cluster, webOfScienceAccessionNumber, arxivLinks.headOption.map(_.stripPrefix("http://arxiv.org/").stripPrefix("abs/").stripPrefix("pdf/")), pdfURLs.toStream.headOption)
   }
 
   def fromDOI(doi: String): Option[ScholarResults] = apply("http://dx.doi.org/" + doi)
@@ -68,6 +68,7 @@ object Scholar {
         println("Oops, we've hit google's robot detector. Please kill this job, or be a nice human and do the captcha.")
       }
 
+      val title = driver.findElements(By.className("gs_rt")).asScala.head.getText.stripPrefix("[CITATION]").trim
       val cluster = "cluster=([0-9]*)&".r.findFirstMatchIn(driver.getCurrentUrl()).get.group(1)
 
       val arxivLinks = driver.findElements(By.cssSelector("a[href^=\"http://arxiv.org/\"]")).asScala.toSeq
@@ -96,7 +97,7 @@ object Scholar {
           matches <- accessionNumberRegex.findFirstMatchIn(url)
         ) yield matches.group(1)
 
-      Some(ScholarResults(queryString, cluster, webOfScienceAccessionNumber, arxivURLs, pdfURLs))
+      Some(ScholarResults(queryString, title, cluster, webOfScienceAccessionNumber, arxivURLs, pdfURLs))
     } catch {
       case e: Exception => {
         Logging.warn("Exception while reading from Google Scholar", e)
