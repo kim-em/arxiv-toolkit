@@ -34,7 +34,17 @@ case class Article(id: String, titleHint: Option[String] = None) {
   def citation = "(.*) Cited [0-9]* times?.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1)).getOrElse(dataText(5))
   def ISSNOption = dataWithPrefix("ISSN").map(s => s.take(4) + "-" + s.drop(4))
   def DOIOption = dataWithPrefix("DOI")
-  def authorData = dataText(3)
+  private def removeFootnotes(author: String): String = {
+    val trimmed = author.trim
+    if(trimmed.last.isLower && (trimmed.takeRight(2).head == '.' || trimmed.takeRight(2).head == ' ')) {
+      removeFootnotes(trimmed.dropRight(2))
+    } else {
+      trimmed
+    }
+  }
+  def authorData = {
+    dataText(3).split(",").map(removeFootnotes).mkString(", ")
+  }
   lazy val authorAffiliationKeys = {
     val r = ".*?((?: *[a-z])*)".r
     authorData.split(" , ").toList.map(_.trim).map({ case a @ r(keys) => (a.stripSuffix(keys), keys.split(" ").toList.map(_.trim).filter(_.nonEmpty)) }).toMap
@@ -56,7 +66,8 @@ case class Article(id: String, titleHint: Option[String] = None) {
 
   def numberOfCitations: Option[Int] = ".* Cited ([0-9]*) times?.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1).toInt)
 
-  def fullCitation = title + " - " + authorData + " - " + citation + " - scopus:" + id
+  def fullCitationWithoutIdentifier = title + " - " + authorData + " - " + citation
+  def fullCitation =  fullCitationWithoutIdentifier + " - scopus:" + id
   def fullCitation_html = title + " - " + authorData + " - " + citation + " - <a href='" + URL + "'>scopus:" + id + "</a>"
   lazy val matches = net.tqft.citationsearch.Search.query(title + " - " + authorData + " - " + citation + DOIOption.map(" " + _).getOrElse("")).results.sortBy(-_.score)
 
@@ -72,7 +83,7 @@ case class Article(id: String, titleHint: Option[String] = None) {
     val allPages = for (i <- (0 until (totalCitationCount + 19) / 20).toStream; line <- Slurp(citationsURL(i))) yield line
 
     val r = "eid=([^&]*)&".r
-    val result = allPages.flatMap(l => r.findFirstMatchIn(l).map(_.group(1))).distinct.filterNot(_ == id).map({ i => println("found citation: " + i); Article(i) })
+    val result = allPages.flatMap(l => r.findFirstMatchIn(l).map(_.group(1))).distinct.filterNot(_ == id).map(i => Article(i))
     if (result.size != totalCitationCount) {
       Logging.warn("Scopus says there are " + totalCitationCount + " citations, but I see " + result.size)
     }

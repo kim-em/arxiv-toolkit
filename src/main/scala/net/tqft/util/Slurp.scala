@@ -223,7 +223,7 @@ object HtmlUnitSlurp extends HtmlUnitSlurp {
   def driverInstance = {
     if (driverOption.isEmpty) {
       Logging.info("Starting HtmlUnit/webdriver")
-      driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_17))
+      driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_31))
       Logging.info("   ... finished starting HTMLUnit")
     }
     driverOption.get

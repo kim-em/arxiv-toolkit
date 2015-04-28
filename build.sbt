@@ -64,6 +64,10 @@ libraryDependencies ++= Seq(
 
 EclipseKeys.withSource := true
 
+EclipseKeys.eclipseOutput := Some(".target")
+
+logLevel in Global := Level.Warn
+
 publishTo := Some(Resolver.sftp("tqft.net", "tqft.net", "tqft.net/releases") as ("scottmorrison", new java.io.File("/Users/scott/.ssh/id_rsa")))
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
