@@ -26,7 +26,7 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "citation-search" % "0.2-SNAPSHOT",
 	"com.ibm.icu" % "icu4j" % "55.1",
 	"rome" % "rome" % "1.0",
-	"org.apache.httpcomponents" % "httpclient" % "4.3.2",
+	"org.apache.httpcomponents" % "httpclient" % "4.4.1",
 	"org.apache.commons" % "commons-compress" % "1.5",
 	"commons-io" % "commons-io" % "2.4",
 	"com.google.code.findbugs" % "jsr305" % "2.0.1",
