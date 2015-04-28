@@ -9,6 +9,8 @@ import net.tqft.mathscinet.Search
 import net.tqft.toolkit.wiki.WikiMap
 import net.tqft.util.Throttle
 import net.tqft.util.PDF
+import net.tqft.scopus
+import net.tqft.webofscience
 
 object Scholar {
 
@@ -18,7 +20,20 @@ object Scholar {
 
   def fromDOI(doi: String): Option[ScholarResults] = apply("http://dx.doi.org/" + doi)
 
-  def cached(queryString: String): Option[ScholarResults] = {
+  def apply(article: scopus.Article): Option[ScholarResults] = {
+    article.DOIOption match {
+      case Some(doi) => fromDOI(doi)
+      case None => apply(article.title + ", " + article.authorsText)
+    }
+  }
+  def apply(citation: webofscience.Citation): Option[ScholarResults] = {
+    citation.DOIOption match {
+      case Some(doi) => fromDOI(doi)
+      case None => apply(citation.title + ", " + citation.authorsText)
+    }
+  }
+  
+  def apply(queryString: String): Option[ScholarResults] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
     import scala.slick.driver.MySQLDriver.simple._
@@ -30,7 +45,7 @@ object Scholar {
     } match {
       case Some(result) => Some(result)
       case None => {
-        val lookup = apply(queryString)
+        val lookup = implementation(queryString)
         SQL {
           implicit session => lookup.map(SQLTables.scholar_queries.+=)
         }
@@ -40,13 +55,11 @@ object Scholar {
 
   }
 
-  def apply(queryString: String): Option[ScholarResults] = {
+  private def implementation(queryString: String): Option[ScholarResults] = {
     def driver = FirefoxDriver.driverInstance
 
     try {
       driver.get("http://scholar.google.com/scholar?q=" + queryString)
-
-      println(driver.getCurrentUrl())
 
       while ({
         Thread.sleep(Throttle.logNormalDistribution(60000).toLong);
@@ -93,7 +106,7 @@ object Scholar {
         for (
           link <- webOfScienceLinks.headOption;
           url = link.getAttribute("href");
-          _ = { println(url); None };
+//          _ = { println(url); None };
           matches <- accessionNumberRegex.findFirstMatchIn(url)
         ) yield matches.group(1)
 

@@ -8,4 +8,7 @@ object TextCitationsFromIdentifierApp extends App {
     val c = citation.title + ", " + citation.authorData
     println(c)
   }
+
+  net.tqft.scholar.FirefoxDriver.quit
+  net.tqft.util.FirefoxSlurp.quit
 }
