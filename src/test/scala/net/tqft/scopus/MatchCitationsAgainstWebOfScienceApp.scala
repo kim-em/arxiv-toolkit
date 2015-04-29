@@ -7,9 +7,13 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
   } else {
     val name = args.tail.mkString(" ")
     println(s"Considering all articles by author '$name', with Scopus identifier ${args(0)}.")
-    Author(args(0).toLong, name).publications
+    Author(args(0).toLong, name).publications.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= 2005)
   }
 
+//  def table[A](contents: => A): A = {
+//    
+//  }
+  
   for (article <- articles) {
     println("Considering citations for " + article.fullCitation)
 
