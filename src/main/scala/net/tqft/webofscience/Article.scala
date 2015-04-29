@@ -56,10 +56,10 @@ case class Article(accessionNumber: String) {
   }
   
   def fullCitationWithoutIdentifier = {
-    // TODO extract authors and journal reference!
     title + " - " + authorsText + " - " + citation
   }
   def fullCitation = fullCitationWithoutIdentifier  + " - " + DOIOption.map(" DOI:" + _).getOrElse("") + " WOS:" + accessionNumber
+  def fullCitation_html = fullCitationWithoutIdentifier  + " - " + DOIOption.map(doi => s" DOI:<a href='https://dx.doi.org/$doi'>$doi</a>").getOrElse("") + s" WOS:<a href='$url'>$accessionNumber</a>"
   
   lazy val citations: Seq[Citation] = {
     val authorRegex = ".*(\\(.*\\))".r
