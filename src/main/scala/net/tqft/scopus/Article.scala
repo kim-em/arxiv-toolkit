@@ -46,7 +46,16 @@ case class Article(id: String, titleHint: Option[String] = None) {
   def authorData = {
     dataText(3)
   }
-  def authors = authorData.split(",").map(removeFootnotes).sliding(2, 2).map(p => p(1) + ". " + p(0)).toSeq
+  def authors = {
+    try {
+      authorData.split(",").map(removeFootnotes).sliding(2, 2).map(p => p(1) + ". " + p(0)).toSeq
+    } catch {
+      case e: Exception => {
+        println(s"Bad authorData for $id: "+ authorData)
+        throw e
+      }
+    }
+  }
 
   def authorsText = {
     import net.tqft.util.OxfordComma._
