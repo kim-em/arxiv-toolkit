@@ -46,11 +46,11 @@ case class Article(id: String, titleHint: Option[String] = None) {
   def authorData = {
     dataText(3)
   }
-  def authors = authorData.split(",").map(removeFootnotes).toSeq
+  def authors = authorData.split(",").map(removeFootnotes).sliding(2, 2).map(p => p(1) + ". " + p(0)).toSeq
 
   def authorsText = {
     import net.tqft.util.OxfordComma._
-    authors.map(author => pandoc.latexToText(net.tqft.mathscinet.Author(0, author).firstNameLastName)).oxfordComma
+    authors.oxfordComma
   }
 
   lazy val authorAffiliationKeys = {
@@ -96,19 +96,31 @@ case class Article(id: String, titleHint: Option[String] = None) {
       matches.sliding(2).filter(p => p(0).score > 0.48 && scala.math.pow(p(0).score, 1.75) > p(1).score).toStream.headOption.map(_.head))
   }
 
-  lazy val citations: Seq[Article] = {
+  private def read_citations: Seq[Article] = {
     val firstPage = Slurp(citationsURL(0)).toStream
 
-    val totalCitationCount = "Scopus - ([0-9]*) documents? that cite".r.findFirstMatchIn(firstPage.mkString("\n")).map(_.group(1)).get.toInt
-    val allPages = for (i <- (0 until (totalCitationCount + 19) / 20).toStream; line <- Slurp(citationsURL(i))) yield line
+    val totalCitationCountOption = "Scopus - ([0-9]*) documents? that cite".r.findFirstMatchIn(firstPage.mkString("\n")).map(_.group(1))
+    if (totalCitationCountOption.isEmpty) {
+      Logging.warn("Didn't find any citations on " + citationsURL(0))
+      Slurp -= citationsURL(0)
+      Thread.sleep(1000)
+      read_citations
+    } else {
+      val totalCitationCount = totalCitationCountOption.get.toInt
 
-    val r = "eid=([^&]*)&".r
-    val result = allPages.flatMap(l => r.findFirstMatchIn(l).map(_.group(1))).distinct.filterNot(_ == id).map(i => Article(i))
-    if (result.size != totalCitationCount) {
-      Logging.warn("Scopus says there are " + totalCitationCount + " citations, but I see " + result.size)
+      val allPages = for (i <- (0 until (totalCitationCount + 19) / 20).toStream; line <- Slurp(citationsURL(i))) yield line
+
+      val r = "eid=([^&]*)&".r
+      val result = allPages.flatMap(l => r.findFirstMatchIn(l).map(_.group(1))).distinct.filterNot(_ == id).map(i => Article(i))
+      if (result.size != totalCitationCount) {
+        Logging.warn("Scopus says there are " + totalCitationCount + " citations, but I see " + result.size)
+      }
+      result
     }
-    result
+
   }
+
+  lazy val citations: Seq[Article] = read_citations
 
   lazy val citationMatches = citations.iterator.toStream.map(r => (r, net.tqft.citationsearch.Search.query(r.fullCitation).results))
   def bestCitationMathSciNetMatches = citationMatches.map({ p => (p._1, p._2.headOption.flatMap(_.citation.MRNumber).map(i => net.tqft.mathscinet.Article(i))) })

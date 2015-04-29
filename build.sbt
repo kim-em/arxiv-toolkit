@@ -36,6 +36,7 @@ libraryDependencies ++= Seq(
 	"org.seleniumhq.selenium" % "selenium-firefox-driver" % "2.45.0",
 	"org.seleniumhq.selenium" % "selenium-chrome-driver" % "2.45.0",
 	"be.roam.hue" % "hue" % "1.1",
+	"org.jsoup" % "jsoup" % "1.8.2",
 	"eu.medsea.mimeutil" % "mime-util" % "2.1.3",
 	"mysql" % "mysql-connector-java" % "5.1.24",
 	"com.typesafe.slick" %% "slick" % "3.0.0-RC3",
@@ -66,7 +67,7 @@ EclipseKeys.withSource := true
 
 EclipseKeys.eclipseOutput := Some(".target")
 
-logLevel in Global := Level.Warn
+// logLevel in Global := Level.Warn
 
 logBuffered := false
 

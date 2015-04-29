@@ -32,7 +32,7 @@ object Scholar {
       case None => apply(citation.title + ", " + citation.authorsText)
     }
   }
-  
+
   def apply(queryString: String): Option[ScholarResults] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
@@ -43,11 +43,21 @@ object Scholar {
         a
       }).run.headOption
     } match {
-      case Some(result) => Some(result)
+      case Some(result) => {
+        if (result.title.isEmpty) {
+          None
+        } else {
+          Some(result)
+        }
+      }
       case None => {
         val lookup = implementation(queryString)
         SQL {
-          implicit session => lookup.map(SQLTables.scholar_queries.+=)
+          implicit session =>
+            SQLTables.scholar_queries += (lookup match {
+              case Some(result) => result
+              case None => ScholarResults(queryString, "", "", None, Nil, Iterator.empty)
+            })
         }
         lookup
       }
@@ -106,14 +116,14 @@ object Scholar {
         for (
           link <- webOfScienceLinks.headOption;
           url = link.getAttribute("href");
-//          _ = { println(url); None };
+          //          _ = { println(url); None };
           matches <- accessionNumberRegex.findFirstMatchIn(url)
         ) yield matches.group(1)
 
       Some(ScholarResults(queryString, title, cluster, webOfScienceAccessionNumber, arxivURLs, pdfURLs))
     } catch {
       case e: Exception => {
-//        Logging.warn("Exception while reading from Google Scholar", e)
+        //        Logging.warn("Exception while reading from Google Scholar", e)
         None
       }
     }
