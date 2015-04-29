@@ -51,8 +51,7 @@ case class Article(id: String, titleHint: Option[String] = None) {
       authorData.split(",").map(removeFootnotes).sliding(2, 2).map(p => p(1) + ". " + p(0)).toSeq
     } catch {
       case e: Exception => {
-        println(s"Bad authorData for $id: "+ authorData)
-        throw e
+        throw new Exception(s"Bad authorData for $id: "+ authorData)
       }
     }
   }
