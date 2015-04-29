@@ -9,6 +9,10 @@ import net.tqft.util.Html
 import scala.collection.JavaConverters._
 import net.tqft.util.pandoc
 import net.tqft.toolkit.Logging
+import net.tqft.util.Slurp
+import com.gargoylesoftware.htmlunit.html.HtmlAnchor
+import com.gargoylesoftware.htmlunit.html.HtmlElement
+import org.jsoup.Jsoup
 
 case class Citation(title: String, authors: List[String], citation: String, DOIOption: Option[String], accessionNumber: Option[String]) {
   override def toString = s"Citation(\n title = $title,\n authors = $authors,\n citation = $citation,\n DOI = $DOIOption,\n accessionNumber = $accessionNumber\n)"
@@ -19,7 +23,7 @@ case class Citation(title: String, authors: List[String], citation: String, DOIO
   }
 
   def fullCitationWithoutIdentifier = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "")
-  def fullCitation = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "")  + (if (accessionNumber.nonEmpty) " WOS:" + accessionNumber.get else "") 
+  def fullCitation = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "") + (if (accessionNumber.nonEmpty) " WOS:" + accessionNumber.get else "")
   def fullCitation_html = fullCitationWithoutIdentifier + (accessionNumber match {
     case Some(a) => " - <a href=\"" + Article(a).url + "\">WOS:" + a + "</a>"
     case None => ""
@@ -32,6 +36,31 @@ case class Citation(title: String, authors: List[String], citation: String, DOIO
 case class Article(accessionNumber: String) {
   def url = s"http://apps.webofknowledge.com/InboundService.do?product=WOS&UT=$accessionNumber&action=retrieve&mode=FullRecord"
 
+  lazy val page = Slurp(url).mkString("\n")
+  lazy val jsoup = Jsoup.parse(page)
+  def title = {
+    jsoup.select(".title value").text
+  }
+  def DOIOption: Option[String] = {
+    jsoup.select(".FR_field").asScala.map(_.text).find(_.startsWith("DOI:")).map(_.stripPrefix("DOI:").trim)
+  }
+  def authors = {
+    jsoup.select("""a[title="Find more records by this author"]""").asScala.map(_.text).toSeq
+  }
+  def authorsText = {
+    import net.tqft.util.OxfordComma._
+    authors.map(author => pandoc.latexToText(net.tqft.mathscinet.Author(0, author).firstNameLastName)).oxfordComma
+  }
+  def citation = {
+    jsoup.select("p.sourceTitle").first.text + ", " + jsoup.select("div.block-record-info-source-values").text
+  }
+  
+  def fullCitationWithoutIdentifier = {
+    // TODO extract authors and journal reference!
+    title + " - " + authorsText + " - " + citation
+  }
+  def fullCitation = fullCitationWithoutIdentifier  + " - " + DOIOption.map(" DOI:" + _).getOrElse("") + " WOS:" + accessionNumber
+  
   lazy val citations: Seq[Citation] = {
     val authorRegex = ".*(\\(.*\\))".r
 
@@ -89,6 +118,7 @@ case class Article(accessionNumber: String) {
 
     val driver = FirefoxDriver.driverInstance
     driver.get("http://webofknowledge.com/")
+    Thread.sleep(1000)
 
     driver.get(url)
     try {

@@ -2,8 +2,8 @@ package net.tqft.scopus
 
 object MatchCitationsAgainstWebOfScienceApp extends App {
 
-  val articles = if (args(0).startsWith("2-s2.0-")) {
-    Seq(Article(args(0)))
+  val articles = if (args(0).stripPrefix("scopus:").startsWith("2-s2.0-")) {
+    Seq(Article(args(0).stripPrefix("scopus:")))
   } else {
     val name = args.tail.mkString(" ")
     println(s"Considering all articles by author '$name', with Scopus identifier ${args(0)}.")
@@ -16,6 +16,7 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
     if (article.onWebOfScience.isEmpty) {
       println("No matching article found on Web Of Science!")
     } else {
+      println("Located matching article on Web of Science: " + article.onWebOfScience.get.fullCitation)
       val (matches, unmatchedScopus, unmatchedWebOfScience) = MatchCitationsAgainstWebOfScience(article)
       println("Found the following matching pairs:")
       println("---")

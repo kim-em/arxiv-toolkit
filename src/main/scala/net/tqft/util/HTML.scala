@@ -7,6 +7,7 @@ import be.roam.hue.doj.Doj
 trait Html {
 
   java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF)
+  java.util.logging.Logger.getLogger("be.hue").setLevel(java.util.logging.Level.OFF)
 
   def client = {
     val result = new WebClient(BrowserVersion.FIREFOX_31)
@@ -19,6 +20,7 @@ trait Html {
     client.getPage(url)
   }
 
+  // TODO deprecate in favour of Jsoup
   def jQuery(url: String) = {
     Doj.on(apply(url))
   }

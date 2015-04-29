@@ -34,6 +34,7 @@ import net.tqft.scopus.Scopus
 import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
 import scala.io.Codec
+import net.tqft.webofscience.WebOfScience
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
@@ -136,6 +137,7 @@ trait FirefoxSlurp extends Slurp {
     if (FirefoxSlurp.enabled_?) {
       try {
         if (url.startsWith("http://www.scopus.com/")) Scopus.preload
+        if (url.startsWith("http://apps.webofknowledge.com/")) WebOfScience.preload
 
         driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
           case Some(element) => {
