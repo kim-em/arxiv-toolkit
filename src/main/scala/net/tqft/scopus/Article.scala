@@ -6,6 +6,8 @@ import net.tqft.toolkit.Logging
 import net.tqft.citationsearch.CitationScore
 import net.tqft.toolkit.Extractors._
 import net.tqft.util.pandoc
+import org.jsoup.Jsoup
+import scala.collection.JavaConverters._
 
 case class Article(id: String, titleHint: Option[String] = None) {
   def URL = "http://www.scopus.com/record/display.url?eid=" + id + "&origin=resultslist"
@@ -46,19 +48,40 @@ case class Article(id: String, titleHint: Option[String] = None) {
   def authorData = {
     dataText(3)
   }
-  def authors = {
-    try {
-      authorData.split(",").map(removeFootnotes).sliding(2, 2).map(p => p(1) + ". " + p(0)).toSeq
-    } catch {
-      case e: Exception => {
-        throw new Exception(s"Bad authorData for $id: "+ authorData)
-      }
-    }
-  }
-
+  //  def authors = {
+  //    try {
+  //      authorData.split(",").map(removeFootnotes).sliding(2, 2).toList.map(p => p(1) + ". " + p(0))
+  //    } catch {
+  //      case e: Exception => {
+  //        throw new Exception(s"Bad authorData for $id: "+ authorData)
+  //      }
+  //    }
+  //  }
+  def authors = authorDetails.map(_.name)
   def authorsText = {
     import net.tqft.util.OxfordComma._
     authors.oxfordComma
+  }
+  def authors_html = {
+    import net.tqft.util.OxfordComma._
+    authorDetails.map(author => s"<a href='${author.url}'>${author.name}</a>").oxfordComma
+  }
+  def authorDetails: Seq[Author] = {
+    val divs = Jsoup.parse(Slurp(URL).mkString("\n")).select("div#authorlist div").asScala
+    for (div <- divs) yield {
+      val a1 = div.select("""a[title="Show Author Details"]""").first
+      val a2 = Option(div.select("a.correspondenceEmail").first)
+
+      val r = ("http://www.scopus.com/authid/detail.url\\?authorId=([0-9]*)&").r
+      val href = a1.attr("href")
+      Author(
+        r.findFirstMatchIn(a1.attr("href")).get.group(1).toLong,
+        a1.text,
+        a2.flatMap(_.attr("href") match {
+          case "" => None
+          case href => Some(href.stripPrefix("mailto:"))
+        }))
+    }
   }
 
   lazy val authorAffiliationKeys = {
@@ -83,8 +106,8 @@ case class Article(id: String, titleHint: Option[String] = None) {
   def numberOfCitations: Option[Int] = ".* Cited ([0-9]*) times?.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1).toInt)
 
   def fullCitationWithoutIdentifier = title + " - " + authorsText + " - " + citation
-  def fullCitation = fullCitationWithoutIdentifier + " - scopus:" + id
-  def fullCitation_html = title + " - " + authorsText + " - " + citation + " - <a href='" + URL + "'>scopus:" + id + "</a>"
+  def fullCitation = fullCitationWithoutIdentifier + " - " + DOIOption.map(doi => "DOI:" + doi + " ").getOrElse("") + "scopus:" + id
+  def fullCitation_html = title + " - " + authors_html + " - " + citation + " - " + DOIOption.map(doi => "DOI:<a href='https://dx.doi.org/" + doi + "'>" + doi + "</a> ").getOrElse("") + "scopus:<a href='" + URL + "'>" + id + "</a>"
 
   lazy val onWebOfScience: Option[net.tqft.webofscience.Article] = {
     DOIOption match {

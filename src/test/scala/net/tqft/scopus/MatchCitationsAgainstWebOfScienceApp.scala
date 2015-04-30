@@ -6,11 +6,11 @@ import java.io.FileWriter
 object MatchCitationsAgainstWebOfScienceApp extends App {
 
   val articles = if (args(0).stripPrefix("scopus:").startsWith("2-s2.0-")) {
-    Seq(Article(args(0).stripPrefix("scopus:")))
+    Iterator(Article(args(0).stripPrefix("scopus:")))
   } else {
     val name = args.tail.mkString(" ")
     println(s"Considering all articles by author '$name', with Scopus identifier ${args(0)}.")
-    Author(args(0).toLong, name).publications.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= 2005)
+    Author(args(0).toLong, name).publications.iterator.filter(a => a.yearOption.nonEmpty && a.yearOption.get >= 2005)
   }
 
   val html_start = """<!DOCTYPE html>
@@ -36,15 +36,15 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
 </script>    
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
 <script type="text/css">
-      table {
+    table {
 		  border-collapse: collapse;
 	  }
-      table, th, td {
+    table, th, td {
 		  border: 1px solid black;     
 	  }
-      th {
-           width: 50%; 
-      }
+    th {
+      width: 50%; 
+    }
 </script>
 <head>
 <body>"""
@@ -55,6 +55,7 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
   
   def p(s: String) {
     html_out.println(s)
+    html_out.flush
   }
 
   def html[A](contents: => A) {
@@ -80,7 +81,7 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
   html {
     for (article <- articles) {
       println("Considering citations for " + article.fullCitation)
-      p("<h2>Considering citations for " + article.fullCitation_html + "</h2>")
+      p("<h3>" + article.fullCitation_html + "</h3>")
 
       if (article.onWebOfScience.isEmpty) {
         println("No matching article found on Web Of Science!")
@@ -108,7 +109,11 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
           for (article <- unmatchedScopus) {
             println(article.fullCitation)
             println("---")
-            tableRow(article.fullCitation_html, "")
+            val wosLink = article.onWebOfScience match {
+              case Some(wosArticle) => s" WoS:(<a href='${wosArticle.url}'>${wosArticle.accessionNumber}</a>)"
+              case None => ""
+            }
+            tableRow(article.fullCitation_html + wosLink, "")
           }
         }
         println("Found the following citations on Web of Science, which do not appear on Scopus:")
