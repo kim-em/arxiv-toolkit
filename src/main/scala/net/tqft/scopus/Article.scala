@@ -8,6 +8,7 @@ import net.tqft.toolkit.Extractors._
 import net.tqft.util.pandoc
 import org.jsoup.Jsoup
 import scala.collection.JavaConverters._
+import org.openqa.selenium.By
 
 case class Article(id: String, titleHint: Option[String] = None) {
   def URL = "http://www.scopus.com/record/display.url?eid=" + id + "&origin=resultslist"
@@ -37,6 +38,7 @@ case class Article(id: String, titleHint: Option[String] = None) {
   def citation = "(.*) Cited [0-9]* times?.".r.findFirstMatchIn(dataText(5).trim).map(_.group(1)).getOrElse(dataText(5))
   def ISSNOption = dataWithPrefix("ISSN").map(s => s.take(4) + "-" + s.drop(4))
   def DOIOption = dataWithPrefix("DOI")
+  def PubMedIdOption = dataWithPrefix("PUBMED ID")
   private def removeFootnotes(author: String): String = {
     val trimmed = author.trim
     if (trimmed.last.isLower && (trimmed.takeRight(2).head == '.' || trimmed.takeRight(2).head == ' ')) {
@@ -164,4 +166,38 @@ case class Article(id: String, titleHint: Option[String] = None) {
   lazy val referenceMatches = references.iterator.toStream.map(r => (r, net.tqft.citationsearch.Search.query(r).results))
 
   def bestReferenceMathSciNetMatches = referenceMatches.map({ p => (p._1, p._2.headOption.flatMap(_.citation.MRNumber).map(i => net.tqft.mathscinet.Article(i))) })
+}
+
+object Article {
+  def fromDOI(doi: String): Option[Article] = {
+    import net.tqft.mlp.sql.SQL
+    import net.tqft.mlp.sql.SQLTables
+    import scala.slick.driver.MySQLDriver.simple._
+    val lookup = SQL { implicit session =>
+      (for (
+        a <- SQLTables.doi2scopus;
+        if a.doi === doi
+      ) yield a.scopus_id).run.headOption
+    }
+    lookup match {
+      case Some("") => None
+      case Some(scopus_id) => Some(Article(scopus_id))
+      case None => {
+        searchForDOI(doi) match {
+          case Some(scopus_id) => {
+            SQL { implicit session => SQLTables.doi2scopus += (doi, scopus_id) }
+            Some(Article(scopus_id))
+          }
+          case None => {
+            SQL { implicit session => SQLTables.doi2scopus += (doi, "") }
+            None
+          }
+        }
+      }
+    }
+  }
+
+  def searchForDOI(doi: String): Option[String] = {
+    ???
+  }
 }
