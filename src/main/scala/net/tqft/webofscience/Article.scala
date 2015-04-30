@@ -18,7 +18,7 @@ import org.jsoup.safety.Whitelist
 import org.jsoup.nodes.Document.OutputSettings
 import org.jsoup.nodes.Element
 
-case class Citation(title: String, authors: List[String], citation: String, DOIOption: Option[String], accessionNumber: Option[String]) {
+case class Citation(title: String, authors: List[String], citation: String, DOIOption: Option[String], accessionNumber: Option[String], PubMedIdOption: Option[String]) {
   override def toString = s"Citation(\n title = $title,\n authors = $authors,\n citation = $citation,\n DOI = $DOIOption,\n accessionNumber = $accessionNumber\n)"
 
   def authorsText = {
@@ -26,10 +26,10 @@ case class Citation(title: String, authors: List[String], citation: String, DOIO
     authors.map(author => pandoc.latexToText(net.tqft.mathscinet.Author(0, author).firstNameLastName)).oxfordComma
   }
 
-  def fullCitationWithoutIdentifier = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "")
+  def fullCitationWithoutIdentifier = title + " - " + authorsText + " - " + citation
   def fullCitation = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "") + (if (accessionNumber.nonEmpty) " WoS:" + accessionNumber.get else "")
-  def fullCitation_html = fullCitationWithoutIdentifier + (accessionNumber match {
-    case Some(a) => " - WoS:<a href=\"" + Article(a).url + "\">" + a + "</a>"
+  def fullCitation_html = fullCitationWithoutIdentifier + " - " + (if (DOIOption.nonEmpty) s" DOI:<a href='http://dx.doi.org/${DOIOption.get}'>${DOIOption.get}</a>" else "") + (accessionNumber match {
+    case Some(a) => " WoS:<a href=\"" + Article(a).url + "\">" + a + "</a>"
     case None => ""
   })
 
@@ -47,6 +47,9 @@ case class Article(accessionNumber: String) {
   }
   def DOIOption: Option[String] = {
     jsoup.select(".FR_field").asScala.map(_.text).find(_.startsWith("DOI:")).map(_.stripPrefix("DOI:").trim)
+  }
+  def PubMedIdOption: Option[String] = {
+    jsoup.select(".FR_field").asScala.map(_.text).find(_.startsWith("PubMed ID:")).map(_.stripPrefix("PubMedID:").trim)
   }
   def authors = {
     jsoup.select("""a[title="Find more records by this author"]""").asScala.map(_.text).toSeq
@@ -78,11 +81,11 @@ case class Article(accessionNumber: String) {
       try {
         val authors = authorsField.split("; ").toList.collect({ case authorRegex(name) => name.stripPrefix("(").stripSuffix(")") })
         val (citation, doi) = {
-          val head +: tail = sourceField.split("Â Â ").toSeq
-          (head + " " + tail.filter(!_.startsWith("DOI: ")).map(_.split(":").tail.mkString(" ").trim).mkString(" "), tail.find(_.startsWith("DOI: ")).map(_.stripPrefix("DOI: ")))
+          val head +: tail = sourceField.split("  ").toSeq
+          (head + " " + tail.filter(!_.startsWith("DOI: ")).mkString(" "), tail.find(_.startsWith("DOI: ")).map(_.stripPrefix("DOI: ")))
         }
         val accessionNumber = map.get("Accession Number").map(_.stripPrefix("WOS:"))
-        Citation(title, authors, citation, doi, accessionNumber)
+        Citation(title, authors, citation, doi, accessionNumber, map.get("PubMed ID"))
       } catch {
         case e: Exception => {
           throw new Exception(e.getMessage() + "\n" + record)

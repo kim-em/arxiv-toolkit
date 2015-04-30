@@ -3,10 +3,10 @@ package net.tqft.scopus
 import net.tqft.util.Slurp
 import net.tqft.util.FirefoxSlurp
 import net.tqft.toolkit.Logging
-import net.tqft.scholar.FirefoxDriver
 import scala.collection.mutable.ListBuffer
 import org.openqa.selenium.By
 import scala.collection.JavaConverters._
+import org.openqa.selenium.WebDriver
 
 object Scopus {
   private var latch = true
@@ -19,6 +19,30 @@ object Scopus {
     None
   }
 }
+
+object FirefoxDriver {
+  private var driverOption: Option[WebDriver] = None
+
+  def driverInstance = {
+    if (driverOption.isEmpty) {
+      Logging.info("Starting Firefox/webdriver")
+      driverOption = Some(new org.openqa.selenium.firefox.FirefoxDriver( /*profile*/ ))
+      Logging.info("   ... finished starting Firefox")
+    }
+    driverOption.get
+  }
+
+  def quit = {
+    try {
+      driverOption.map(_.quit)
+    } catch {
+      case e: Exception => Logging.error("Exception occurred while trying to quit Firefox:", e)
+    }
+    driverOption = None
+  }
+
+}
+
 
 case class Author(id: Long, name: String, email: Option[String] = None) {
   def url = "http://www.scopus.com/authid/detail.url?authorId=" + id.toString
@@ -107,7 +131,7 @@ case class Author(id: Long, name: String, email: Option[String] = None) {
   //    if (result.size != totalArticleCount) {
   //      println(allPages.mkString("\n"))
   //      Logging.warn("Scopus says there are " + totalArticleCount + " citations, but I see " + result.size)
-  //      require(false)
+  //      require(false)))
   //    }
   //    result
   //  }

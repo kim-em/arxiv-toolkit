@@ -127,6 +127,11 @@ class DOI2WebOfScience(tag: Tag) extends Table[(String, String)](tag, "doi2webof
   def accessionNumber = column[String]("accession_number")
   def * = (doi, accessionNumber)
 }
+class DOI2Scopus(tag: Tag) extends Table[(String, String)](tag, "doi2scopus") {
+  def doi = column[String]("doi", O.PrimaryKey)
+  def scopus_id = column[String]("scopis_id")
+  def * = (doi, scopus_id)
+}
 
 class WebOfScienceMathSciNetMatches(tag: Tag) extends Table[(String, Int, String, Date)](tag, "webofscience_mathscinet_matches") {
   def accessionNumber = column[String]("accession_number", O.PrimaryKey)
@@ -220,6 +225,7 @@ object SQLTables {
   val scholar_queries = TableQuery[ScholarQueries]
   
   val doi2webofscience = TableQuery[DOI2WebOfScience]
+  val doi2scopus = TableQuery[DOI2Scopus]
   
   object webofscience_aux extends TableQuery(new WebOfScienceAux(_)) {
     def citations_recordsView = map(aux => aux.citations_recordsView)

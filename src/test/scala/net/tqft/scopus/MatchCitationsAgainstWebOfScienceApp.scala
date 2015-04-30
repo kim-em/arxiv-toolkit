@@ -110,7 +110,7 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
             println(article.fullCitation)
             println("---")
             val wosLink = article.onWebOfScience match {
-              case Some(wosArticle) => s" WoS:(<a href='${wosArticle.url}'>${wosArticle.accessionNumber}</a>)"
+              case Some(wosArticle) => s" (WoS:<a href='${wosArticle.url}'>${wosArticle.accessionNumber}</a>)"
               case None => ""
             }
             tableRow(article.fullCitation_html + wosLink, "")
