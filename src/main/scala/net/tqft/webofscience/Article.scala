@@ -40,8 +40,22 @@ case class Citation(title: String, authors: List[String], citation: String, DOIO
 case class Article(accessionNumber: String) {
   def url = s"http://apps.webofknowledge.com/InboundService.do?product=WOS&UT=$accessionNumber&action=retrieve&mode=FullRecord"
 
-  lazy val page = Slurp(url).mkString("\n")
-  lazy val jsoup = Jsoup.parse(page)
+  lazy val jsoup = {
+    def load = Jsoup.parse(Slurp(url).mkString("\n"))
+    val result = load
+    try {
+      result.select(".title value").text
+      result.select("p.sourceTitle").first.text
+      result.select("div.block-record-info-source-values").text  
+      result
+    } catch {
+      case e: Exception => {
+        Logging.warn("Something went wrong while reading metadata for " + this + ", trying again.", e)
+        Slurp -= url
+        load
+      }
+    }
+  }
   def title = {
     jsoup.select(".title value").text
   }
@@ -58,9 +72,7 @@ case class Article(accessionNumber: String) {
     import net.tqft.util.OxfordComma._
     authors.map(author => pandoc.latexToText(net.tqft.mathscinet.Author(0, author).firstNameLastName)).oxfordComma
   }
-  def citation = {
-    jsoup.select("p.sourceTitle").first.text + ", " + jsoup.select("div.block-record-info-source-values").text
-  }
+  def citation = jsoup.select("p.sourceTitle").first.text + ", " + jsoup.select("div.block-record-info-source-values").text  
 
   def fullCitationWithoutIdentifier = {
     title + " - " + authorsText + " - " + citation
