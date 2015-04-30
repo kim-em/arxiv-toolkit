@@ -20,7 +20,7 @@ object Scopus {
   }
 }
 
-case class Author(id: Long, name: String) {
+case class Author(id: Long, name: String, email: Option[String] = None) {
   def url = "http://www.scopus.com/authid/detail.url?authorId=" + id.toString
 
   lazy val publications: Seq[Article] = {

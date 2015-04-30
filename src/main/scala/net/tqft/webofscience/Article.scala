@@ -1,7 +1,6 @@
 package net.tqft.webofscience
 
 import net.tqft.scholar.Scholar
-import net.tqft.scholar.FirefoxDriver
 import org.openqa.selenium.By
 import scala.collection.mutable.ListBuffer
 import org.openqa.selenium.support.ui.Select
@@ -13,6 +12,11 @@ import net.tqft.util.Slurp
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor
 import com.gargoylesoftware.htmlunit.html.HtmlElement
 import org.jsoup.Jsoup
+import org.openqa.selenium.JavascriptExecutor
+import org.openqa.selenium.Keys
+import org.jsoup.safety.Whitelist
+import org.jsoup.nodes.Document.OutputSettings
+import org.jsoup.nodes.Element
 
 case class Citation(title: String, authors: List[String], citation: String, DOIOption: Option[String], accessionNumber: Option[String]) {
   override def toString = s"Citation(\n title = $title,\n authors = $authors,\n citation = $citation,\n DOI = $DOIOption,\n accessionNumber = $accessionNumber\n)"
@@ -23,9 +27,9 @@ case class Citation(title: String, authors: List[String], citation: String, DOIO
   }
 
   def fullCitationWithoutIdentifier = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "")
-  def fullCitation = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "") + (if (accessionNumber.nonEmpty) " WOS:" + accessionNumber.get else "")
+  def fullCitation = title + " - " + authorsText + " - " + citation + (if (DOIOption.nonEmpty) " DOI:" + DOIOption.get else "") + (if (accessionNumber.nonEmpty) " WoS:" + accessionNumber.get else "")
   def fullCitation_html = fullCitationWithoutIdentifier + (accessionNumber match {
-    case Some(a) => " - <a href=\"" + Article(a).url + "\">WOS:" + a + "</a>"
+    case Some(a) => " - WoS:<a href=\"" + Article(a).url + "\">" + a + "</a>"
     case None => ""
   })
 
@@ -54,13 +58,13 @@ case class Article(accessionNumber: String) {
   def citation = {
     jsoup.select("p.sourceTitle").first.text + ", " + jsoup.select("div.block-record-info-source-values").text
   }
-  
+
   def fullCitationWithoutIdentifier = {
     title + " - " + authorsText + " - " + citation
   }
-  def fullCitation = fullCitationWithoutIdentifier  + " - " + DOIOption.map(" DOI:" + _).getOrElse("") + " WOS:" + accessionNumber
-  def fullCitation_html = fullCitationWithoutIdentifier  + " - " + DOIOption.map(doi => s" DOI:<a href='https://dx.doi.org/$doi'>$doi</a>").getOrElse("") + s" WOS:<a href='$url'>$accessionNumber</a>"
-  
+  def fullCitation = fullCitationWithoutIdentifier + " - " + DOIOption.map(" DOI:" + _).getOrElse("") + " WoS:" + accessionNumber
+  def fullCitation_html = fullCitationWithoutIdentifier + " - " + DOIOption.map(doi => s" DOI:<a href='https://dx.doi.org/$doi'>$doi</a>").getOrElse("") + s" WoS:<a href='$url'>$accessionNumber</a>"
+
   lazy val citations: Seq[Citation] = {
     val authorRegex = ".*(\\(.*\\))".r
 
@@ -96,15 +100,11 @@ case class Article(accessionNumber: String) {
         a.citations_records
       }).run.headOption.map(_.split("-----<<-->>-----").toSeq.map(_.trim).filter(_.nonEmpty))
     }
+
     lookup match {
       case Some(result) => result
       case None => {
-        val records = for (
-          page <- scrape_printable_citations;
-          record <- Html.jQuery(Html.preloaded("http://dev.null/", page)).get("table").allElements().map(_.asText()).filter(_.startsWith("Record"))
-        ) yield {
-          record
-        }
+        val records = scrape_printable_citations
         SQL { implicit session =>
           SQLTables.webofscience_aux.citations_recordsView += ((accessionNumber, records.mkString("-----<<-->>-----")))
         }
@@ -114,7 +114,7 @@ case class Article(accessionNumber: String) {
 
   }
 
-  private def scrape_printable_citations = {
+  def scrape_printable_citations = {
 
     val driver = FirefoxDriver.driverInstance
     driver.get("http://webofknowledge.com/")
@@ -134,10 +134,11 @@ case class Article(accessionNumber: String) {
         val currentWindow = driver.getWindowHandle
         // Switch to new window opened
         (driver.getWindowHandles.asScala - currentWindow).headOption.map(driver.switchTo().window)
-        val result = driver.getPageSource
+        //        val result = driver.getPageSource
+        results ++= driver.findElements(By.cssSelector("table")).asScala.map(_.getText).filter(_.startsWith("Record"))
         driver.close
         driver.switchTo().window(currentWindow)
-        results += result
+        //        results += result
       }
 
       if (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
@@ -153,7 +154,7 @@ case class Article(accessionNumber: String) {
       results.toSeq
     } catch {
       case e: org.openqa.selenium.NoSuchElementException => {
-        Logging.warn("No 'Times Cited' link found for " + url, e)
+        //        Logging.warn("No 'Times Cited' link found for " + url, e))))
         Seq.empty
       }
 
@@ -164,7 +165,66 @@ case class Article(accessionNumber: String) {
 
 object Article {
   def fromDOI(doi: String): Option[Article] = {
-    Scholar.fromDOI(doi).flatMap(r => r.webOfScienceAccessionNumber).map(Article(_))
+    import net.tqft.mlp.sql.SQL
+    import net.tqft.mlp.sql.SQLTables
+    import scala.slick.driver.MySQLDriver.simple._
+    val lookup = SQL { implicit session =>
+      (for (
+        a <- SQLTables.doi2webofscience;
+        if a.doi === doi
+      ) yield a.accessionNumber).run.headOption
+    }
+    lookup match {
+      case Some("") => None
+      case Some(accessionNumber) => Some(Article(accessionNumber))
+      case None => {
+        Scholar.fromDOI(doi).flatMap(r => r.webOfScienceAccessionNumber).orElse(searchForDOI(doi)) match {
+          case Some(accessionNumber) => {
+            SQL { implicit session => SQLTables.doi2webofscience += (doi, accessionNumber) }
+            Some(Article(accessionNumber))
+          }
+          case None => {
+            SQL { implicit session => SQLTables.doi2webofscience += (doi, "") }
+            None
+          }
+        }
+      }
+    }
+  }
+
+  def searchForDOI(doi: String): Option[String] = {
+    def driver = FirefoxDriver.driverInstance
+    def jse = driver.asInstanceOf[JavascriptExecutor]
+
+    try {
+      driver.get("http://apps.webofknowledge.com/")
+
+      driver.findElement(By.cssSelector("i.icon-dd-active-block-search")).click();
+      driver.findElement(By.linkText("Advanced Search")).click();
+      driver.findElement(By.id("value(input1)")).clear();
+      driver.findElement(By.id("value(input1)")).sendKeys("DO=" + doi);
+      driver.findElement(By.cssSelector("#searchButton > input[type=\"image\"]")).click();
+      driver.findElement(By.linkText("1")).click();
+      driver.findElement(By.cssSelector("value")).click();
+
+      driver.findElements(By.className("FR_field")).asScala.map(_.getText).filter(_.startsWith("DOI:")).map(_.stripPrefix("DOI:").trim).headOption match {
+        case Some(foundDOI) if foundDOI == doi => {
+          driver.findElements(By.className("FR_field")).asScala.map(_.getText).filter(_.startsWith("Accession Number:")).map(_.stripPrefix("Accession Number:").trim.stripPrefix("WOS:")).headOption
+        }
+        case Some(badDOI) => {
+          Logging.warn("Searching for DOI:" + doi + " on Web of Science lead to a page with DOI:" + badDOI)
+          None
+        }
+        case None => {
+          None
+        }
+      }
+    } catch {
+      case e: Exception => {
+        Logging.warn("Exception while searching for DOI:" + doi + " on Web of Science.", e)
+        None
+      }
+    }
   }
 
   def fromMathSciNet(article: net.tqft.mathscinet.Article, useGoogleScholar: Boolean = false): Option[Article] = {
