@@ -51,8 +51,8 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
 
   val html_end = "</body></html>"
 
-  val html_out = new PrintWriter(new FileWriter("compare.html"))
-  
+  val html_out = new PrintWriter(new FileWriter("compare-" + args(0) + ".html"))
+
   def p(s: String) {
     html_out.println(s)
     html_out.flush
@@ -79,6 +79,11 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
   }
 
   html {
+    p("Found <ul><li><span id='matching'>0</span> matching pairs of citations,</li> <li><span id='scopus'>0</span> citations only on Scopus, and</li><li><span id='WoS'>0</span> citations only on Web of Science.</li></ul>")
+    def pmatch = p("<script>$('#matching').text(parseInt($('#matching').text()) + 1);</script>")
+    def pscopus = p("<script>$('#scopus').text(parseInt($('#scopus').text()) + 1);</script>")
+    def pwos = p("<script>$('#WoS').text(parseInt($('#WoS').text()) + 1);</script>")
+
     for (article <- articles) {
       println("Considering citations for " + article.fullCitation)
       p("<h3>" + article.fullCitation_html + "</h3>")
@@ -100,6 +105,7 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
             println(webOfScienceCitation.fullCitation)
             println("---")
             tableRow(scopusArticle.fullCitation_html, webOfScienceCitation.fullCitation_html)
+            pmatch
           }
         }
         println("Found the following citations on Scopus, which do not appear on Web of Science:")
@@ -114,6 +120,7 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
               case None => ""
             }
             tableRow(article.fullCitation_html + wosLink, "")
+            pscopus
           }
         }
         println("Found the following citations on Web of Science, which do not appear on Scopus:")
@@ -124,6 +131,7 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
             println(article.fullCitation)
             println("---")
             tableRow("", article.fullCitation_html)
+            pwos
           }
         }
         p("</p><hr>")
@@ -133,6 +141,8 @@ object MatchCitationsAgainstWebOfScienceApp extends App {
     }
   }
 
+  net.tqft.scopus.FirefoxDriver.quit
+  net.tqft.webofscience.FirefoxDriver.quit
   net.tqft.scholar.FirefoxDriver.quit
   net.tqft.util.FirefoxSlurp.quit
 

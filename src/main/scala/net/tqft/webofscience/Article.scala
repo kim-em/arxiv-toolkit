@@ -46,7 +46,7 @@ case class Article(accessionNumber: String) {
     try {
       result.select(".title value").text
       result.select("p.sourceTitle").first.text
-      result.select("div.block-record-info-source-values").text  
+      result.select("div.block-record-info-source-values").text
       result
     } catch {
       case e: Exception => {
@@ -72,7 +72,7 @@ case class Article(accessionNumber: String) {
     import net.tqft.util.OxfordComma._
     authors.map(author => pandoc.latexToText(net.tqft.mathscinet.Author(0, author).firstNameLastName)).oxfordComma
   }
-  def citation = jsoup.select("p.sourceTitle").first.text + ", " + jsoup.select("div.block-record-info-source-values").text  
+  def citation = jsoup.select("p.sourceTitle").first.text + ", " + jsoup.select("div.block-record-info-source-values").text
 
   def fullCitationWithoutIdentifier = {
     title + " - " + authorsText + " - " + citation
@@ -119,9 +119,9 @@ case class Article(accessionNumber: String) {
     lookup match {
       case Some(result) => result
       case None => {
-        val records = scrape_printable_citations
+        val records = scrape_printable_citations(true)
         SQL { implicit session =>
-          SQLTables.webofscience_aux.citations_recordsView += ((accessionNumber, records.mkString("-----<<-->>-----")))
+          SQLTables.webofscience_aux += ((accessionNumber, title, authorsText, citation, records.mkString("-----<<-->>-----"), DOIOption))
         }
         records
       }
@@ -129,48 +129,63 @@ case class Article(accessionNumber: String) {
 
   }
 
-  def scrape_printable_citations = {
-
+  def scrape_printable_citations(retry: Boolean = true): Seq[String] = {
     val driver = FirefoxDriver.driverInstance
     driver.get("http://webofknowledge.com/")
     Thread.sleep(1000)
 
     driver.get(url)
     try {
-      driver.findElement(By.partialLinkText("Times Cited")).click()
+      val timesCitedLink = driver.findElement(By.partialLinkText("Times Cited"))
 
-      val results = ListBuffer[String]()
-      def scrapePage {
-        driver.findElement(By.name("formatForPrint")).click()
-        Thread.sleep(1000)
+        val timesCited = timesCitedLink.getText.split(" ").head.toInt
+        timesCitedLink.click()
 
-        driver.findElements(By.name("formatForPrint")).asScala.last.click()
+        val results = ListBuffer[String]()
+        def scrapePage {
+          driver.findElement(By.name("formatForPrint")).click()
+          Thread.sleep(500)
 
-        val currentWindow = driver.getWindowHandle
-        // Switch to new window opened
-        (driver.getWindowHandles.asScala - currentWindow).headOption.map(driver.switchTo().window)
-        //        val result = driver.getPageSource
-        results ++= driver.findElements(By.cssSelector("table")).asScala.map(_.getText).filter(_.startsWith("Record"))
-        driver.close
-        driver.switchTo().window(currentWindow)
-        //        results += result
-      }
+          driver.findElements(By.name("formatForPrint")).asScala.last.click()
 
-      if (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
-        new Select(driver.findElement(By.id("selectPageSize_.bottom"))).selectByVisibleText("50 per page")
-      }
+          Thread.sleep(200)
+          
+          val currentWindow = driver.getWindowHandle
+          // Switch to new window opened
+          (driver.getWindowHandles.asScala - currentWindow).headOption.map(driver.switchTo().window)
+          //        val result = driver.getPageSource
+          Thread.sleep(2000)
+          results ++= driver.findElements(By.cssSelector("table")).asScala.map(_.getText.trim).filter(_.startsWith("Record"))
+          driver.close
+          driver.switchTo().window(currentWindow)
+          //        results += result
+        }
 
-      scrapePage
-      while (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
-        driver.findElement(By.className("paginationNext")).click
+        if (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
+          new Select(driver.findElement(By.id("selectPageSize_.bottom"))).selectByVisibleText("50 per page")
+        }
+
         scrapePage
-      }
+        while (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
+          driver.findElement(By.className("paginationNext")).click
+          scrapePage
+        }
 
-      results.toSeq
+        if (!retry || results.size == timesCited) {
+          results.toSeq
+        } else {
+          println("Found a different number of records than I was expecting!")
+          println(timesCited)
+          println(results.mkString("\n-----\n"))
+          scrape_printable_citations(false)
+        }
     } catch {
       case e: org.openqa.selenium.NoSuchElementException => {
-        //        Logging.warn("No 'Times Cited' link found for " + url, e))))
-        Seq.empty
+        if (driver.getPageSource.contains("""<span class="TCcountFR">0</span> Times Cited""")) {
+          Seq.empty
+        } else {
+          ???
+        }
       }
 
     }

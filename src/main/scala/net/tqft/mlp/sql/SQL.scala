@@ -142,13 +142,13 @@ class WebOfScienceMathSciNetMatches(tag: Tag) extends Table[(String, Int, String
   def insertView = (accessionNumber, identifier, source)
 }
 
-class WebOfScienceAux(tag: Tag) extends Table[(String, String, String, String, String, String)](tag, "webofscience_aux") {
+class WebOfScienceAux(tag: Tag) extends Table[(String, String, String, String, String, Option[String])](tag, "webofscience_aux") {
   def accessionNumber = column[String]("accession_number", O.PrimaryKey)
   def title = column[String]("title")
   def authors = column[String]("authors")
   def citation = column[String]("citation")
   def citations_records = column[String]("citations_records")
-  def doi = column[String]("doi")
+  def doi = column[Option[String]]("doi")
   def * = (accessionNumber, title, authors, citation, citations_records, doi)
   def citations_recordsView = (accessionNumber, citations_records)
 }
