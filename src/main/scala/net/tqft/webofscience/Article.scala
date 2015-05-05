@@ -136,6 +136,7 @@ case class Article(accessionNumber: String) {
 
     driver.get(url)
     try {
+      Thread.sleep(1000)
       val timesCitedLink = driver.findElement(By.partialLinkText("Times Cited"))
 
         val timesCited = timesCitedLink.getText.split(" ").head.toInt
