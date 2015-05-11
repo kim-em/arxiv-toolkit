@@ -135,60 +135,55 @@ case class Article(accessionNumber: String) {
     Thread.sleep(1000)
 
     driver.get(url)
-    try {
-      Thread.sleep(1000)
+    Thread.sleep(1000)
+    if (driver.getPageSource.contains("""<span class="TCcountFR">0</span> Times Cited""")) {
+      Seq.empty
+    } else {
       val timesCitedLink = driver.findElement(By.partialLinkText("Times Cited"))
 
-        val timesCited = timesCitedLink.getText.split(" ").head.toInt
-        timesCitedLink.click()
+      val timesCited = timesCitedLink.getText.split(" ").head.toInt
+      timesCitedLink.click()
 
-        val results = ListBuffer[String]()
-        def scrapePage {
-          driver.findElement(By.name("formatForPrint")).click()
-          Thread.sleep(500)
+      val results = ListBuffer[String]()
+      def scrapePage {
+        Thread.sleep(500)
+        driver.findElement(By.name("formatForPrint")).click()
+        Thread.sleep(500)
 
-          driver.findElements(By.name("formatForPrint")).asScala.last.click()
+        driver.findElements(By.name("formatForPrint")).asScala.last.click()
 
-          Thread.sleep(200)
-          
-          val currentWindow = driver.getWindowHandle
-          // Switch to new window opened
-          (driver.getWindowHandles.asScala - currentWindow).headOption.map(driver.switchTo().window)
-          //        val result = driver.getPageSource
-          Thread.sleep(2000)
-          results ++= driver.findElements(By.cssSelector("table")).asScala.map(_.getText.trim).filter(_.startsWith("Record"))
-          driver.close
-          driver.switchTo().window(currentWindow)
-          //        results += result
-        }
+        Thread.sleep(200)
 
-        if (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
-          new Select(driver.findElement(By.id("selectPageSize_.bottom"))).selectByVisibleText("50 per page")
-        }
-
-        scrapePage
-        while (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
-          driver.findElement(By.className("paginationNext")).click
-          scrapePage
-        }
-
-        if (!retry || results.size == timesCited) {
-          results.toSeq
-        } else {
-          println("Found a different number of records than I was expecting!")
-          println(timesCited)
-          println(results.mkString("\n-----\n"))
-          scrape_printable_citations(false)
-        }
-    } catch {
-      case e: org.openqa.selenium.NoSuchElementException => {
-        if (driver.getPageSource.contains("""<span class="TCcountFR">0</span> Times Cited""")) {
-          Seq.empty
-        } else {
-          ???
-        }
+        val currentWindow = driver.getWindowHandle
+        // Switch to new window opened
+        (driver.getWindowHandles.asScala - currentWindow).headOption.map(driver.switchTo().window)
+        //        val result = driver.getPageSource
+        Thread.sleep(2000)
+        results ++= driver.findElements(By.cssSelector("table")).asScala.map(_.getText.trim).filter(_.startsWith("Record"))
+        driver.close
+        driver.switchTo().window(currentWindow)
+        //        results += result
       }
 
+      Thread.sleep(1500)
+      if (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
+        new Select(driver.findElement(By.id("selectPageSize_.bottom"))).selectByVisibleText("50 per page")
+      }
+
+      scrapePage
+      while (driver.findElements(By.className("paginationNextDisabled")).asScala.isEmpty) {
+        driver.findElement(By.className("paginationNext")).click
+        scrapePage
+      }
+
+      if (!retry || results.size == timesCited) {
+        results.toSeq
+      } else {
+        println("Found a different number of records than I was expecting!")
+        println(timesCited)
+        println(results.mkString("\n-----\n"))
+        scrape_printable_citations(false)
+      }
     }
 
   }
