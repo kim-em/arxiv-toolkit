@@ -303,21 +303,36 @@ trait ScopusSlurp extends CachingSlurp {
 }
 
 trait CachingSlurp extends Slurp {
-  protected def cache(hostName: String): scala.collection.mutable.Map[String, Array[Byte]]
+  protected def cache(url: String): scala.collection.mutable.Map[String, Array[Byte]]
 
+  var overwriteCache = false
+  
   override def getStream(url: String) = {
     Logging.info("Looking in cache for " + url)
-    val bytes = cache(url).getOrElseUpdate(url, {
+    
+    def retrieve = {
       Throttle(url)
       Logging.info("Loading " + url)
       val result = IOUtils.toByteArray(super.getStream(url))
       Logging.info("   ... finished")
       result
-    })
+    }
+    
+    val bytes = if(overwriteCache) {
+      Logging.warn("Overwriting cache entry for: " + url)
+      val result = retrieve
+      cache(url).put(url, result)
+      result
+    } else {
+      cache(url).getOrElseUpdate(url, retrieve)
+    }
     new ByteArrayInputStream(bytes)
   }
 
-  def -=(url: String): this.type
+  def -=(url: String): this.type = {
+    cache(url) -= url
+    this
+  }
 }
 
 trait S3CachingSlurp extends CachingSlurp {
@@ -334,12 +349,12 @@ trait S3CachingSlurp extends CachingSlurp {
     })
   }
 
-  def -=(url: String): this.type = {
-    import net.tqft.toolkit.collections.MapTransformer._
-    val hostName = new URL(url).getHost
-    s3.bytes(hostName + bucketSuffix).transformKeys({ relativeURL: String => "http://" + hostName + "/" + relativeURL }, { absoluteURL: String => new URL(absoluteURL).getFile().stripPrefix("/") }) -= url
-    this
-  }
+//  def -=(url: String): this.type = {
+//    import net.tqft.toolkit.collections.MapTransformer._
+//    val hostName = new URL(url).getHost
+//    s3.bytes(hostName + bucketSuffix).transformKeys({ relativeURL: String => "http://" + hostName + "/" + relativeURL }, { absoluteURL: String => new URL(absoluteURL).getFile().stripPrefix("/") }) -= url
+//    this
+//  }
 
   override def cache(url: String) = {
     val hostName = new URL(url).getHost
