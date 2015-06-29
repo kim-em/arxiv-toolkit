@@ -5,10 +5,15 @@ import net.tqft.util.CSVParser
 import net.tqft.toolkit.Extractors.Int
 import scala.io.Codec
 import net.tqft.util.FirefoxSlurp
-import scala.collection.mutable.{ Map => mMap }
+import scala.collection.mutable
+import net.tqft.util.Slurp
+import net.tqft.toolkit.amazon.S3
 
 object CitationApp extends App {
 
+  S3("hIndex1996").clear
+  S3("hIndex2008").clear
+  
   Article.disableBibtexSaving
 
   val mathematicians = (for (
@@ -27,17 +32,19 @@ object CitationApp extends App {
   type Level = String
   type Year = Int
 
-  val counts = mMap[Level, mMap[Year, mMap[Int, Int]]]()
+  val counts = mutable.Map[Level, mutable.Map[Year, mutable.Map[Int, Int]]]()
   val years = Seq(2008, 1996)
   val levels = Seq("?", "A", "B", "C", "D", "E")
 
   for (level <- levels) {
-    counts(level) = mMap[Year, mMap[Int, Int]]()
+    counts(level) = mutable.Map[Year, mutable.Map[Int, Int]]()
     for (year <- years) {
-      counts(level)(year) = mMap[Int, Int]()
+      counts(level)(year) = mutable.Map[Int, Int]()
     }
   }
 
+  Slurp.overwriteCache = true
+  
   try {
     for ((a, uni, level) <- authors) {
       for (year <- years)
