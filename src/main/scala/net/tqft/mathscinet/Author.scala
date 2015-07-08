@@ -60,13 +60,13 @@ val hIndexCache2008 = {
   }
 
   def hIndex(id: Int, firstYear: Int) = {
-    if(firstYear == 1996) {
-      hIndexCache1996.getOrElseUpdate(id, hIndexImplementation(id, firstYear))
-    } else if(firstYear == 2008) {
-      hIndexCache2008.getOrElseUpdate(id, hIndexImplementation(id, firstYear))
-    } else {
+//    if(firstYear == 1996) {
+//      hIndexCache1996.getOrElseUpdate(id, hIndexImplementation(id, firstYear))
+//    } else if(firstYear == 2008) {
+//      hIndexCache2008.getOrElseUpdate(id, hIndexImplementation(id, firstYear))
+//    } else {
       hIndexImplementation(id, firstYear)
-    }
+//    }
   }
   
   private def hIndexImplementation(id: Int, firstYear: Int) = {

@@ -58,6 +58,8 @@ object Search extends Logging {
     query((for (p <- compositeParameters) yield p + "=" + compositeQuery(p)).mkString("&"))
   }
 
+  def byAuthorIdentifier(id: Int) = query("pg1" -> "INDI", "s1" -> id.toString)
+  
   def by(author: String) = query("pg4" -> "AUCN", "s4" -> author)
   def inJournal(text: String) = inJournalsJumbled(Seq(text))
   def during(k: Int) = query("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
