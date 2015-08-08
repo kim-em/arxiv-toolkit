@@ -61,6 +61,7 @@ object Search extends Logging {
   def byAuthorIdentifier(id: Int) = query("pg1" -> "INDI", "s1" -> id.toString)
   
   def by(author: String) = query("pg4" -> "AUCN", "s4" -> author)
+  def institution(code: String) = query("pg4" -> "IC", "s4" -> code)
   def inJournal(text: String) = inJournalsJumbled(Seq(text))
   def during(k: Int) = query("arg3" -> k.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
   def between(start: Int, end: Int) = query("yearRangeFirst" -> start.toString, "yearRangeSecond" -> end.toString, "dr" -> "pubyear", "pg8" -> "ET", "yrop" -> "eq")
