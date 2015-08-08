@@ -33,6 +33,7 @@ import java.nio.file.Path
 import scala.concurrent.future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.BitSet
+import scala.concurrent.Future
 
 trait Article { article =>
   def identifier: Int
@@ -79,6 +80,28 @@ trait Article { article =>
     bibtex.get("edition"),
     bibtex.get("publisher"),
     bibtex.get("series"))
+
+  def saveSQL {
+    if(Article.saving_?) {
+    if (!Articles.identifiersInDatabase.contains(identifier)) {
+      Future {
+        import scala.slick.driver.MySQLDriver.simple._
+
+        try {
+          SQL { implicit session =>
+            SQLTables.mathscinet += this
+            Logging.info("Saving to the database:\n" + bibtex.toBIBTEXString)
+          }
+        } catch {
+          case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {}
+          case e: Exception => {
+            Logging.error("Exception while inserting \n" + bibtex.toBIBTEXString, e)
+          }
+        }
+      }
+    }
+    }
+  }
 
   def endnote = {
     if (endnoteData.isEmpty) {
@@ -803,28 +826,11 @@ object Article {
   def fromBibtex(bibtexString: String): Option[Article] = {
     BIBTEX.parse(bibtexString).map({
       case b @ BIBTEX(_, identifierString @ MRIdentifier(id), data) =>
-        //        if (saving_?) b.save
         val result = new Article {
           override val identifier = id
         }
         result.bibtexData = Some(b)
-        if (!Articles.identifiersInDatabase.contains(id)) {
-          future {
-            import scala.slick.driver.MySQLDriver.simple._
-
-            try {
-              SQL { implicit session =>
-                SQLTables.mathscinet += result
-                Logging.info("Saving to the database:\n" + bibtexString)
-              }
-            } catch {
-              case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {}
-              case e: Exception => {
-                Logging.error("Exception while inserting \n" + result.bibtex.toBIBTEXString, e)
-              }
-            }
-          }
-        }
+        result.saveSQL
         result
     })
   }
@@ -834,7 +840,7 @@ object Article {
     { url: String => HttpClientSlurp.apply(url).toList }.memo
   }
 
-  private var saving_? = false
+  private var saving_? = true
   def disableBibtexSaving { saving_? = false }
   def enableBibtexSaving { saving_? = true }
 
