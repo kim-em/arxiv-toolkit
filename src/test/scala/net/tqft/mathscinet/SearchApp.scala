@@ -6,9 +6,9 @@ import net.tqft.util.FirefoxSlurp
 import net.tqft.journals.ISSNs
 
 object SearchApp extends App {
-  //  println(Search.inTopJournalsJumbled(200).size)
-  //  println(Search.during(2013).size)
-  //  println(Search.inJournalsJumbled(Articles.ISSNsInDatabase).size)
+    println(Search.inTopJournalsJumbled(200).size)
+    println(Search.during(2013).size)
+    println(Search.inJournalsJumbled(Articles.ISSNsInDatabase).size)
 
   //  println(Search.inJournal(ISSNs.`Journal of K-Theory`).size)
   //  for(a<- Search.byAuthorIdentifier(105700)) println(a)
