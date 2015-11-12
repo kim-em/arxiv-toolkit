@@ -39,7 +39,7 @@ object ParsePubs extends App {
     val ref2 = (for (ref <- refs) yield {
       val matches = net.tqft.citationsearch.Search.goodMatch(ref.get("paper").getOrElse(ref("book")) + " Kovacs " + ref.get("by").getOrElse("").replaceAll("with", "") + " " + ref.get("jour").getOrElse("") + " " + ref.get("year").getOrElse("") + " " + ref.get("pages").getOrElse("") + " " + ref.get("vol").getOrElse("")).map(_.citation)
 
-      val mr = matches.flatMap(_.MRNumber).orElse(if(ref("no") == "80") Some(1119007) else None)
+      val mr = matches.flatMap(_.MRNumber).orElse(ref("no") match { case  "80" => Some(1119007); case "16"=> Some(215897); case "77" => Some(1092217); case _ => None })
       
       val extra = (ref ++ mr.map(id => "mrnumber" -> ("MR" + id.toString)).toSeq
         ++ matches.flatMap(_.arXiv.map(id => "arxiv" -> id)).toSeq
