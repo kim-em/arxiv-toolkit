@@ -76,7 +76,7 @@ object Search extends Logging {
   
   def inJournalsJumbled(strings: Iterable[String]) = {
     val years = currentYear to 1980 by -1
-    val ranges = (1810,1939) +: (1970 to 1940 by -10).map(y => (y, y+9)) 
+    val ranges = (1810,1939) +: (1970 to 1940 by -5).map(y => (y, y+4)) 
         
     val searches = Random.shuffle((for(year <- years; s <- strings) yield inJournalYear(s, year)) ++ (for((start, end) <- ranges; s <- strings) yield inJournalBetween(s, start, end)))
     
