@@ -36,8 +36,8 @@ object SQLAuxPDFApp extends App {
       for ((a, aux) <- group) {
         try {
           val pdf = a.stablePDFURL.getOrElse("-")
-          SQLTables.mathscinet_aux.filter(_.MRNumber === a.identifier).map(_.pdf).update(Some(pdf))
           println("Adding PDF URL for " + a.identifierString + ": " + pdf)
+          SQLTables.mathscinet_aux.filter(_.MRNumber === a.identifier).map(_.pdf).update(Some(pdf))
         } catch {
           case e: Exception => {
             Logging.error("Exception while inserting \n" + a.bibtex.toBIBTEXString, e)
