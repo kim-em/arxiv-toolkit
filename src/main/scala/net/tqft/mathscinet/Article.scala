@@ -34,6 +34,7 @@ import scala.concurrent.future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.BitSet
 import scala.concurrent.Future
+import net.tqft.util.FirefoxSlurp
 
 trait Article { article =>
   def identifier: Int
@@ -116,6 +117,9 @@ trait Article { article =>
     if (bibtexData.isEmpty) {
       val text = BIBTEX.cache.getOrElseUpdate(identifierString, {
         val lines = Slurp(bibtexURL).toList
+        if(lines.exists(line => line.startsWith("No publications results for"))) {
+          throw new NoSuchElementException("There is no article with MathSciNet number " + identifierString)
+        }
         val start = lines.indexWhere(_.trim.startsWith("<pre>"))
         val finish = lines.indexWhere(_.trim == "</pre>")
         if (start == -1 || finish <= start) {
@@ -837,7 +841,7 @@ object Article {
 
   val ElsevierSlurpCache = {
     import net.tqft.toolkit.functions.Memo._
-    { url: String => HttpClientSlurp.apply(url).toList }.memo
+    { url: String => FirefoxSlurp.apply(url).toList }.memo
   }
 
   private var saving_? = true

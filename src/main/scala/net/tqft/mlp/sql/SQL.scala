@@ -28,6 +28,11 @@ class MathscinetAux(tag: Tag) extends Table[(Int, String, String, String, String
   def citationData = (MRNumber, textTitle, wikiTitle, textAuthors, textCitation, markdownCitation, htmlCitation)
 }
 
+class MathscinetGaps(tag: Tag) extends Table[(Int)](tag, "mathscinet_gaps") {
+  def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
+  def * = (MRNumber)
+}
+
 class MathscinetBIBTEX(tag: Tag) extends Table[Article](tag, "mathscinet_bibtex") {
   def MRNumber = column[Int]("MRNumber", O.PrimaryKey)
   def `type` = column[String]("type")
@@ -211,6 +216,7 @@ object Wiki {
 
 object SQLTables {
   val mathscinet = TableQuery[MathscinetBIBTEX]
+  val mathscinet_gaps = TableQuery[MathscinetGaps]
   val portico = TableQuery[Portico]
   val arxiv = TableQuery[Arxiv]
   object  arxivAuthorNames extends TableQuery(new ArxivAuthorNames(_)) {

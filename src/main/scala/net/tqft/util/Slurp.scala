@@ -35,12 +35,16 @@ import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
 import scala.io.Codec
 import net.tqft.webofscience.WebOfScience
+import org.apache.http.impl.client.BasicCookieStore
+import org.apache.http.impl.cookie.BasicClientCookie
+import org.apache.http.impl.client.HttpClientBuilder
+import net.tqft.sciencedirect.ScienceDirect
 
 trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
   final def getBytes(url: String) = IOUtils.toByteArray(getStream(url))
 
-  def apply(url: String) = {
+  def apply(url: String): Iterator[String] = {
     val bis = new BufferedInputStream(getStream(url))
     val cd = new CharsetDetector()
     cd.setText(bis)
@@ -95,6 +99,12 @@ trait HttpClientSlurp extends Slurp {
 
   val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(cxMgr))
 
+  val cookieStore = new BasicCookieStore();
+  val cookie = new BasicClientCookie("SD_REMOTEACCESS", "92845a49cfd32a5b71ae0b4dcea2f3c130924b6c5014f5d667046e31a9efda345801c40c2ba552b6181d7e037d3e94263fd9f927ef262ddd3d9781711d2637cbde8f8e7e00fe62dbe4895322066480c289bcb8a14a5ea018604b02ff5ce9f9eafd98f637b12d7c55");
+  cookie.setDomain(".sciencedirect.com")
+  cookie.setPath("/")
+  cookieStore.addCookie(cookie);
+
   val params = client.getParams()
   params.setBooleanParameter("http.protocol.handle-redirects", true)
   HttpConnectionParams.setConnectionTimeout(params, 20000);
@@ -110,6 +120,9 @@ trait HttpClientSlurp extends Slurp {
     val get = new HttpGet(url)
     get.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
     referer.map(r => get.setHeader("Referer", r))
+//    if (url.contains("sciencedirect.com")) {
+//      get.setHeader("Cookie", "SD_REMOTEACCESS=92845a49cfd32a5b71ae0b4dcea2f3c130924b6c5014f5d667046e31a9efda345801c40c2ba552b6181d7e037d3e94263fd9f927ef262ddd3d9781711d2637cbde8f8e7e00fe62dbe4895322066480c289bcb8a14a5ea018604b02ff5ce9f9eafd98f637b12d7c55")
+//    }
 
     val response = client.execute(get);
 
@@ -138,6 +151,7 @@ trait FirefoxSlurp extends Slurp {
       try {
         if (url.startsWith("http://www.scopus.com/")) Scopus.preload
         if (url.startsWith("http://apps.webofknowledge.com/")) WebOfScience.preload
+        if (url.startsWith("http://www.sciencedirect.com/")) ScienceDirect.preload
 
         driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
           case Some(element) => {
@@ -151,9 +165,13 @@ trait FirefoxSlurp extends Slurp {
         driver.getTitle match {
           case e @ ("502 Bad Gateway" | "500 Internal Server Error" | "503 Service Temporarily Unavailable") => {
             Logging.error("Exception accessing " + url, new HttpException(e))
-            if (throttle == 0) throttle = 5000 else throttle *= 2
-            Thread.sleep(throttle)
-            getStream(url)
+            //            if (throttle == 0) throttle = 5000 else throttle *= 2
+            //            if (throttle < 20000 && throttle > 0) {
+            //              Thread.sleep(throttle)
+            //              getStream(url)
+            //            } else {
+            throw new HttpException(e)
+            //            }
           }
           case e @ ("MathSciNet Access Error") => throw new HttpException("403 " + e)
           case _ =>
@@ -276,8 +294,8 @@ object FirefoxSlurp extends FirefoxSlurp {
 }
 
 trait MathSciNetMirrorSlurp extends Slurp {
-  val offset = Random.nextInt(10 * 60 * 1000)
-  val mirrorList = Random.shuffle(List( /*"www.ams.org", */ /* "ams.rice.edu", */ /*"ams.impa.br", */ "ams.math.uni-bielefeld.de", "ams.mpim-bonn.mpg.de", "ams.u-strasbg.fr"))
+  private var offset = Random.nextInt(10 * 60 * 1000)
+  val mirrorList = Random.shuffle(List("www.ams.org" /*"ams.rice.edu",*/ /* "ams.impa.br",*/ /* "ams.math.uni-bielefeld.de", */ /*"ams.mpim-bonn.mpg.de",*/ /*"ams.u-strasbg.fr"*/ ))
   def mirror = mirrorList((((new Date().getTime() + offset) / (10 * 60 * 1000)) % mirrorList.size).toInt)
 
   override def getStream(url: String) = {
@@ -286,7 +304,14 @@ trait MathSciNetMirrorSlurp extends Slurp {
     } else {
       url
     }
+    //    try {
     super.getStream(newURL)
+    //    } catch {
+    //      case e: HttpException => {
+    //        offset = Random.nextInt(10 * 60 * 1000)
+    //        getStream(url)
+    //      }
+    //    }
   }
 }
 
@@ -295,7 +320,7 @@ trait ScopusSlurp extends CachingSlurp {
     super.apply(url).map({ line =>
       if (line.contains("Scopus cannot re-create the page that you bookmarked.")) {
         -=(url)
-        throw new Exception("Scopus won't allow bookmarking this page! (I've attempt to remove the result from the cache.)")
+        throw new Exception("Scopus won't allow bookmarking this page! (I've attempted to remove the result from the cache.)")
       }
       line
     })
@@ -306,10 +331,10 @@ trait CachingSlurp extends Slurp {
   protected def cache(url: String): scala.collection.mutable.Map[String, Array[Byte]]
 
   var overwriteCache = false
-  
+
   override def getStream(url: String) = {
     Logging.info("Looking in cache for " + url)
-    
+
     def retrieve = {
       Throttle(url)
       Logging.info("Loading " + url)
@@ -317,8 +342,8 @@ trait CachingSlurp extends Slurp {
       Logging.info("   ... finished")
       result
     }
-    
-    val bytes = if(overwriteCache) {
+
+    val bytes = if (overwriteCache) {
       Logging.warn("Overwriting cache entry for: " + url)
       val result = retrieve
       cache(url).put(url, result)
@@ -349,12 +374,12 @@ trait S3CachingSlurp extends CachingSlurp {
     })
   }
 
-//  def -=(url: String): this.type = {
-//    import net.tqft.toolkit.collections.MapTransformer._
-//    val hostName = new URL(url).getHost
-//    s3.bytes(hostName + bucketSuffix).transformKeys({ relativeURL: String => "http://" + hostName + "/" + relativeURL }, { absoluteURL: String => new URL(absoluteURL).getFile().stripPrefix("/") }) -= url
-//    this
-//  }
+  //  def -=(url: String): this.type = {
+  //    import net.tqft.toolkit.collections.MapTransformer._
+  //    val hostName = new URL(url).getHost
+  //    s3.bytes(hostName + bucketSuffix).transformKeys({ relativeURL: String => "http://" + hostName + "/" + relativeURL }, { absoluteURL: String => new URL(absoluteURL).getFile().stripPrefix("/") }) -= url
+  //    this
+  //  }
 
   override def cache(url: String) = {
     val hostName = new URL(url).getHost
@@ -371,7 +396,7 @@ trait ThrottledSlurp extends Slurp {
 
 object Throttle extends Logging {
   val defaultInterval = 1000
-  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 100000, "scopus.com" -> 30000, "arxiv.org" -> 5000, "google.com" -> 500, "scholar.google.com" -> 500)
+  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 60000, "scopus.com" -> 30000, "arxiv.org" -> 5000, "google.com" -> 500, "scholar.google.com" -> 500)
   val lastThrottle = scala.collection.mutable.Map[String, Long]().withDefaultValue(0)
 
   // poisson distributed gaps
