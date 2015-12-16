@@ -61,7 +61,7 @@ object ParsePubs extends App {
         ++ doi.map(d => "doi" -> d).toSeq
         ++ ref.get("by").map(by => "by" -> pandoc.latexToText(by))
         ++ ref.get("finalinfo").map(finalinfo => "finalinfo" -> pandoc.latexToText(finalinfo))
-        ++ ref.get("inbook").map(inbook => "inbook" -> pandoc.latexToText(inbook))
+        ++ ref.get("inbook").map(inbook => "inbook" -> pandoc.latexToHTML(inbook))
         ++ ref.get("paper").map(paper => "paper" -> pandoc.latexToText(paper))
         ++ ref.get("pages").map(pages => "pages" -> pages.stripSuffix(";"))).toMap
 
@@ -127,19 +127,17 @@ object ParsePubs extends App {
     val decade = ((yr(papers.head) / 10) * 10).toString + "s"
 
     sb ++= s"""<div class="timeline" id="$decade">$decade</div>\n"""
-    sb ++= s"""<dl class="collected-works">\n"""
+    sb ++= s"""<ol class="collected-works" start="${papers.head("no")}">\n"""
 
     for (paper <- papers) {
 
       try {
-        sb ++= " <dt>\n"
-        sb ++= s"""  ${paper("no")}. ${pdfLink(paper)}\n"""
-        sb ++= " </dt>\n"
-        sb ++= " <dd>\n"
+        sb ++= " <li>\n"
+        line(s"""  ${pdfLink(paper)}""")
 
         def line(s: String) = {
           if (s.trim.nonEmpty) {
-            sb ++= "  " + s + "<br/>\n"
+            sb ++= "  " + s.trim.replaceAll(" ,", ",").stripPrefix(",") + "<br/>\n"
           }
         }
         def x(a: String) = {
@@ -153,10 +151,9 @@ object ParsePubs extends App {
         }
 
         line(s"${x("by")}")
-        line(s"${x("jour")} ${y("vol", "<b>", "</b>")} ${x("inbook")} ${x("publ")} ${x("publaddr")} ${y("yr", "(", ")")} ${y("pages", "pp. ", "")}")
+        line(s"${x("jour")} ${y("vol", "<b>", "</b>")} ${x("inbook")} ${y("publ", ", ", "")} ${x("publaddr")} ${y("yr", "(", ")")} ${y("pages", "pp. ", "")}")
         line(y("finalinfo", "(", ")"))
         line(s"${MRLink(paper)} ${DOILink(paper)}")
-        sb ++= " </dd>\n"
       } catch {
         case e: Exception => {
           println(e)
@@ -166,7 +163,7 @@ object ParsePubs extends App {
       }
     }
 
-    sb ++= "</dl>\n"
+    sb ++= "</ol>\n"
   }
 
     sb ++= "<!-- end of automatically generated section: please do not edit by hand --->\n"
