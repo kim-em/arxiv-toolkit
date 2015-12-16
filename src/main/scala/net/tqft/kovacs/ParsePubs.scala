@@ -39,11 +39,26 @@ object ParsePubs extends App {
     val ref2 = (for (ref <- refs) yield {
       val matches = net.tqft.citationsearch.Search.goodMatch(ref.get("paper").getOrElse(ref("book")) + " Kovacs " + ref.get("by").getOrElse("").replaceAll("with", "") + " " + ref.get("jour").getOrElse("") + " " + ref.get("year").getOrElse("") + " " + ref.get("pages").getOrElse("") + " " + ref.get("vol").getOrElse("")).map(_.citation)
 
-      val mr = matches.flatMap(_.MRNumber).orElse(ref("no") match { case  "80" => Some(1119007); case "16"=> Some(215897); case "77" => Some(1092217); case _ => None })
-      
+      val mr = ref("no") match {
+        case "16"=> Some(215897)
+        case "47" => None
+        case "53" => None
+        case "77" => Some(1092217)
+        case "80" => Some(1119007)
+        case "84" => None
+        case "87" => None
+        case _ => matches.flatMap(_.MRNumber)
+      }
+        
+      val doi = ref("no") match {
+        case "48" => Some("10.1017/S1446788700024770")
+        case "98" => Some("10.1017/S1446788700001130")
+        case _ => mr.flatMap(i => Article(i).DOI)
+      }
+        
       val extra = (ref ++ mr.map(id => "mrnumber" -> ("MR" + id.toString)).toSeq
         ++ matches.flatMap(_.arXiv.map(id => "arxiv" -> id)).toSeq
-        ++ matches.flatMap(_.MRNumber.flatMap(i => Article(i).DOI.map(doi => "doi" -> doi))).toSeq
+        ++ doi.map(d => "doi" -> d).toSeq
         ++ ref.get("by").map(by => "by" -> pandoc.latexToText(by))
         ++ ref.get("finalinfo").map(finalinfo => "finalinfo" -> pandoc.latexToText(finalinfo))
         ++ ref.get("inbook").map(inbook => "inbook" -> pandoc.latexToHTML(inbook))
@@ -66,7 +81,7 @@ object ParsePubs extends App {
 
   val sb = new StringBuilder
   
-  sb ++= "<!-- start of automatically generated section: please do not edit by hand --->\n"
+  sb ++= "<!-- start of automatically generated section: please do not edit by hand -->\n"
 
   def MRLink(paper: Map[String, String]) = {
     paper.get("mrnumber") match {
