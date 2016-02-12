@@ -83,24 +83,38 @@ trait Article { article =>
     bibtex.get("series"))
 
   def saveSQL {
-    if(Article.saving_?) {
-    if (!Articles.identifiersInDatabase.contains(identifier)) {
-      Future {
-        import scala.slick.driver.MySQLDriver.simple._
+    if (Article.saving_?) {
+      if (!Articles.identifiersInDatabase.contains(identifier)) {
+        Future {
+          import scala.slick.driver.MySQLDriver.simple._
 
-        try {
-          SQL { implicit session =>
-            SQLTables.mathscinet += this
-            Logging.info("Saving to the database:\n" + bibtex.toBIBTEXString)
+          try {
+            SQL { implicit session =>
+              SQLTables.mathscinet += this
+              Logging.info("Saving to the database:\n" + bibtex.toBIBTEXString)
+            }
+          } catch {
+            case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {}
+            case e: Exception => {
+              Logging.error("Exception while inserting \n" + bibtex.toBIBTEXString, e)
+            }
           }
-        } catch {
-          case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {}
-          case e: Exception => {
-            Logging.error("Exception while inserting \n" + bibtex.toBIBTEXString, e)
+
+          try {
+            SQL { implicit session =>
+              val data = (identifier, textTitle, wikiTitle, authorsText, citation_text, citation_markdown, citation_html)
+              SQLTables.mathscinet_aux.citationData += (data)
+              println(SQLTables.mathscinet_aux.citationData.insertStatementFor(data) + ";")
+            }
+          } catch {
+            case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
+            }
+            case e: Exception => {
+              Logging.error("Exception while inserting \n" + article.bibtex.toBIBTEXString, e)
+            }
           }
         }
       }
-    }
     }
   }
 
@@ -117,7 +131,13 @@ trait Article { article =>
     if (bibtexData.isEmpty) {
       val text = BIBTEX.cache.getOrElseUpdate(identifierString, {
         val lines = Slurp(bibtexURL).toList
-        if(lines.exists(line => line.startsWith("No publications results for"))) {
+        if (lines.exists(line => line.startsWith("No publications results for"))) {
+          try {
+            BIBTEX.cache -= identifierString
+            Slurp -= bibtexURL
+          } catch {
+            case e: Exception => Logging.warn("Failed to clean BIBTEX database.", e)
+          }
           throw new NoSuchElementException("There is no article with MathSciNet number " + identifierString)
         }
         val start = lines.indexWhere(_.trim.startsWith("<pre>"))
@@ -483,7 +503,7 @@ trait Article { article =>
   lazy val pdfURL: Option[String] = {
     // This mimics the logic of direct-article-link.user.js 
 
-    val lookup = if (ISSN == ISSNs.`K-Theory`) {
+    val lookup = if (ISSNOption.nonEmpty && ISSN == ISSNs.`K-Theory`) {
       // K-Theory, have to get it from Portico for now
       // FIXME this is apparently broken
       val toc = HttpClientSlurp.getString("http://www.portico.org/Portico/browse/access/toc.por?journalId=ISSN_09203036&issueId=ISSN_09203036v" + volume.toString + "i" + number)
@@ -624,7 +644,7 @@ trait Article { article =>
       }
     }
 
-    lookup.orElse(if (ISSNs.Elsevier.contains(ISSN)) searchElsevierForPDFURL else None)
+    lookup.orElse(if (ISSNOption.nonEmpty && ISSNs.Elsevier.contains(ISSN)) searchElsevierForPDFURL else None)
   }
 
   def correctedURL = URL match {
@@ -801,14 +821,7 @@ object Article {
       val article = new Article {
         override val identifier = identifier_
       }
-      SQL {
-        implicit session =>
-          try {
-            SQLTables.mathscinet.insert(article)
-          } catch {
-            case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException => {}
-          }
-      }
+      article.saveSQL
       article
     })
   }

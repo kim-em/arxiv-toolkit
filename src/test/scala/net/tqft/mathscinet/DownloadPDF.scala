@@ -1,8 +1,12 @@
 package net.tqft.mathscinet
 
-object DownloadPDF extends App {
-  for(a <- args) {
-    val article = Article(a)
-    article.savePDF("/Users/scott/Downloads/")
+import net.tqft.toolkit.Extractors._
+
+object DownloadPDFsBy extends App {
+  for(Int(authorId) <- args) {
+    val author = Author(authorId, "")
+    for(article <- author.articles) {
+      article.savePDF("/Users/scott/Literature/Downloads/")
+    }
   }
 }
