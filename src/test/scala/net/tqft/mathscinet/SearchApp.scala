@@ -7,7 +7,7 @@ import net.tqft.journals.ISSNs
 import scala.util.Random
 
 object SearchApp extends App {
-  println(Search.query("pg4" -> "AUCN", "s4" -> "a*", "d" -> Random.nextInt().toString).take(100).size)
+
   println(Search.inTopJournalsJumbled(200).size)
   println(Search.during(2013).size)
   

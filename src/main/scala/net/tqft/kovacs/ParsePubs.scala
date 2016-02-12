@@ -39,7 +39,7 @@ object ParsePubs extends App {
     val ref2 = (for (ref <- refs) yield {
       val matches = net.tqft.citationsearch.Search.goodMatch(ref.get("paper").getOrElse(ref("book")) + " Kovacs " + ref.get("by").getOrElse("").replaceAll("with", "") + " " + ref.get("jour").getOrElse("") + " " + ref.get("year").getOrElse("") + " " + ref.get("pages").getOrElse("") + " " + ref.get("vol").getOrElse("")).map(_.citation)
 
-      val mr = ref("no") match {
+      val mr = ref("no").trim match {
         case "16"=> Some(215897)
         case "47" => None
         case "53" => None
@@ -169,7 +169,7 @@ object ParsePubs extends App {
     sb ++= "</dl>\n"
   }
 
-    sb ++= "<!-- end of automatically generated section: please do not edit by hand --->\n"
+    sb ++= "<!-- end of automatically generated section: please do not edit by hand -->\n"
 
   
   val html_pw = new PrintWriter(new FileOutputStream(html))
