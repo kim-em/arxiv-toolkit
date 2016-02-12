@@ -19,6 +19,8 @@ object FromTheTop extends App {
     new scala.collection.mutable.BitSet(4000000) ++= (for (a <- SQLTables.mathscinet_gaps) yield a.MRNumber).iterator
   })
   
+  println("gaps: " + gaps.size)
+  
   for (i <- (3397000 to 3000000 by -1); if !Articles.identifiersInDatabase.contains(i); if !gaps.contains(i)) {
     try {
       Article(i)
