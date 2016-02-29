@@ -30,7 +30,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.DirectoryStream
 import java.nio.file.Path
-import scala.concurrent.future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.BitSet
 import scala.concurrent.Future
@@ -400,6 +399,8 @@ trait Article { article =>
   }
 
   private def searchElsevierForPDFURL: Option[String] = {
+    if(volumeOption.isEmpty) return None
+    
     Logging.info("Attempting to find URL for Elsevier article.")
 
     val issn = correctedISSN
