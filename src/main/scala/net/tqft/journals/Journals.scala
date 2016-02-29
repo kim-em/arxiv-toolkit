@@ -25,27 +25,27 @@ object ISSNs {
 
 case class Journal(issn: String) {
   def articles: List[Article] = {
-    import scala.slick.driver.MySQLDriver.simple._
+    import slick.driver.MySQLDriver.api._
 
-    SQL { implicit session =>
+    SQL { 
       (for (
         a <- SQLTables.mathscinet;
         if a.issn === issn;
         if a.`type` === "article"
-      ) yield a).list
+      ) yield a).result
     }
   }
   def upToYear(year: Int): Iterator[Article] = {
-    import scala.slick.driver.MySQLDriver.simple._
+    import slick.driver.MySQLDriver.api._
 
-    SQL { implicit session =>
+    (SQL { 
       (for (
         a <- SQLTables.mathscinet;
         if a.issn === issn;
         if a.`type` === "article";
         if a.year <= year.toString
-      ) yield a).list.iterator
-    }
+      ) yield a).result
+    }).iterator
 
   }
 
@@ -81,9 +81,9 @@ object Journals {
     "0019-9958" -> 12 /* this appears to be an oversight? c.f. my email on 2014-02-03 */).withDefault(_ => 1)
 
    lazy val journalNames = {
-      import scala.slick.driver.MySQLDriver.simple._
+      import slick.driver.MySQLDriver.api._
   
-      SQL { implicit session =>
+      SQL { 
         (for (
           a <- SQLTables.mathscinet;
           if a.journal.isNotNull;

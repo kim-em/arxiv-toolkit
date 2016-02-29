@@ -10,7 +10,7 @@ import net.tqft.mlp.sql.Wiki
 
 object SQLAuxFreeApp extends App {
 
-   val pages =  SQL { implicit session =>
+   val pages =  SQL { 
     val query = (for (
       p <- Wiki.Pages;
       if p.page_namespace === 100;
@@ -25,7 +25,7 @@ object SQLAuxFreeApp extends App {
     query.list
   }
 
-  SQL { implicit session =>
+  SQL { 
     for ((title, text) <- pages) {
       val r = "(http://[^ \\n]*)".r
       val links = r.findAllMatchIn(text).map(_.group(1)).toSeq

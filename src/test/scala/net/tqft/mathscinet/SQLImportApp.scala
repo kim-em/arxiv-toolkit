@@ -15,7 +15,7 @@ object SQLImportApp extends App {
   val cache = AnonymousS3("LoM-bibtex")
 
 
-  SQL { implicit session =>
+  SQL { 
       for (group <- cache.keysIterator.toSeq.sorted.reverse.grouped(1000); groupPar = { val p = group.par; p.tasksupport = pool; p }; k <- groupPar; a = Article(k)) {
         println("inserting: " + a.identifierString)
         try {

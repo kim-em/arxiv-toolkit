@@ -1,10 +1,12 @@
 package net.tqft.mlp.sql
 
-import scala.slick.driver.MySQLDriver.simple._
+import slick.driver.MySQLDriver.api._
 import net.tqft.mathscinet.Article
 import net.tqft.util.BIBTEX
 import net.tqft.scholar.Scholar
 import java.sql.Date
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 class ArxivMathscinetMatches(tag: Tag) extends Table[(String, Int, Double, String)](tag, "arxiv_mathscinet_matches") {
   def arxivid = column[String]("arxivid")
@@ -56,7 +58,8 @@ class MathscinetBIBTEX(tag: Tag) extends Table[Article](tag, "mathscinet_bibtex"
   def edition = column[Option[String]]("edition")
   def publisher = column[Option[String]]("publisher")
   def series = column[Option[String]]("series")
-  def * = (MRNumber, `type`, title, booktitle, author, editor, doi, url, journal, fjournal, issn, isbn, volume, issue, year, pages, mrclass, number, address, edition, publisher, series) <> (buildArticle, { a: Article => Some(a.sqlRow) })
+  def note = column[Option[String]]("note")
+  def * = (MRNumber, `type`, title, booktitle, author, editor, doi, url, journal, fjournal, issn, isbn, volume, issue, year, pages, mrclass, number, address, edition, publisher, (series, note)) <> (buildArticle, { a: Article => Some(a.sqlRow) })
 
   private def buildArticle(data: bibtexTuple): Article = {
     val bibtexData = (
@@ -79,7 +82,8 @@ class MathscinetBIBTEX(tag: Tag) extends Table[Article](tag, "mathscinet_bibtex"
       ("address" -> data._19) ::
       ("edition" -> data._20) ::
       ("publisher" -> data._21) ::
-      ("series" -> data._22) ::
+      ("series" -> data._22._1) ::
+      ("note" -> data._22._2) ::
       Nil).collect({ case (k, Some(v)) => (k -> v) })
 
     val result = new Article {
@@ -109,6 +113,14 @@ class Arxiv(tag: Tag) extends Table[net.tqft.arxiv2.Article](tag, "arxiv") {
   def * = (arxivid, created, updated, authors, title, categories, comments, proxy, reportno, mscclass, acmclass, journalref, doi, license, `abstract`) <> ((net.tqft.arxiv2.Article.apply _).tupled, { a: net.tqft.arxiv2.Article => Some(a.sqlRow) })
 }
 
+class ArxivAux(tag: Tag) extends Table[(String, String, String)](tag, "arxiv_aux") {
+  def arxivid = column[String]("arxivid", O.PrimaryKey)
+  def textTitle = column[String]("textTitle")
+  def textAuthors = column[String]("textAuthors")
+  def * = (arxivid, textTitle, textAuthors)
+}
+
+
 class ArxivAuthorNames(tag: Tag) extends Table[net.tqft.arxiv2.Author](tag, "arxiv_author_names") {
   def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
   def keyname = column[String]("keyname")
@@ -121,10 +133,10 @@ class ArxivAuthorNames(tag: Tag) extends Table[net.tqft.arxiv2.Author](tag, "arx
 
 class ArxivAuthorshipsByName(tag: Tag) extends Table[(Int, String, Int)](tag, "arxiv_authorships_by_name") {
   def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
-  def arxiv_id = column[String]("arxiv_id")
+  def arxivid = column[String]("arxivid")
   def author_name_id = column[Int]("author_name_id")
-  def * = (id, arxiv_id, author_name_id)
-  def insertView = (arxiv_id, author_name_id)
+  def * = (id, arxivid, author_name_id)
+  def insertView = (arxivid, author_name_id)
 }
 
 class DOI2WebOfScience(tag: Tag) extends Table[(String, String)](tag, "doi2webofscience") {
@@ -219,6 +231,7 @@ object SQLTables {
   val mathscinet_gaps = TableQuery[MathscinetGaps]
   val portico = TableQuery[Portico]
   val arxiv = TableQuery[Arxiv]
+  val arxiv_aux = TableQuery[ArxivAux]
   object  arxivAuthorNames extends TableQuery(new ArxivAuthorNames(_)) {
     def insertView = map(name => name.insertView)
     
@@ -243,15 +256,16 @@ object SQLTables {
     def citationData = map(aux => aux.citationData)
   }
 
-  def mathscinet(ISSNs: TraversableOnce[String], years: TraversableOnce[Int]): Iterator[Article] = {
-    import scala.slick.driver.MySQLDriver.simple._
-    SQL { implicit session =>
-      for (j <- ISSNs.toIterator; y <- years.toIterator; a <- SQLTables.mathscinet.filter(_.issn === j).filter(_.year === y.toString).iterator) yield a
-    }
-
-  }
+//  def mathscinet(ISSNs: TraversableOnce[String], years: TraversableOnce[Int]): Iterator[Article] = {
+//    import slick.driver.MySQLDriver.api._
+//    SQL { 
+//      for (j <- ISSNs.toIterator; y <- years.toIterator; a <- SQLTables.mathscinet.filter(_.issn === j).filter(_.year === y.toString).iterator) yield a
+//    }
+//
+//  }
 }
 
+
 object SQL {
-  def apply[A](closure: slick.driver.MySQLDriver.backend.Session => A): A = Database.forURL("jdbc:mysql://mysql.tqft.net/mathematicsliteratureproject?user=mathscinetbot&password=zytopex", driver = "com.mysql.jdbc.Driver") withSession closure
+  def apply[R](x: DBIOAction[R, NoStream, Nothing]): R = Await.result(db.run(x), Duration.Inf)
 }

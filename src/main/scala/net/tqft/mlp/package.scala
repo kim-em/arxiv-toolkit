@@ -23,12 +23,12 @@ package object mlp {
 
   val selectedYears = Seq(2013)
 
-  def selectedCoverage = {
-    import scala.slick.driver.MySQLDriver.simple._
-    SQL { implicit session =>
-      for (j <- selectedJournals; y <- selectedYears; a <- SQLTables.mathscinet.filter(_.issn === j).filter(_.year === y.toString).iterator) yield a
-    }
-  }
+//  def selectedCoverage = {
+//    import slick.driver.MySQLDriver.api._
+//    SQL { 
+//      for (j <- selectedJournals; y <- selectedYears; a <- SQLTables.mathscinet.filter(_.issn === j).filter(_.year === y.toString).iterator) yield a
+//    }
+//  }
 
   def extendedJournals = selectedJournals ++ ISSNs.Elsevier.iterator 
   def extendedYears = Seq(2010, 2013)

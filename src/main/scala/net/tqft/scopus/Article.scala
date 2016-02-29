@@ -172,24 +172,24 @@ object Article {
   def fromDOI(doi: String): Option[Article] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
-    import scala.slick.driver.MySQLDriver.simple._
-    val lookup = SQL { implicit session =>
-      (for (
+    import slick.driver.MySQLDriver.api._
+    val lookup = 
+      SQL { (for (
         a <- SQLTables.doi2scopus;
         if a.doi === doi
-      ) yield a.scopus_id).run.headOption
-    }
+      ) yield a.scopus_id).result.headOption }
+    
     lookup match {
       case Some("") => None
       case Some(scopus_id) => Some(Article(scopus_id))
       case None => {
         searchForDOI(doi) match {
           case Some(scopus_id) => {
-            SQL { implicit session => SQLTables.doi2scopus += (doi, scopus_id) }
+            SQL { SQLTables.doi2scopus += (doi, scopus_id) }
             Some(Article(scopus_id))
           }
           case None => {
-            SQL { implicit session => SQLTables.doi2scopus += (doi, "") }
+            SQL {  SQLTables.doi2scopus += (doi, "") }
             None
           }
         }

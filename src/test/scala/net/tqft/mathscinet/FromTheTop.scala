@@ -11,27 +11,33 @@ import net.tqft.toolkit.Logging
 object FromTheTop extends App {
   import scala.slick.driver.MySQLDriver.simple._
 
-  val max = (SQL { implicit session =>
+  val max = (SQL { 
     (for (a <- SQLTables.mathscinet) yield a.MRNumber).max.run
   }).get
 
-  val gaps = (SQL { implicit session => 
+  val gaps = (SQL { 
     new scala.collection.mutable.BitSet(4000000) ++= (for (a <- SQLTables.mathscinet_gaps) yield a.MRNumber).iterator
   })
-  
+
   println("gaps: " + gaps.size)
-  
+
   for (i <- (3397000 to 3000000 by -1); if !Articles.identifiersInDatabase.contains(i); if !gaps.contains(i)) {
     try {
       Article(i)
     } catch {
       case e: NoSuchElementException => try {
         Logging.info(s"Recording that $i is not a valid MR number.")
-        (SQL { implicit session => SQLTables.mathscinet_gaps += (i) })
+        (SQL {  SQLTables.mathscinet_gaps += (i) })
       } catch {
         case e: Throwable => e.printStackTrace()
       }
-      case e: Throwable => e.printStackTrace()
+      case e: Throwable => {
+        e.printStackTrace()
+        if (e.getMessage.startsWith("500")) {
+          Logging.warn("Sleeping for 20 mins")
+          Thread.sleep(1200000L)
+        }
+      }
     }
   }
 

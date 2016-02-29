@@ -11,7 +11,7 @@ object JournalsNotOnTheERAList extends App {
   def count(issn: String) = {
     import scala.slick.driver.MySQLDriver.simple._
 
-    SQL { implicit session =>
+    SQL { 
       (for (
         a <- SQLTables.mathscinet;
         if a.issn === issn;

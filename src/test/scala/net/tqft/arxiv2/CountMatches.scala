@@ -6,7 +6,7 @@ import scala.slick.driver.MySQLDriver.simple._
 
 object CountMatches extends App {
 
-  val ids = SQL { implicit session =>
+  val ids = SQL { 
     (for (a <- SQLTables.arxiv; if a.categories.startsWith("math"); if a.arxivid.startsWith("08")) yield a.arxivid).run
   }
 
