@@ -8,10 +8,10 @@ import net.tqft.toolkit.amazon.S3
  * @author scott
  */
 object UpdatePreliminary extends App {
-  import scala.slick.driver.MySQLDriver.simple._
+  import slick.driver.MySQLDriver.api._
 
   val preliminary = (SQL { 
-    (for (a <- SQLTables.mathscinet; if a.mrclass === "Preliminary Data") yield a).run
+    (for (a <- SQLTables.mathscinet; if a.mrclass === "Preliminary Data") yield a)
   })
 
   def getArticle(id: Int): Article = {

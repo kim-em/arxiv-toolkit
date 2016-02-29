@@ -25,12 +25,13 @@ object OAI2MRef extends App {
 
   import slick.driver.MySQLDriver.api._
 
-  SQL { 
-    val articlesWithoutMatchingDOI = for (
+  
+    val articlesWithoutMatchingDOI = SQL { for (
       a <- SQLTables.arxiv;
-      if a.journalref.isNotNull;
-      if a.doi.isNull || !SQLTables.mathscinet.filter(_.doi === a.doi).exists
+      if a.journalref.isDefined;
+      if a.doi.isEmpty || !SQLTables.mathscinet.filter(_.doi === a.doi).exists
     ) yield (a.arxivid, a.title, a.authors, a.journalref)
+  }
 
     for ((id, title, authorsXML, journalRef) <- articlesWithoutMatchingDOI) {
       try {
@@ -51,7 +52,6 @@ object OAI2MRef extends App {
           Logging.warn("Exception while looking up article using MRef", e)
         }
       }
-    }
   }
 
   println(count)

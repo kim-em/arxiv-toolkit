@@ -11,7 +11,7 @@ object UpdateTheses extends App {
   import slick.driver.MySQLDriver.api._
 
   val thesesWithoutNote = (SQL { 
-    (for (a <- SQLTables.mathscinet; if a.publisher === "ProQuest LLC, Ann Arbor, MI"; if a.note.isEmpty) yield a).run
+    (for (a <- SQLTables.mathscinet; if a.publisher === "ProQuest LLC, Ann Arbor, MI"; if a.note.isEmpty) yield a)
   })
 
   def getArticle(id: Int): Article = {

@@ -2,10 +2,10 @@ package net.tqft.arxiv2
 
 import net.tqft.mlp.sql.SQL
 import net.tqft.mlp.sql.SQLTables
-import scala.slick.driver.MySQLDriver.simple._
+import slick.driver.MySQLDriver.api._
 
 object ListProlificAuthors extends App {
-  SQL { 
+
     val authorsArticlesQuery = (for (
       author <- SQLTables.arxivAuthorNames;
       article <- SQLTables.arxivAuthorshipsByName;
@@ -16,8 +16,8 @@ object ListProlificAuthors extends App {
       case (author, articles) => (author, articles.length)
     }).sortBy(_._2.desc)
     
-    for((author, count) <- authorsNumberOfArticlesQuery.take(5)) {
+    for((author, count) <- SQL { authorsNumberOfArticlesQuery.take(5) }) {
       println(author.fullName + " has " + count + " articles.")
     }
-  }
+
 }

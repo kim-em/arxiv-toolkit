@@ -2,7 +2,7 @@ package net.tqft.arxiv2
 
 import net.tqft.mlp.sql.SQL
 import net.tqft.mlp.sql.SQLTables
-import scala.slick.driver.MySQLDriver.simple._
+import slick.driver.MySQLDriver.api._
 import java.util.Date
 
 object CompleteAuthorshipTable extends App {
@@ -10,7 +10,7 @@ object CompleteAuthorshipTable extends App {
   val articles = SQL {  (for (
         (article, authorship) <- SQLTables.arxiv joinLeft SQLTables.arxivAuthorshipsByName on (_.arxivid === _.arxivid);
         if(authorship.isEmpty)
-      ) yield article).take(1000).selectStatement }
+      ) yield article).take(1000) }
 
   println(articles)
   

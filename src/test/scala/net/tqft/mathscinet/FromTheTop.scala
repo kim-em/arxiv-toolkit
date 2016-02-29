@@ -9,14 +9,11 @@ import net.tqft.toolkit.Logging
  * @author scott
  */
 object FromTheTop extends App {
-  import scala.slick.driver.MySQLDriver.simple._
+  import slick.driver.MySQLDriver.api._
 
-  val max = (SQL { 
-    (for (a <- SQLTables.mathscinet) yield a.MRNumber).max.run
-  }).get
-
-  val gaps = (SQL { 
-    new scala.collection.mutable.BitSet(4000000) ++= (for (a <- SQLTables.mathscinet_gaps) yield a.MRNumber).iterator
+  
+  val gaps = (
+    new scala.collection.mutable.BitSet(4000000) ++= SQL { (for (a <- SQLTables.mathscinet_gaps) yield a.MRNumber) 
   })
 
   println("gaps: " + gaps.size)

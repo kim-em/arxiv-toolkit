@@ -2,12 +2,12 @@ package net.tqft.arxiv2
 
 import net.tqft.mlp.sql.SQLTables
 import net.tqft.mlp.sql.SQL
-import scala.slick.driver.MySQLDriver.simple._
+import slick.driver.MySQLDriver.api._
 
 object CountMatches extends App {
 
   val ids = SQL { 
-    (for (a <- SQLTables.arxiv; if a.categories.startsWith("math"); if a.arxivid.startsWith("08")) yield a.arxivid).run
+    (for (a <- SQLTables.arxiv; if a.categories.startsWith("math"); if a.arxivid.startsWith("08")) yield a.arxivid)
   }
 
   var matched = 0
