@@ -24,7 +24,7 @@ object ISSNs {
 }
 
 case class Journal(issn: String) {
-  def articles: List[Article] = {
+  def articles: Seq[Article] = {
     import slick.driver.MySQLDriver.api._
 
     SQL { 
@@ -32,7 +32,7 @@ case class Journal(issn: String) {
         a <- SQLTables.mathscinet;
         if a.issn === issn;
         if a.`type` === "article"
-      ) yield a).result
+      ) yield a)
     }
   }
   def upToYear(year: Int): Iterator[Article] = {
@@ -83,15 +83,18 @@ object Journals {
    lazy val journalNames = {
       import slick.driver.MySQLDriver.api._
   
-      SQL { 
+      val result = (SQL { 
         (for (
           a <- SQLTables.mathscinet;
-          if a.journal.isNotNull;
-          if a.issn.isNotNull
+          if a.journal.isDefined;
+          if a.issn.isDefined
         ) yield a).groupBy(x => (x.issn, x.journal)).map({
           case (p, a) => (p._1.get, p._2.get, a.length)
-        }).list.groupBy(_._1).map(t => (t._1.toUpperCase, pandoc.latexToText(t._2.sortBy(-_._3).head._2)))
-      }
+        }).result
+      })
+      
+      result.groupBy(_._1).map(t => (t._1.toUpperCase, pandoc.latexToText(t._2.sortBy(-_._3).head._2)))
+      
     }
   
   //  for (l <- journalNames) println("\"" + l._1 + "\" -> \"" + l._2 + "\",")

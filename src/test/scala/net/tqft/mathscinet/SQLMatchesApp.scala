@@ -2,7 +2,7 @@ package net.tqft.mathscinet
 
 import net.tqft.mlp.sql.SQL
 import net.tqft.mlp.sql.SQLTables
-import scala.slick.driver.MySQLDriver.simple._
+import slick.driver.MySQLDriver.api._
 import net.tqft.toolkit.Logging
 import net.tqft.util.pandoc
 import scala.collection.parallel.ForkJoinTaskSupport
@@ -10,16 +10,15 @@ import net.tqft.citationsearch._
 
 object SQLMatchesApp extends App {
 
-  SQL { 
     //    There's no good way to rebuild this table; if the citation search database is expanded, just clear this table and rebuild.
     //    SQLTables.arxiv_mathscinet_matches.delete
 
-    def page(k: Int): List[(String, String, String, Option[String])] = try {
-      (for (
+    def page(k: Int): Seq[(String, String, String, Option[String])] = try {
+     SQL { (for (
         a <- SQLTables.arxiv;
-        if a.doi.isNull;
+        if a.doi.isEmpty;
         if !SQLTables.arxiv_mathscinet_matches.filter(_.arxivid === a.arxivid).exists
-      ) yield (a.arxivid, a.title, a.authors, a.journalref)).drop(k * 100).take(100).list
+      ) yield (a.arxivid, a.title, a.authors, a.journalref)).drop(k * 100).take(100) }
     } catch {
       case e: Exception => {
         Logging.warn(e)
@@ -37,8 +36,10 @@ object SQLMatchesApp extends App {
         if i == 0 || score > 0.5;
         if c.MRNumber.nonEmpty
       ) {
+        SQL {
         SQLTables.arxiv_mathscinet_matches += ((arxivid, c.MRNumber.get, score, c.best))
+        }
       }
     }
-  }
+
 }
