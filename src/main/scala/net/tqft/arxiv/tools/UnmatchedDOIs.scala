@@ -4,9 +4,9 @@ import net.tqft.mlp.sql._
 
 object UnmatchedDOIs extends App {
 
-  import scala.slick.driver.MySQLDriver.simple._
+  import slick.driver.MySQLDriver.api._
 
-  SQL { implicit session =>
+  SQL { 
     val results = for (
       a <- SQLTables.arxiv;
       if a.journalref.isNotNull;

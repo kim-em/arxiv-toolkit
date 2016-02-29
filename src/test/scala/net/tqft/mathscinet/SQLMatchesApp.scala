@@ -10,7 +10,7 @@ import net.tqft.citationsearch._
 
 object SQLMatchesApp extends App {
 
-  SQL { implicit session =>
+  SQL { 
     //    There's no good way to rebuild this table; if the citation search database is expanded, just clear this table and rebuild.
     //    SQLTables.arxiv_mathscinet_matches.delete
 

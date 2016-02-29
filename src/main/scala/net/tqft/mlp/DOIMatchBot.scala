@@ -1,7 +1,7 @@
 package net.tqft.mlp
 
 import net.tqft.mlp.sql.SQLTables
-import scala.slick.driver.MySQLDriver.simple._
+import slick.driver.MySQLDriver.api._
 import net.tqft.mlp.sql.SQL
 import net.tqft.mathscinet.Article
 import net.tqft.toolkit.wiki.WikiMap
@@ -20,17 +20,17 @@ object DOIMatchBot extends App {
     b
   }
 
-  SQL { implicit session =>
-    val matchingDOIs = for {
+  
+    val matchingDOIs = SQL { (for (
       a <- SQLTables.arxiv;
       b <- SQLTables.mathscinet if a.doi === b.doi
-    } yield (a.arxivid, b.MRNumber)
+    ) yield (a.arxivid, b.MRNumber)).result
+    }
 
-    println(matchingDOIs.selectStatement)
 
     println("Matching DOIs:")
 
-    val results = scala.util.Random.shuffle(matchingDOIs.run)
+    val results = scala.util.Random.shuffle(matchingDOIs)
     println("total: " + results.size)
 
     for (
@@ -42,7 +42,7 @@ object DOIMatchBot extends App {
     }
 
     println("total: " + results.size)
-  }
+  
 
   FirefoxDriver.quit
 }

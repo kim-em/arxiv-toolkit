@@ -106,21 +106,21 @@ case class Article(accessionNumber: String) {
     }
   }
 
-  lazy val citations_records = {
+  lazy val citations_records: Seq[String] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
-    import scala.slick.driver.MySQLDriver.simple._
-    val lookup = SQL { implicit session =>
+    import slick.driver.MySQLDriver.api._
+    val lookup = (SQL { 
       (for (a <- SQLTables.webofscience_aux; if a.accessionNumber === accessionNumber; if a.citations_records.isNotNull) yield {
         a.citations_records
-      }).run.headOption.map(_.split("-----<<-->>-----").toSeq.map(_.trim).filter(_.nonEmpty))
-    }
+      }).result.headOption
+    }).map(_.split("-----<<-->>-----").toSeq.map(_.trim).filter(_.nonEmpty))
 
     lookup match {
       case Some(result) => result
       case None => {
         val records = scrape_printable_citations(true)
-        SQL { implicit session =>
+        SQL { 
           SQLTables.webofscience_aux += ((accessionNumber, title, authorsText, citation, records.mkString("-----<<-->>-----"), DOIOption))
         }
         records
@@ -193,12 +193,12 @@ object Article {
   def fromDOI(doi: String): Option[Article] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
-    import scala.slick.driver.MySQLDriver.simple._
-    val lookup = SQL { implicit session =>
+    import slick.driver.MySQLDriver.api._
+    val lookup = SQL { 
       (for (
         a <- SQLTables.doi2webofscience;
         if a.doi === doi
-      ) yield a.accessionNumber).run.headOption
+      ) yield a.accessionNumber).result.headOption
     }
     lookup match {
       case Some("") => None
@@ -206,11 +206,11 @@ object Article {
       case None => {
         Scholar.fromDOI(doi).flatMap(r => r.webOfScienceAccessionNumber).orElse(searchForDOI(doi)) match {
           case Some(accessionNumber) => {
-            SQL { implicit session => SQLTables.doi2webofscience += (doi, accessionNumber) }
+            SQL {  SQLTables.doi2webofscience += (doi, accessionNumber) }
             Some(Article(accessionNumber))
           }
           case None => {
-            SQL { implicit session => SQLTables.doi2webofscience += (doi, "") }
+            SQL {  SQLTables.doi2webofscience += (doi, "") }
             None
           }
         }
@@ -257,12 +257,12 @@ object Article {
     // first see if we have a record in the database
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
-    import scala.slick.driver.MySQLDriver.simple._
-    val lookup = SQL { implicit session =>
+    import slick.driver.MySQLDriver.api._
+    val lookup = SQL { 
       (for (
         a <- SQLTables.webofscience_mathscinet_matches;
         if a.identifier === article.identifier
-      ) yield a.accessionNumber).run.headOption
+      ) yield a.accessionNumber).result.headOption
     }
     lookup match {
       case Some(accessionNumber) => Some(Article(accessionNumber))
@@ -272,7 +272,7 @@ object Article {
           case Some(doi) if useGoogleScholar => fromDOI(doi) match {
             case Some(result) => {
               // stash the result in the database
-              SQL { implicit session =>
+              SQL { 
                 SQLTables.webofscience_mathscinet_matches.insertView += ((result.accessionNumber, article.identifier, "Google Scholar"))
               }
               Some(result)

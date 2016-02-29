@@ -7,11 +7,11 @@ import net.tqft.toolkit.amazon.S3
 /**
  * @author scott
  */
-object UpdatePreliminary extends App {
-  import scala.slick.driver.MySQLDriver.simple._
+object UpdateTheses extends App {
+  import slick.driver.MySQLDriver.api._
 
-  val preliminary = (SQL { 
-    (for (a <- SQLTables.mathscinet; if a.mrclass === "Preliminary Data") yield a).run
+  val thesesWithoutNote = (SQL { 
+    (for (a <- SQLTables.mathscinet; if a.publisher === "ProQuest LLC, Ann Arbor, MI"; if a.note.isEmpty) yield a).run
   })
 
   def getArticle(id: Int): Article = {
@@ -25,7 +25,9 @@ object UpdatePreliminary extends App {
     }
   }
 
-  for (a <- preliminary; if a.year <= 2015) {
+  println("There are " + thesesWithoutNote.size + " theses which need updating.")
+  
+  for (a <- thesesWithoutNote) {
     try {
       println(a)
 
@@ -33,6 +35,8 @@ object UpdatePreliminary extends App {
       SQL { 
         (for (a0 <- SQLTables.mathscinet; if a0.MRNumber === a.identifier) yield a0).update(getArticle(a.identifier))
       }
+      
+      a.saveAux
     } catch {
       case e: Throwable => e.printStackTrace()
     }

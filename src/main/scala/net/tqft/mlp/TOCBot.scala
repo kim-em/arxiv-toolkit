@@ -24,10 +24,12 @@ object TOCBot extends App {
     b.setThrottle(1500)
     b
   }
-  import scala.slick.driver.MySQLDriver.simple._
+  import slick.driver.MySQLDriver.api._
 
-  val texts = SQL { implicit session =>
-    val query = (for (
+  val texts = { 
+    println("Loading all /FreeURL pages from the wiki...")
+    val query = SQL { 
+    (for (
       p <- Wiki.Pages;
       if p.page_namespace === 100;
       if p.page_title like "%/FreeURL";
@@ -35,11 +37,10 @@ object TOCBot extends App {
       if r.rev_id === p.page_latest;
       t <- Wiki.Texts;
       if t.old_id === r.rev_text_id
-    ) yield (p.page_title, t.old_text))
+    ) yield (p.page_title, t.old_text)).result
+    }
 
-    println("Loading all /FreeURL pages from the wiki...")
-    println(query.selectStatement)
-    val result = query.list.map({ p => (p._1.dropRight(8), p._2) }).toMap
+    val result = query.map({ p => (p._1.dropRight(8), p._2) }).toMap
     println(" ... done")
     println(result.take(10))
     result

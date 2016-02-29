@@ -39,7 +39,7 @@ libraryDependencies ++= Seq(
 	"org.jsoup" % "jsoup" % "1.8.2",
 	"eu.medsea.mimeutil" % "mime-util" % "2.1.3",
 	"mysql" % "mysql-connector-java" % "5.1.24",
-	"com.typesafe.slick" %% "slick" % "3.0.0",
+	"com.typesafe.slick" %% "slick" % "3.1.1",
 	"uk.ac.shef.wit" % "simmetrics" % "1.6.2",
 	"org.apache.pdfbox" % "pdfbox" % "1.8.9"
 )
