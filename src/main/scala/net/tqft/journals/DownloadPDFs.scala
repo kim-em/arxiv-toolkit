@@ -15,8 +15,8 @@ object DownloadPDFs extends App {
 //    val b = if (a.DOI.isEmpty) {
 //      println("Discarding cached BIBTEX")
 //      Slurp -= a.bibtexURL
-//      import scala.slick.driver.MySQLDriver.simple._
-//      SQL { implicit session => 
+//      import slick.driver.MySQLDriver.api._
+//      SQL { 
 //        println("Deleting the database record for " + a.identifierString + ": " + a.title)
 //        SQLTables.mathscinet.filter(_.MRNumber === a.identifier).delete
 //      }

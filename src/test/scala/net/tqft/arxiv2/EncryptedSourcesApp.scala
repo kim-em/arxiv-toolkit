@@ -7,7 +7,7 @@ import net.tqft.mlp.sql.SQLTables
 import scala.slick.driver.MySQLDriver.simple._
 
 object EncryptedSourcesApp extends App {
-    val ids = SQL { implicit session =>
+    val ids = SQL { 
     (for (a <- SQLTables.arxiv; if a.categories.startsWith("math"); if a.arxivid.startsWith("0705")) yield a.arxivid).run
   }
 

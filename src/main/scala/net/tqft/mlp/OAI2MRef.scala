@@ -23,9 +23,9 @@ object OAI2MRef extends App {
   var count = 0
   val input: File = new File("/Users/scott/projects/arxiv-toolkit/arxiv.txt")
 
-  import scala.slick.driver.MySQLDriver.simple._
+  import slick.driver.MySQLDriver.api._
 
-  SQL { implicit session =>
+  SQL { 
     val articlesWithoutMatchingDOI = for (
       a <- SQLTables.arxiv;
       if a.journalref.isNotNull;
