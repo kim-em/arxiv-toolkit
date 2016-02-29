@@ -50,11 +50,11 @@ case class Author(id: Long, name: String, email: Option[String] = None) {
   lazy val publications: Seq[Article] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
-    import scala.slick.driver.MySQLDriver.simple._
-    val lookup = SQL { implicit session =>
+    import slick.driver.MySQLDriver.api._
+    val lookup = SQL { 
       (for (a <- SQLTables.scopus_authorships; if a.author_id === id) yield {
         a.scopus_id
-      }).run
+      }).result
     }
     
     (if (lookup.isEmpty) {
@@ -65,7 +65,7 @@ case class Author(id: Long, name: String, email: Option[String] = None) {
         Article(m.group(1), Some(m.group(2)))
       }).toStream.distinct
 
-      SQL { implicit session =>
+      SQL { 
         for (a <- records) {
           SQLTables.scopus_authorships += ((id, a.id))
         }

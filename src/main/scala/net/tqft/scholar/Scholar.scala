@@ -36,12 +36,12 @@ object Scholar {
   def apply(queryString: String): Option[ScholarResults] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
-    import scala.slick.driver.MySQLDriver.simple._
+    import slick.driver.MySQLDriver.api._
 
-    SQL { implicit session =>
+    SQL { 
       (for (a <- SQLTables.scholar_queries; if a.query === queryString) yield {
         a
-      }).run.headOption
+      }).result.headOption
     } match {
       case Some(result) => {
         if (result.title.isEmpty) {
@@ -53,7 +53,7 @@ object Scholar {
       case None => {
         val lookup = implementation(queryString)
         SQL {
-          implicit session =>
+          
             SQLTables.scholar_queries += (lookup match {
               case Some(result) => result
               case None => ScholarResults(queryString, "", "", None, Nil, Iterator.empty)

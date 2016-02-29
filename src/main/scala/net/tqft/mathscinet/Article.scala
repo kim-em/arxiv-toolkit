@@ -80,18 +80,18 @@ trait Article { article =>
     bibtex.get("address"),
     bibtex.get("edition"),
     bibtex.get("publisher"),
-    bibtex.get("series"))
+    (bibtex.get("series"), bibtex.get("note")))
 
   def saveSQL {
     if (Article.saving_?) {
       if (!Articles.identifiersInDatabase.contains(identifier)) {
+        Logging.info("Saving to the database:\n" + bibtex.toBIBTEXString)
         Future {
-          import scala.slick.driver.MySQLDriver.simple._
+          import slick.driver.MySQLDriver.api._
 
           try {
-            SQL { implicit session =>
+            SQL { 
               SQLTables.mathscinet += this
-              Logging.info("Saving to the database:\n" + bibtex.toBIBTEXString)
             }
           } catch {
             case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {}
@@ -100,20 +100,26 @@ trait Article { article =>
             }
           }
 
-          try {
-            SQL { implicit session =>
-              val data = (identifier, textTitle, wikiTitle, authorsText, citation_text, citation_markdown, citation_html)
-              SQLTables.mathscinet_aux.citationData += (data)
-              println(SQLTables.mathscinet_aux.citationData.insertStatementFor(data) + ";")
-            }
-          } catch {
-            case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
-            }
-            case e: Exception => {
-              Logging.error("Exception while inserting \n" + article.bibtex.toBIBTEXString, e)
-            }
-          }
+          saveAux
+
         }
+      }
+    }
+  }
+
+  def saveAux {
+    try {
+      import slick.driver.MySQLDriver.api._
+      SQL { 
+        val data = (identifier, textTitle, wikiTitle, authorsText, citation_text, citation_markdown, citation_html)
+        SQLTables.mathscinet_aux.citationData += (data)
+        println(SQLTables.mathscinet_aux.citationData.insertStatementFor(data) + ";")
+      }
+    } catch {
+      case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
+      }
+      case e: Exception => {
+        Logging.error("Exception while inserting \n" + article.bibtex.toBIBTEXString, e)
       }
     }
   }
@@ -230,10 +236,13 @@ trait Article { article =>
         journal + restOfCitation
       }
       case "book" => {
-        bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+        bibtex.get("MRCLASS") match {
+          case Some("Thesis") => bibtex.get("NOTE").getOrElse("")
+          case _ => bibtex.get("SERIES").map(_ + " ").getOrElse("") + bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+        }
       }
       case "inproceedings" => {
-        bibtex.get("BOOKTITLE").map(" " + _).getOrElse("") + journalOption.getOrElse("") + restOfCitation
+        bibtex.get("BOOKTITLE").map(_ + " ").getOrElse("") + journalOption.getOrElse("") + restOfCitation
       }
       case "proceedings" => {
         bibtex.get("NOTE").getOrElse("")
@@ -254,19 +263,22 @@ trait Article { article =>
 
     bibtex.documentType match {
       case "article" => {
-        "_" + journal + "_" + restOfCitation
+        "_" + pandoc.latexToText(journal) + "_" + restOfCitation
       }
       case "book" => {
-        bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+        bibtex.get("MRCLASS") match {
+          case Some("Thesis") => bibtex.get("NOTE").map(s => pandoc.latexToText(s)) getOrElse ("")
+          case _ => bibtex.get("SERIES").map(s => "_" + pandoc.latexToText(s) + "_ ").getOrElse("") + bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+        }
       }
       case "inproceedings" => {
-        bibtex.get("BOOKTITLE").map(" _" + _ + "_").getOrElse("") + journalOption.getOrElse("") + restOfCitation
+        bibtex.get("BOOKTITLE").map(s => "_" + pandoc.latexToText(s) + "_ ").getOrElse("") + pandoc.latexToText(journalOption.getOrElse("")) + restOfCitation
       }
       case "proceedings" => {
-        bibtex.get("NOTE").getOrElse("")
+        pandoc.latexToText(bibtex.get("NOTE").getOrElse(""))
       }
       case "incollection" => {
-        bibtex.get("BOOKTITLE").map("_" + _ + "_ ").getOrElse("") + pages
+        bibtex.get("BOOKTITLE").map(s => "_" + pandoc.latexToText(s) + "_ ").getOrElse("") + pages
       }
       case otherwise => {
         Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)
@@ -280,19 +292,22 @@ trait Article { article =>
 
     bibtex.documentType match {
       case "article" => {
-        "<i>" + journal + "</i>" + restOfCitation
+        "<i>" + pandoc.latexToText(journal) + "</i>" + restOfCitation
       }
       case "book" => {
-        bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+        bibtex.get("MRCLASS") match {
+          case Some("Thesis") => bibtex.get("NOTE").map(s => pandoc.latexToText(s)) getOrElse ("")
+          case _ => bibtex.get("SERIES").map(s => "<i>" + pandoc.latexToText(s) + "</i> ").getOrElse("") + bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+        }
       }
       case "inproceedings" => {
-        bibtex.get("BOOKTITLE").map(" <i>_" + _ + "</i>").getOrElse("") + journalOption.getOrElse("") + restOfCitation
+        bibtex.get("BOOKTITLE").map(s => "<i>_" + pandoc.latexToText(s) + "</i> ").getOrElse("") + pandoc.latexToText(journalOption.getOrElse("")) + restOfCitation
       }
       case "proceedings" => {
-        bibtex.get("NOTE").getOrElse("")
+        pandoc.latexToText(bibtex.get("NOTE").getOrElse(""))
       }
       case "incollection" => {
-        bibtex.get("BOOKTITLE").map("<i>" + _ + "</i> ").getOrElse("") + pages
+        bibtex.get("BOOKTITLE").map(s => "<i>" + pandoc.latexToText(s) + "</i> ").getOrElse("") + pages
       }
       case otherwise => {
         Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)
@@ -808,12 +823,12 @@ object Article {
   }
 
   def apply(identifier: Int): Article = {
-    import scala.slick.driver.MySQLDriver.simple._
-    val lookup = SQL { implicit session =>
+    import slick.driver.MySQLDriver.api._
+    val lookup = SQL { 
       (for (
         a <- SQLTables.mathscinet;
         if a.MRNumber === identifier
-      ) yield a).firstOption
+      ) yield a).result.headOption
     }
 
     lookup.getOrElse({
@@ -883,12 +898,12 @@ object Articles {
 
   def apply(identifierStrings: Traversable[String]): Map[String, Article] = {
     def apply(identifiers: Traversable[Int]): Map[Int, Article] = {
-      import scala.slick.driver.MySQLDriver.simple._
-      SQL { implicit session =>
+      import slick.driver.MySQLDriver.api._
+      SQL { 
         (for (
           a <- SQLTables.mathscinet;
           if a.MRNumber.inSet(identifiers)
-        ) yield a).list.map(a => a.identifier -> a).toMap
+        ) yield a).result.map(a => a.identifier -> a).toMap
       }
     }
     apply(identifierStrings.collect({ case MRIdentifier(id) => id })).map(p => p._2.identifierString -> p._2)
@@ -926,8 +941,8 @@ object Articles {
 
   lazy val identifiersInDatabase = {
     Logging.info("Finding out what's already in the database ...")
-    import scala.slick.driver.MySQLDriver.simple._
-    val result = SQL { implicit session =>
+    import slick.driver.MySQLDriver.api._
+    val result = SQL { 
       new scala.collection.mutable.BitSet(4000000) ++= SQLTables.mathscinet.map(_.MRNumber).iterator
     }
     Logging.info(s" ... ${result.size} articles")
@@ -936,8 +951,8 @@ object Articles {
 
   lazy val ISSNsInDatabase = {
     Logging.info("Finding out which ISSNs appear in the database ...")
-    import scala.slick.driver.MySQLDriver.simple._
-    val result = SQL { implicit session =>
+    import slick.driver.MySQLDriver.api._
+    val result = SQL { 
       SQLTables.mathscinet.groupBy(x => x.issn).map(_._1).list.flatten.map(_.toUpperCase)
     }
     Logging.info(s" ... ${result.size} ISSNs")

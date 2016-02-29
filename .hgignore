@@ -1,6 +1,8 @@
 # use glob syntax.
 syntax: glob
 
+mathscinet.bib*
+
 # temporary latex files
 *.aux
 *.log

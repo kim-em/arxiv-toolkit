@@ -5,7 +5,7 @@ import net.tqft.mlp.sql.SQLTables
 import scala.slick.driver.MySQLDriver.simple._
 
 object ListProlificAuthors extends App {
-  SQL { implicit session =>
+  SQL { 
     val authorsArticlesQuery = (for (
       author <- SQLTables.arxivAuthorNames;
       article <- SQLTables.arxivAuthorshipsByName;
