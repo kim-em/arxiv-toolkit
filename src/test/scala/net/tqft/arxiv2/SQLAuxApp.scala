@@ -13,33 +13,30 @@ object SQLAuxApp extends App {
 
   val seen = scala.collection.mutable.Set[String]()
 
-    def articlesPage(k: Int) = SQL {
-      println("retrieving page " + k)
-      (for (
-        a <- SQLTables.arxiv;
-        if !SQLTables.arxiv_aux.filter(_.arxivid === a.arxivid).exists
-      ) yield a).drop(k * 1000).take(1000)
-    }
+  def articlesPage(k: Int) = SQL {
+    println("retrieving page " + k)
+    (for (
+      a <- SQLTables.arxiv;
+      if !SQLTables.arxiv_aux.filter(_.arxivid === a.arxivid).exists
+    ) yield a).drop(k * 1000).take(1000)
+  }
 
-    var group = articlesPage(0)
-    while (group.nonEmpty) {
-      println(group.size)
-      for (a <- { val p = group.par; p.tasksupport = pool; p }) {
-        try {
-          val data = (a.identifier, a.textTitle, a.authorsText)
-          SQL { SQLTables.arxiv_aux += (data) }
-          println(SQLTables.arxiv_aux.forceInsertStatementFor(data) + ";")
-        } catch {
-          case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
-            println("skipping " + a.identifier)
-          }
-          case e: Exception => {
-            Logging.error("Exception while inserting \n" + a, e)
-          }
-        }
+  val targets = ((SQL { SQLTables.arxiv.map(_.arxivid) }).toSet -- (SQL { SQLTables.arxiv_aux.map(_.arxivid) })).par
+  targets.tasksupport = pool
+
+  for (id <- targets; a <- SQL { SQLTables.arxiv.filter(_.arxivid === id) }) {
+    try {
+      val data = (a.identifier, a.textTitle, a.authorsText)
+      SQL { SQLTables.arxiv_aux += (data) }
+      println(SQLTables.arxiv_aux.forceInsertStatementFor(data) + ";")
+    } catch {
+      case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
+        println("skipping " + a.identifier)
       }
-      seen ++= group.map(_.identifier)
-      group = articlesPage(0)
-      group = group.filterNot(a => seen.contains(a.identifier))
+      case e: Exception => {
+        Logging.error("Exception while inserting \n" + a, e)
+      }
     }
+  }
+
 }
