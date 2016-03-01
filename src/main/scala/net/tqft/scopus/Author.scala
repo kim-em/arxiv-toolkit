@@ -65,11 +65,9 @@ case class Author(id: Long, name: String, email: Option[String] = None) {
         Article(m.group(1), Some(m.group(2)))
       }).toStream.distinct
 
-      SQL { 
         for (a <- records) {
-          SQLTables.scopus_authorships += ((id, a.id))
+          SQL { SQLTables.scopus_authorships += ((id, a.id)) }
         }
-      }
       records.map(_.id)
     } else {
       lookup

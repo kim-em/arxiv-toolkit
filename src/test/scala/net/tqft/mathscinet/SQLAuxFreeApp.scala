@@ -2,7 +2,7 @@ package net.tqft.mathscinet
 
 import net.tqft.mlp.sql.SQL
 import net.tqft.mlp.sql.SQLTables
-import scala.slick.driver.MySQLDriver.simple._
+import slick.driver.MySQLDriver.api._
 import net.tqft.toolkit.Logging
 import net.tqft.util.pandoc
 import scala.collection.parallel.ForkJoinTaskSupport
@@ -21,11 +21,10 @@ object SQLAuxFreeApp extends App {
       if t.old_id === r.rev_text_id
     ) yield (p.page_title, t.old_text))
 
-    println(query.selectStatement)
-    query.list
+//    println(query.)
+    query
   }
 
-  SQL { 
     for ((title, text) <- pages) {
       val r = "(http://[^ \\n]*)".r
       val links = r.findAllMatchIn(text).map(_.group(1)).toSeq
@@ -35,13 +34,13 @@ object SQLAuxFreeApp extends App {
         case None => links.headOption.getOrElse("-")
       }
       val id = title.take(9).drop(2).toInt
-      val q = SQLTables.mathscinet_aux
+      val q = SQL { SQLTables.mathscinet_aux
         .filter(_.MRNumber === id)
         .map(_.free)
-        .update(Some(freeLink))
+        .update(Some(freeLink)) 
+      }
 
       println("Adding Free URL for " + title.take(9) + ": " + freeLink + " returned " + q)       
     }
 
-  }
 }

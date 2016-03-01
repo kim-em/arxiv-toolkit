@@ -111,8 +111,8 @@ case class Article(accessionNumber: String) {
     import net.tqft.mlp.sql.SQLTables
     import slick.driver.MySQLDriver.api._
     val lookup = (SQL { 
-      (for (a <- SQLTables.webofscience_aux; if a.accessionNumber === accessionNumber; if a.citations_records.isNotNull) yield {
-        a.citations_records
+      (for (a <- SQLTables.webofscience_aux; if a.accessionNumber === accessionNumber; if a.citations_records.isDefined) yield {
+        a.citations_records.get
       }).result.headOption
     }).map(_.split("-----<<-->>-----").toSeq.map(_.trim).filter(_.nonEmpty))
 
@@ -121,7 +121,7 @@ case class Article(accessionNumber: String) {
       case None => {
         val records = scrape_printable_citations(true)
         SQL { 
-          SQLTables.webofscience_aux += ((accessionNumber, title, authorsText, citation, records.mkString("-----<<-->>-----"), DOIOption))
+          SQLTables.webofscience_aux += ((accessionNumber, title, authorsText, citation, Some(records.mkString("-----<<-->>-----")), DOIOption))
         }
         records
       }

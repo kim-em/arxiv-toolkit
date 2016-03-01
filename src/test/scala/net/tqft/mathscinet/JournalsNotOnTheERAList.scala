@@ -9,7 +9,7 @@ import net.tqft.mlp.sql.SQLTables
 object JournalsNotOnTheERAList extends App {
 
   def count(issn: String) = {
-    import scala.slick.driver.MySQLDriver.simple._
+    import slick.driver.MySQLDriver.api._
 
     SQL { 
       (for (
@@ -17,7 +17,7 @@ object JournalsNotOnTheERAList extends App {
         if a.issn === issn;
         if a.`type` === "article";
         if a.year >= "2012"
-      ) yield a).length.run
+      ) yield a).length
     }
 
   }
