@@ -29,6 +29,7 @@ object FromTheTop extends App {
         Logging.info(s"Recording that $i is not a valid MR number.")
         (SQL {  SQLTables.mathscinet_gaps += (i) })
       } catch {
+        case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException => {}
         case e: Throwable => e.printStackTrace()
       }
       case e: Throwable => {

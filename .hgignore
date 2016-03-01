@@ -3,6 +3,8 @@ syntax: glob
 
 mathscinet.bib*
 
+db.t
+
 # temporary latex files
 *.aux
 *.log
