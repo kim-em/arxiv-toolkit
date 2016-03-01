@@ -2,7 +2,7 @@ package net.tqft.arxiv2
 
 import net.tqft.mlp.sql.SQL
 import net.tqft.mlp.sql.SQLTables
-import scala.slick.driver.MySQLDriver.simple._
+import slick.driver.MySQLDriver.api._
 import net.tqft.toolkit.Logging
 import net.tqft.util.pandoc
 import scala.collection.parallel.ForkJoinTaskSupport
@@ -13,13 +13,12 @@ object SQLAuxApp extends App {
 
   val seen = scala.collection.mutable.Set[String]()
 
-  SQL { 
-    def articlesPage(k: Int) = {
+    def articlesPage(k: Int) = SQL {
       println("retrieving page " + k)
       (for (
         a <- SQLTables.arxiv;
         if !SQLTables.arxiv_aux.filter(_.arxivid === a.arxivid).exists
-      ) yield a).drop(k * 1000).take(1000).list
+      ) yield a).drop(k * 1000).take(1000)
     }
 
     var group = articlesPage(0)
@@ -28,8 +27,8 @@ object SQLAuxApp extends App {
       for (a <- { val p = group.par; p.tasksupport = pool; p }) {
         try {
           val data = (a.identifier, a.textTitle, a.authorsText)
-          SQLTables.arxiv_aux += (data)
-          println(SQLTables.arxiv_aux.insertStatementFor(data) + ";")
+          SQL { SQLTables.arxiv_aux += (data) }
+          println(SQLTables.arxiv_aux.forceInsertStatementFor(data) + ";")
         } catch {
           case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
             println("skipping " + a.identifier)
@@ -43,5 +42,4 @@ object SQLAuxApp extends App {
       group = articlesPage(0)
       group = group.filterNot(a => seen.contains(a.identifier))
     }
-  }
 }

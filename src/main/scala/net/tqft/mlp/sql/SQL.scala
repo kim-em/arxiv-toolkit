@@ -159,12 +159,12 @@ class WebOfScienceMathSciNetMatches(tag: Tag) extends Table[(String, Int, String
   def insertView = (accessionNumber, identifier, source)
 }
 
-class WebOfScienceAux(tag: Tag) extends Table[(String, String, String, String, String, Option[String])](tag, "webofscience_aux") {
+class WebOfScienceAux(tag: Tag) extends Table[(String, String, String, String, Option[String], Option[String])](tag, "webofscience_aux") {
   def accessionNumber = column[String]("accession_number", O.PrimaryKey)
   def title = column[String]("title")
   def authors = column[String]("authors")
   def citation = column[String]("citation")
-  def citations_records = column[String]("citations_records")
+  def citations_records = column[Option[String]]("citations_records")
   def doi = column[Option[String]]("doi")
   def * = (accessionNumber, title, authors, citation, citations_records, doi)
   def citations_recordsView = (accessionNumber, citations_records)
@@ -267,5 +267,8 @@ object SQLTables {
 
 
 object SQL {
-  def apply[R](x: DBIOAction[R, NoStream, Nothing]): R = Await.result(db.run(x), Duration.Inf)
+  def apply[R](x: slick.lifted.Rep[Int]) = Await.result(db.run(x.result), Duration.Inf)
+  def apply[R](x: slick.lifted.Query[Any, R, Seq]): Seq[R] = Await.result(db.run(x.result), Duration.Inf)
+  def stream[R](x: slick.lifted.Query[Any, R, Seq]): slick.backend.DatabasePublisher[R] = db.stream(x.result)
+  def apply[R, S <: NoStream, E <: Effect](x: slick.profile.SqlAction[R, S, E]): R = Await.result(db.run(x), Duration.Inf)
 }

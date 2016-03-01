@@ -30,7 +30,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.DirectoryStream
 import java.nio.file.Path
-import scala.concurrent.future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.BitSet
 import scala.concurrent.Future
@@ -110,11 +109,9 @@ trait Article { article =>
   def saveAux {
     try {
       import slick.driver.MySQLDriver.api._
-      SQL { 
         val data = (identifier, textTitle, wikiTitle, authorsText, citation_text, citation_markdown, citation_html)
-        SQLTables.mathscinet_aux.citationData += (data)
-        println(SQLTables.mathscinet_aux.citationData.insertStatementFor(data) + ";")
-      }
+        SQL { SQLTables.mathscinet_aux.citationData += (data) }
+        println(SQLTables.mathscinet_aux.citationData.forceInsertStatementFor(data) + ";")
     } catch {
       case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
       }
@@ -402,6 +399,8 @@ trait Article { article =>
   }
 
   private def searchElsevierForPDFURL: Option[String] = {
+    if(volumeOption.isEmpty) return None
+    
     Logging.info("Attempting to find URL for Elsevier article.")
 
     val issn = correctedISSN
@@ -899,12 +898,13 @@ object Articles {
   def apply(identifierStrings: Traversable[String]): Map[String, Article] = {
     def apply(identifiers: Traversable[Int]): Map[Int, Article] = {
       import slick.driver.MySQLDriver.api._
-      SQL { 
+      (SQL { 
         (for (
           a <- SQLTables.mathscinet;
           if a.MRNumber.inSet(identifiers)
-        ) yield a).result.map(a => a.identifier -> a).toMap
-      }
+        ) yield a).result
+      }).map(a => a.identifier -> a).toMap
+      
     }
     apply(identifierStrings.collect({ case MRIdentifier(id) => id })).map(p => p._2.identifierString -> p._2)
   }
@@ -942,9 +942,8 @@ object Articles {
   lazy val identifiersInDatabase = {
     Logging.info("Finding out what's already in the database ...")
     import slick.driver.MySQLDriver.api._
-    val result = SQL { 
-      new scala.collection.mutable.BitSet(4000000) ++= SQLTables.mathscinet.map(_.MRNumber).iterator
-    }
+    val result = 
+      new scala.collection.mutable.BitSet(4000000) ++= SQL { SQLTables.mathscinet.map(_.MRNumber).result }
     Logging.info(s" ... ${result.size} articles")
     result
   }
@@ -952,9 +951,9 @@ object Articles {
   lazy val ISSNsInDatabase = {
     Logging.info("Finding out which ISSNs appear in the database ...")
     import slick.driver.MySQLDriver.api._
-    val result = SQL { 
-      SQLTables.mathscinet.groupBy(x => x.issn).map(_._1).list.flatten.map(_.toUpperCase)
-    }
+    val result = (SQL { 
+      SQLTables.mathscinet.groupBy(x => x.issn).map(_._1)
+    }).flatten.map(_.toUpperCase)
     Logging.info(s" ... ${result.size} ISSNs")
     result
   }
