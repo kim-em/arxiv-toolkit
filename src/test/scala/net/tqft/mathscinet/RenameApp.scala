@@ -13,7 +13,7 @@ object RenameApp extends App {
     else Stream.empty)
 
   val r = """MR([0-9]*)\.pdf""".r
-  for (file <- getFileTree(new File(base)); if file.getName.endsWith(".pdf")) {
+  for (file <- getFileTree(new File(base)).par; if file.getName.endsWith(".pdf")) {
     for(m <- r.findFirstMatchIn(file.getName); Int(id) = m.group(1)) {
     println(id)
     println(file.getParentFile.getAbsolutePath)

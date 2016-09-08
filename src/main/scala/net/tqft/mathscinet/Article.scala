@@ -735,8 +735,12 @@ trait Article { article =>
     stripMoreLaTeX(pandoc.latexToText(plainTitle)).stripPrefix(".")
   }
 
-  def sanitizedTitle = textTitle.replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
-    .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+  def sanitizedTitle = textTitle.replaceAllLiterally("/", "") // scary UTF-8 character that just *looks* like a forward slash
+    .replaceAllLiterally(":", "") // scary UTF-8 character that just *looks* like a colon
+    .replaceAllLiterally("\\", "") // scary UTF-8 character that just *looks* like a back slash
+//  def sanitizedTitle = textTitle.replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
+//    .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+//    .replaceAllLiterally("\\", "∖") // scary UTF-8 character that just *looks* like a back slash
 
   def wikiTitle = {
     def pandocFragment(f: String) = {
