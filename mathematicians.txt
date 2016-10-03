@@ -1,4 +1,6 @@
 # All ANU level D/Es
+788724, 7201672329, "Morrison, Scott", "ANU", "D"
+893164, 35179526700, "Licata, Anthony", "ANU", "C"
 31480, 7003701615, "Barnsley, Michael", "ANU", "E"
 32465, 7004335929, "Batchelor, Murray", "ANU", "E"
 202164, 7006756834, "Bazhanov, Vladimir", "ANU", "E"
@@ -17,8 +19,6 @@
 193603, 7007130603, "Welsh, Alan", "ANU", "E"
 241631, 7101845196, "Isaev, Alexander", "ANU", "D"
 219644, 7403450585, "Roberts, Stephen", "ANU", "D"
-788724, 7201672329, "Morrison, Scott", "ANU", "C"
-893164, 35179526700, "Licata, Anthony", "ANU", "C"
 779516, 15925005300, "Alper, Jarod", "ANU", "B"
 849641, 35248722000, "Licata, Joan", "ANU", "B"
 634814, 8408953200, "Borger, James", "ANU", "B"

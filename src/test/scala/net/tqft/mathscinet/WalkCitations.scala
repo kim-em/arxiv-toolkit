@@ -32,8 +32,10 @@ object WalkCitations extends App {
         }
 
       } catch {
-        case e if e.getMessage.startsWith("500") => {
+        case e if e.getMessage == null || e.getMessage.startsWith("500") => {
           Logging.warn(e)
+          Logging.warn(e.getMessage)
+          e.printStackTrace()
           Logging.warn("Sleeping for 20 minutes")
           Thread.sleep(1200000L)
         }
