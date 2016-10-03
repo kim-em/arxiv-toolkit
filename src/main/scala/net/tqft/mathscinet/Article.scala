@@ -226,7 +226,7 @@ trait Article { article =>
   }
 
   def citation_text: String = {
-    def restOfCitation = " " + volumeYearAndIssue + pagesOption.map(", " + _).getOrElse("")
+    def restOfCitation = " " + volumeYearAndIssue + pagesOption.map(", " + _.replaceAll("–", "-")).getOrElse("")
 
     val latex = bibtex.documentType match {
       case "article" => {
@@ -245,7 +245,7 @@ trait Article { article =>
         bibtex.get("NOTE").getOrElse("")
       }
       case "incollection" => {
-        bibtex.get("BOOKTITLE").map(_ + " ").getOrElse("") + pages
+        bibtex.get("BOOKTITLE").map(_ + " ").getOrElse("") + pages.replaceAll("–", "-")
       }
       case otherwise => {
         Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)
@@ -256,7 +256,7 @@ trait Article { article =>
   }
 
   def citation_markdown: String = {
-    def restOfCitation = " " + volumeYearAndIssue_markdown + pagesOption.map(", " + _).getOrElse("")
+    def restOfCitation = " " + volumeYearAndIssue_markdown + pagesOption.map(", " + _.replaceAll("–", "-")).getOrElse("")
 
     bibtex.documentType match {
       case "article" => {
@@ -275,7 +275,7 @@ trait Article { article =>
         pandoc.latexToText(bibtex.get("NOTE").getOrElse(""))
       }
       case "incollection" => {
-        bibtex.get("BOOKTITLE").map(s => "_" + pandoc.latexToText(s) + "_ ").getOrElse("") + pages
+        bibtex.get("BOOKTITLE").map(s => "_" + pandoc.latexToText(s) + "_ ").getOrElse("") + pages.replaceAll("–", "-")
       }
       case otherwise => {
         Logging.warn("Citation format for " + identifierString + " of type " + otherwise + " undefined:\n" + bibtex.toBIBTEXString)

@@ -11,8 +11,8 @@ import net.tqft.toolkit.amazon.S3
 
 object CitationApp extends App {
 
-  //  S3("hIndex1996").clear
-  //  S3("hIndex2008").clear
+//    S3("hIndex1996").clear
+//    S3("hIndex2008").clear
 
   Article.disableBibtexSaving
 
