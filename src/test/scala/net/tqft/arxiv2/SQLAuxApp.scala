@@ -13,14 +13,6 @@ object SQLAuxApp extends App {
 
   val seen = scala.collection.mutable.Set[String]()
 
-  def articlesPage(k: Int) = SQL {
-    println("retrieving page " + k)
-    (for (
-      a <- SQLTables.arxiv;
-      if !SQLTables.arxiv_aux.filter(_.arxivid === a.arxivid).exists
-    ) yield a).drop(k * 1000).take(1000)
-  }
-
   val targets = ((SQL { SQLTables.arxiv.map(_.arxivid) }).toSet -- (SQL { SQLTables.arxiv_aux.map(_.arxivid) })).par
   targets.tasksupport = pool
 

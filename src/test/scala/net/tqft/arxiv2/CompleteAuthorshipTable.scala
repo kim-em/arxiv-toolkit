@@ -4,11 +4,13 @@ import net.tqft.mlp.sql.SQL
 import net.tqft.mlp.sql.SQLTables
 import slick.driver.MySQLDriver.api._
 import java.util.Date
+import scala.collection.parallel.ForkJoinTaskSupport
 
 object CompleteAuthorshipTable extends App {
 
-  val targets = (SQL { for (article <- SQLTables.arxiv) yield article.arxivid }).toSet -- (SQL { for (authorship <- SQLTables.arxivAuthorshipsByName) yield authorship.arxivid }) -- Seq("math/0611658")
-
+  val targets = ((SQL { for (article <- SQLTables.arxiv) yield article.arxivid }).toSet -- (SQL { for (authorship <- SQLTables.arxivAuthorshipsByName) yield authorship.arxivid }) -- Seq("math/0611658")).par
+  val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
+  targets.tasksupport = pool
   println(targets.size + " articles to work on ...")
 
   for (id <- targets) {
