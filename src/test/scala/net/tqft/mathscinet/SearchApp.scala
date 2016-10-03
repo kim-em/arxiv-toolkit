@@ -8,8 +8,9 @@ import scala.util.Random
 
 object SearchApp extends App {
 
-  println(Search.anywhere("ProQuest LLC, Ann Arbor, MI").size)
-  println(Search.inTopJournalsJumbled(200).size)
+  
+//  println(Search.anywhere("ProQuest LLC, Ann Arbor, MI").size)
+//  println(Search.inTopJournalsJumbled(200).size)
   println(Search.during(2013).size)
   
   //  println(Search.inJournal(ISSNs.`Journal of K-Theory`).size)
