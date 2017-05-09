@@ -14,7 +14,8 @@ resolvers ++= Seq(
 	"Sonatype Nexus Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
 	"Sonatype Nexus Releases" at "https://oss.sonatype.org/content/repositories/releases",
 	"Scala Snapshots" at "http://scala-tools.org/repo-snapshots/",
-	"simmetrics repository" at "http://maven.mse.jhu.edu/m2repository"
+	// "simmetrics repository" at "http://maven.mse.jhu.edu/m2repository",
+	"simmetrics repository" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases/"
 )
 
 // Project dependencies

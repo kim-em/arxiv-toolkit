@@ -15,35 +15,54 @@ import scala.io.Source
 import net.tqft.citationsearch.CitationScore
 import net.tqft.util.pandoc
 import java.io.IOException
+import net.tqft.util.HttpClientSlurp
+import java.io.BufferedInputStream
+import org.apache.commons.io.FileUtils
+import net.tqft.toolkit.Logging
+import net.tqft.util.Throttle
 
 trait Sources {
   def rawSourceFile(identifier: String): Option[Array[Byte]]
-  def apply(identifier: String): Map[String, Array[Byte]] = {
-    rawSourceFile(identifier) match {
-      case None => Map.empty
-      case Some(bytes) => PDF.getBytes(new ByteArrayInputStream(bytes)) match {
-        case Some(pdfBytes) => Map(identifier + ".pdf" -> pdfBytes)
-        case None => {
-          try {
-            val tis = new TarArchiveInputStream(new GZIPInputStream(new ByteArrayInputStream(bytes)))
-            var entry: ArchiveEntry = null
-            val buffer = ListBuffer[(String, Array[Byte])]()
-            while ({ entry = tis.getNextEntry; entry != null }) {
-              if (!entry.isDirectory) {
-                buffer += ((entry.getName, IOUtils.toByteArray(tis)))
-              }
-            }
-            buffer.toMap
+
+  protected def processBytes(identifier: String, bytes: Array[Byte]) = {
+    PDF.getBytes(new ByteArrayInputStream(bytes)) match {
+      case Some(pdfBytes) => Map(identifier + ".pdf" -> pdfBytes)
+      case None => {
+        try {
+          val is = try {
+            new GZIPInputStream(new ByteArrayInputStream(bytes))
           } catch {
             case e: IOException => {
-              require(e.getMessage == "Error detected parsing the header")
-              Map(identifier + ".tex" -> IOUtils.toByteArray(new GZIPInputStream(new ByteArrayInputStream(bytes))))
+              require(e.getMessage == "Not in GZIP format", "Unexpected IOException: " + e.getMessage)
+              new ByteArrayInputStream(bytes)
             }
+          }
+          val tis = new TarArchiveInputStream(is)
+          var entry: ArchiveEntry = null
+          val buffer = ListBuffer[(String, Array[Byte])]()
+          while ({ entry = tis.getNextEntry; entry != null }) {
+            if (!entry.isDirectory) {
+              buffer += ((entry.getName, IOUtils.toByteArray(tis)))
+            }
+          }
+          buffer.toMap
+        } catch {
+          case e: IOException => {
+            require(e.getMessage == "Error detected parsing the header", "Unexpected IOException: " + e.getMessage)
+            Map(identifier + ".tex" -> IOUtils.toByteArray(new GZIPInputStream(new ByteArrayInputStream(bytes))))
           }
         }
       }
     }
   }
+
+  def apply(identifier: String): Map[String, Array[Byte]] = {
+    rawSourceFile(identifier) match {
+      case None => Map.empty
+      case Some(bytes) => processBytes(identifier, bytes)
+    }
+  }
+  // TODO we'd like to process examples like: https://gist.github.com/semorrison/2ee73cd5c088312735d5c9ef3ac1e763  
   def bibitems(identifier: String): Seq[(String, String)] = {
     val lines = apply(identifier).collect({ case (name, bytes) if name.toLowerCase.endsWith(".tex") || name.toLowerCase.endsWith(".bbl") => Source.fromBytes(bytes).getLines }).iterator.flatten
     var state = false
@@ -71,27 +90,25 @@ trait Sources {
     for (line <- bibitemLines) {
       if (line.startsWith("\\bibitem")) {
         post
-        
+
         val tail = line.stripPrefix("\\bibitem").trim
-        
+
         val (key_, remainder) = {
-          if(tail.startsWith("{")) {
+          if (tail.startsWith("{")) {
             (
-            		line.stripPrefix("{").takeWhile(_ != '}'),
-            		line.stripPrefix("{").dropWhile(_ != '}').stripPrefix("}")
-            )
-          } else if(tail.startsWith("[")) {
+              line.stripPrefix("{").takeWhile(_ != '}'),
+              line.stripPrefix("{").dropWhile(_ != '}').stripPrefix("}"))
+          } else if (tail.startsWith("[")) {
             (
-                line.stripPrefix("[").takeWhile(_ != ']').stripPrefix("{").stripSuffix("}"),
-                line.stripPrefix("[").dropWhile(_ != ']').stripPrefix("[").dropWhile(_ != '}').stripPrefix("}")
-            )
+              line.stripPrefix("[").takeWhile(_ != ']').stripPrefix("{").stripSuffix("}"),
+              line.stripPrefix("[").dropWhile(_ != ']').stripPrefix("[").dropWhile(_ != '}').stripPrefix("}"))
           } else {
             println("I don't know how to parse this bibitem line:")
             println(line)
             ???
           }
         }
-        
+
         key = key_
         entryBuffer += remainder
       } else {
@@ -127,7 +144,44 @@ trait SourcesFromLocalCopy extends Sources {
   }
 }
 
-object Sources extends SourcesFromLocalCopy {
+trait SourcesFromArxiv extends Sources {
+  def basePath: String
+  abstract override def rawSourceFile(identifier: String) = {
+    super.rawSourceFile(identifier) match {
+      case Some(bytes) => Some(bytes)
+      case None => {
+        try {
+          val path = Paths.get(basePath).resolve(identifier.split("/").last.take(4))
+          val stub = identifier.replaceAllLiterally("/", "")
+
+          Logging.info("Downloading sources from the arxiv for " + identifier)
+          val url = "https://arxiv.org/e-print/" + identifier
+          Throttle(url)
+          val bytes = IOUtils.toByteArray(new BufferedInputStream(HttpClientSlurp.getStream(url)))
+
+          val files = processBytes(identifier, bytes)
+          val file = if (files.keySet == Set(identifier + ".pdf")) {
+            path.resolve(stub + ".pdf").toFile
+          } else {
+            path.resolve(stub + ".gz").toFile
+          }
+
+          FileUtils.writeByteArrayToFile(file, bytes)
+
+          Some(bytes)
+        } catch {
+          case e: Exception => {
+            Logging.info("Caught " + e.getMessage + " while downloading " + identifier)
+            None
+          }
+        }
+      }
+    }
+
+  }
+}
+
+object Sources extends SourcesFromLocalCopy with SourcesFromArxiv {
   override val basePath = "/Users/scott/scratch/arxiv/"
-//  override val basePath = "/Users/scott/scratch/arxiv/"
+  //  override val basePath = "/Users/scott/scratch/arxiv/"
 }
