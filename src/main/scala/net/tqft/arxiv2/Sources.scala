@@ -64,7 +64,7 @@ trait Sources {
   }
   // TODO we'd like to process examples like: https://gist.github.com/semorrison/2ee73cd5c088312735d5c9ef3ac1e763  
   def bibitems(identifier: String): Seq[(String, String)] = {
-    val lines = apply(identifier).collect({ case (name, bytes) if name.toLowerCase.endsWith(".tex") || name.toLowerCase.endsWith(".bbl") => Source.fromBytes(bytes).getLines }).iterator.flatten
+    val lines = apply(identifier).collect({ case (name, bytes) if name.toLowerCase.endsWith(".tex") || name.toLowerCase.endsWith(".bbl") => Source.fromBytes(bytes).getLines }).iterator.flatten.toStream
     var state = false
     val bibitemLines = lines.filter({ line =>
       // TODO allow whitespace after 'begin' and 'end'
@@ -77,46 +77,80 @@ trait Sources {
       } else {
         state
       }
-    })
-    val buffer = ListBuffer[(String, String)]()
-    var key: String = null
-    val entryBuffer = ListBuffer[String]()
-    def post {
-      if (key != null) {
-        buffer += ((key, entryBuffer.filter(_.trim.nonEmpty).mkString("\n")))
-      }
-      entryBuffer.clear
-    }
-    for (line <- bibitemLines) {
-      if (line.startsWith("\\bibitem")) {
-        post
+    }).toStream
 
-        val tail = line.stripPrefix("\\bibitem").trim
-
-        val (key_, remainder) = {
-          if (tail.startsWith("{")) {
-            (
-              line.stripPrefix("{").takeWhile(_ != '}'),
-              line.stripPrefix("{").dropWhile(_ != '}').stripPrefix("}"))
-          } else if (tail.startsWith("[")) {
-            (
-              line.stripPrefix("[").takeWhile(_ != ']').stripPrefix("{").stripSuffix("}"),
-              line.stripPrefix("[").dropWhile(_ != ']').stripPrefix("[").dropWhile(_ != '}').stripPrefix("}"))
-          } else {
-            println("I don't know how to parse this bibitem line:")
-            println(line)
-            ???
-          }
-        }
-
-        key = key_
-        entryBuffer += remainder
+    if (bibitemLines.isEmpty) {
+      if (lines.contains("% $ biblatex auxiliary file $")) {
+        // Try parsing it as biblatex
+        parse_biblatex(lines)
       } else {
-        entryBuffer += line
+        println("No bibliography found for " + identifier)
+        ???
       }
+    } else {
+
+      val buffer = ListBuffer[(String, String)]()
+      var key: String = null
+      val entryBuffer = ListBuffer[String]()
+      def post {
+        if (key != null) {
+          buffer += ((key, entryBuffer.filter(_.trim.nonEmpty).mkString("\n")))
+        }
+        entryBuffer.clear
+      }
+      for (line <- bibitemLines) {
+        if (line.startsWith("\\bibitem")) {
+          post
+
+          val tail = line.stripPrefix("\\bibitem").trim
+
+          val (key_, remainder) = {
+            if (tail.startsWith("{")) {
+              (
+                line.stripPrefix("{").takeWhile(_ != '}'),
+                line.stripPrefix("{").dropWhile(_ != '}').stripPrefix("}"))
+            } else if (tail.startsWith("[")) {
+              (
+                line.stripPrefix("[").takeWhile(_ != ']').stripPrefix("{").stripSuffix("}"),
+                line.stripPrefix("[").dropWhile(_ != ']').stripPrefix("[").dropWhile(_ != '}').stripPrefix("}"))
+            } else {
+              println("I don't know how to parse this bibitem line:")
+              println(line)
+              ???
+            }
+          }
+
+          key = key_
+          entryBuffer += remainder
+        } else {
+          entryBuffer += line
+        }
+      }
+      post
+      buffer.toSeq
     }
-    post
-    buffer.toSeq
+  }
+
+  def parse_biblatex(lines: Seq[String]): Seq[(String, String)] = {
+    import net.tqft.toolkit.collections.Split._
+    implicit class Regex(sc: StringContext) {
+      def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
+    }
+
+    for (chunk <- lines.splitBefore(_ == "% $ biblatex auxiliary file $").toStream.apply(1).splitBefore(line => line.trim.startsWith("\\entry") || line.trim.startsWith("\\endsortlist")).toStream.init.tail) yield {
+      val key = chunk.head.trim.stripPrefix("\\entry{").takeWhile(_ != '}')
+      val fields = Seq("title", "journaltitle", "year", "number", "volume", "note")
+      val prefixes = Seq("family=", "given=") ++ fields.map(f => "\\field{" + f + "}")
+      val text = (for (
+        p <- prefixes;
+        line <- chunk.tail.map(_.trim);
+        if line.startsWith(p);
+        data = line.stripPrefix(p + "{").stripSuffix(",").stripSuffix("}")
+      ) yield {
+        data.replaceAllLiterally("\\bibnamedelima", "").replaceAllLiterally("\\bibnamedelimi", "")
+      })
+      (key, text.mkString(" "))
+    }
   }
 
   def referencesResolved(identifier: String) = bibitems(identifier).par.map({
