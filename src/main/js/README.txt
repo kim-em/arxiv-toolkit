@@ -1,0 +1,1 @@
+XPIs are created from the userscript via https://arantius.com/misc/greasemonkey/script-compiler.php
