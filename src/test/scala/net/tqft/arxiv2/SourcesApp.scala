@@ -13,10 +13,10 @@ object SourcesApp extends App {
 //    })
 //    println()
 //  }
-  for(s <- Sources.bibitems("math/9912028")) {
-    println(s)
-    println
-  }
+//  for(s <- Sources.bibitems("math/9912028")) {
+//    println(s)
+//    println
+//  }
   for(s <- Sources.bibitems("1701.00567")) {
     println(s)
     println
