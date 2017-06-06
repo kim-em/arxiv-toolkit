@@ -243,7 +243,7 @@ object HtmlUnitSlurp extends HtmlUnitSlurp {
   def driverInstance = {
     if (driverOption.isEmpty) {
       Logging.info("Starting HtmlUnit/webdriver")
-      driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_31))
+      driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_38))
       java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF)
       Logging.info("   ... finished starting HTMLUnit")
     }
@@ -396,7 +396,7 @@ trait ThrottledSlurp extends Slurp {
 
 object Throttle extends Logging {
   val defaultInterval = 1000
-  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 60000, "scopus.com" -> 30000, "arxiv.org" -> 5000, "google.com" -> 500, "scholar.google.com" -> 500)
+  val hostIntervals = scala.collection.mutable.Map("ams.org" -> 60000, "scopus.com" -> 30000, "arxiv.org" -> 5000, "google.com" -> 500, "scholar.google.com" -> 500, "zbmath.org" -> 10000)
   val lastThrottle = scala.collection.mutable.Map[String, Long]().withDefaultValue(0)
 
   // poisson distributed gaps
