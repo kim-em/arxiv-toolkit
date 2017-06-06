@@ -37,5 +37,7 @@ src/main/js/mathscinet-extension.zip
 # passwords
 arxiv_sql_password
 
+arXiv_OAI
+
 db
 db.p
