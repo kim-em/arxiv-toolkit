@@ -20,7 +20,7 @@ case class Citation(text: String) {
 	      val r1 = """math\.[A-Z]{2}/[0-9]{7}""".r
 	      val r2 = """[-a-z]*/[0-9]{7}""".r
 	      val r3 = """[0-9]{4}\.[0-9]{4}""".r
-	      Some(r1.findFirstIn(chunk).orElse(r2.findFirstIn(chunk)).orElse(r2.findFirstIn(chunk)).get)
+	      Some(r1.findFirstIn(chunk).orElse(r2.findFirstIn(chunk)).orElse(r3.findFirstIn(chunk)).get)
 	    } else {
 	      None
 	    }

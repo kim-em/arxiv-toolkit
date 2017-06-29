@@ -28,6 +28,7 @@ object SourcesApp extends App {
   targets += "0809.3031"
 
   while (targets.nonEmpty) {
+    println(s"Completed ${done.size} articles.")
     val target = randomTarget
     targets = targets.filterNot(_ == target)
     done += target
