@@ -2,11 +2,11 @@ package net.tqft.arxiv2
 
 import net.tqft.mlp.sql.SQLTables
 import net.tqft.mlp.sql.SQL
-import slick.driver.MySQLDriver.api._
+import slick.jdbc.MySQLProfile.api._
 
 object CountMatches extends App {
 
-  val ids = SQL { 
+  val ids = SQL {
     (for (a <- SQLTables.arxiv; if a.categories.startsWith("math"); if a.arxivid.startsWith("08")) yield a.arxivid)
   }
 

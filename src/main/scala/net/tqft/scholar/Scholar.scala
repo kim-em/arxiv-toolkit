@@ -23,22 +23,22 @@ object Scholar {
   def apply(article: scopus.Article): Option[ScholarResults] = {
     article.DOIOption match {
       case Some(doi) => fromDOI(doi)
-      case None => apply(article.title + ", " + article.authorsText)
+      case None      => apply(article.title + ", " + article.authorsText)
     }
   }
   def apply(citation: webofscience.Citation): Option[ScholarResults] = {
     citation.DOIOption match {
       case Some(doi) => fromDOI(doi)
-      case None => apply(citation.title + ", " + citation.authorsText)
+      case None      => apply(citation.title + ", " + citation.authorsText)
     }
   }
 
   def apply(queryString: String): Option[ScholarResults] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
-    import slick.driver.MySQLDriver.api._
+    import slick.jdbc.MySQLProfile.api._
 
-    SQL { 
+    SQL {
       (for (a <- SQLTables.scholar_queries; if a.query === queryString) yield {
         a
       }).result.headOption
@@ -53,11 +53,11 @@ object Scholar {
       case None => {
         val lookup = implementation(queryString)
         SQL {
-          
-            SQLTables.scholar_queries += (lookup match {
-              case Some(result) => result
-              case None => ScholarResults(queryString, "", "", None, Nil, Iterator.empty)
-            })
+
+          SQLTables.scholar_queries += (lookup match {
+            case Some(result) => result
+            case None         => ScholarResults(queryString, "", "", None, Nil, Iterator.empty)
+          })
         }
         lookup
       }

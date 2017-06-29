@@ -4,7 +4,7 @@ import scala.util.parsing.combinator.RegexParsers
 import scala.io.Source
 
 object CSVParser extends RegexParsers {
-  def apply(f: java.io.File): Iterator[List[String]] = apply(io.Source.fromFile(f))
+  def apply(f: java.io.File): Iterator[List[String]] = apply(scala.io.Source.fromFile(f))
   def apply(s: Source): Iterator[List[String]] = apply(s.getLines())
   def apply(lines: TraversableOnce[String]): Iterator[List[String]] = lines.map(apply(_)).toIterator
   def apply(s: String): List[String] = parseAll(fromCsv, s) match {

@@ -9,12 +9,12 @@ import net.tqft.toolkit.Logging
  * @author scott
  */
 object FromTheTop extends App {
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
 
-  
   val gaps = (
-    new scala.collection.mutable.BitSet(4000000) ++= SQL { (for (a <- SQLTables.mathscinet_gaps) yield a.MRNumber) 
-  })
+    new scala.collection.mutable.BitSet(4000000) ++= SQL {
+      (for (a <- SQLTables.mathscinet_gaps) yield a.MRNumber)
+    })
 
   println("gaps: " + gaps.size)
 
@@ -24,7 +24,7 @@ object FromTheTop extends App {
     } catch {
       case e: NoSuchElementException => try {
         Logging.info(s"Recording that $i is not a valid MR number.")
-        (SQL {  SQLTables.mathscinet_gaps += (i) })
+        (SQL { SQLTables.mathscinet_gaps += (i) })
       } catch {
         case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException => {}
         case e: Throwable => e.printStackTrace()

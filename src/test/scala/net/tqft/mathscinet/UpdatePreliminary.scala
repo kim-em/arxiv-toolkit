@@ -8,9 +8,9 @@ import net.tqft.toolkit.amazon.S3
  * @author scott
  */
 object UpdatePreliminary extends App {
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
 
-  val preliminary = (SQL { 
+  val preliminary = (SQL {
     (for (a <- SQLTables.mathscinet; if a.mrclass === "Preliminary Data") yield a)
   })
 
@@ -30,7 +30,7 @@ object UpdatePreliminary extends App {
       println(a)
 
       S3("www.ams.org.cache") -= "http://www.ams.org/mathscinet/search/publications.html?fmt=bibtex&pg1=MR&s1=" + a.identifier.toString
-      SQL { 
+      SQL {
         (for (a0 <- SQLTables.mathscinet; if a0.MRNumber === a.identifier) yield a0).update(getArticle(a.identifier))
       }
     } catch {

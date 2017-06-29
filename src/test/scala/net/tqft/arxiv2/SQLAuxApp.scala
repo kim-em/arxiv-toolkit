@@ -2,14 +2,14 @@ package net.tqft.arxiv2
 
 import net.tqft.mlp.sql.SQL
 import net.tqft.mlp.sql.SQLTables
-import slick.driver.MySQLDriver.api._
+import slick.jdbc.MySQLProfile.api._
 import net.tqft.toolkit.Logging
 import net.tqft.util.pandoc
 import scala.collection.parallel.ForkJoinTaskSupport
 
 object SQLAuxApp extends App {
 
-  val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(100))
+  val pool = new ForkJoinTaskSupport(new java.util.concurrent.ForkJoinPool(100))
 
   val seen = scala.collection.mutable.Set[String]()
 

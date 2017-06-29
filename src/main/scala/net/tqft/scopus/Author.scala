@@ -43,31 +43,30 @@ object FirefoxDriver {
 
 }
 
-
 case class Author(id: Long, name: String, email: Option[String] = None) {
   def url = "http://www.scopus.com/authid/detail.url?authorId=" + id.toString
 
   lazy val publications: Seq[Article] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
-    import slick.driver.MySQLDriver.api._
-    val lookup = SQL { 
+    import slick.jdbc.MySQLProfile.api._
+    val lookup = SQL {
       (for (a <- SQLTables.scopus_authorships; if a.author_id === id) yield {
         a.scopus_id
       }).result
     }
-    
+
     (if (lookup.isEmpty) {
       val r = """<a onclick="return submitRecord\('(.*)','[0-9]*','[0-9]*'\);" title="Show document details" href=".*">(.*)</a>""".r
       val lines = publications_results
-//      println(lines.mkString("\n"))
+      //      println(lines.mkString("\n"))
       val records = (for (line <- lines; if line.contains("Show document details"); m <- r.findAllMatchIn(line)) yield {
         Article(m.group(1), Some(m.group(2)))
       }).toStream.distinct
 
-        for (a <- records) {
-          SQL { SQLTables.scopus_authorships += ((id, a.id)) }
-        }
+      for (a <- records) {
+        SQL { SQLTables.scopus_authorships += ((id, a.id)) }
+      }
       records.map(_.id)
     } else {
       lookup

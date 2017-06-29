@@ -9,13 +9,14 @@ import java.io.File
 
 object SQLExportApp extends App {
 
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val out = new PrintWriter(new FileOutputStream(new File("./mathscinet.bib")))
+//  val out = new PrintWriter(new FileOutputStream(new File("./mathscinet.bib")))
 
   for (a <- SQL.stream(SQLTables.mathscinet)) {
-    out.println(a.bibtex.toBIBTEXString)
-    out.println()
+    println(a.bibtex.toBIBTEXString)
+//    out.println(a.bibtex.toBIBTEXString)
+//    out.println()
   }
 }

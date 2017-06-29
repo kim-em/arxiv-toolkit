@@ -32,12 +32,14 @@ case class Article(
   def authorsText = {
     import net.tqft.util.OxfordComma._
 
-//    pandoc.latexToText(
-      authors.map({
-        case (keyname, forenames, suffix, _) => List(Some(forenames), Some(keyname), suffix).flatten.mkString(" ")
-      }).oxfordComma
-//      )
+    //    pandoc.latexToText(
+    authors.map({
+      case (keyname, forenames, suffix, _) => List(Some(forenames), Some(keyname), suffix).flatten.mkString(" ")
+    }).oxfordComma
+    //      )
   }
 
   def textTitle = pandoc.latexToText(title)
+
+  def citation = (authorsText + " " + textTitle + " " + journalref.getOrElse("") + " arXiv:" + identifier + " " +  doi.map("DOI:" + _).getOrElse("")).trim
 }
