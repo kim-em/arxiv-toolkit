@@ -44,6 +44,8 @@ trait Slurp {
   def getStream(url: String): InputStream = new URL(url).openStream
   final def getBytes(url: String) = IOUtils.toByteArray(getStream(url))
 
+  def quit
+  
   def apply(url: String): Iterator[String] = {
     val bis = new BufferedInputStream(getStream(url))
     val cd = new CharsetDetector()
@@ -99,6 +101,8 @@ trait HttpClientSlurp extends Slurp {
 
   val client: HttpClient = new DecompressingHttpClient(new DefaultHttpClient(cxMgr))
 
+  override def quit = { /* nothing to do */ }
+  
   val cookieStore = new BasicCookieStore();
   val cookie = new BasicClientCookie("SD_REMOTEACCESS", "92845a49cfd32a5b71ae0b4dcea2f3c130924b6c5014f5d667046e31a9efda345801c40c2ba552b6181d7e037d3e94263fd9f927ef262ddd3d9781711d2637cbde8f8e7e00fe62dbe4895322066480c289bcb8a14a5ea018604b02ff5ce9f9eafd98f637b12d7c55");
   cookie.setDomain(".sciencedirect.com")
@@ -142,8 +146,10 @@ object HttpClientSlurp extends HttpClientSlurp
 trait FirefoxSlurp extends Slurp {
   private def driver = FirefoxSlurp.driverInstance
 
+  override def quit: Unit = FirefoxSlurp.quit
+  
   var throttle = 0
-
+  
   override def getStream(url: String) = {
     import scala.collection.JavaConverters._
 
@@ -153,7 +159,13 @@ trait FirefoxSlurp extends Slurp {
         if (url.startsWith("http://apps.webofknowledge.com/")) WebOfScience.preload
         if (url.startsWith("http://www.sciencedirect.com/")) ScienceDirect.preload
 
-        driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption match {
+        
+        val link = try{
+          driver.findElements(By.cssSelector("""a[href="""" + url + """"]""")).asScala.headOption
+        } catch {
+          case e: Exception => None
+        }
+        link match {
           case Some(element) => {
             Logging.info("webdriver: clicking an available link")
             element.click()
@@ -177,7 +189,18 @@ trait FirefoxSlurp extends Slurp {
           case _ =>
         }
         throttle = 0
-        new ByteArrayInputStream(driver.getPageSource.getBytes("UTF-8"))
+        if(url.contains("ams.org")) Thread.sleep(5000)
+        val pageSource = {
+          val firstAttempt = driver.getPageSource
+          if(url.contains("ams.org") && firstAttempt.contains("setCookie( 'hasJavascript', 1 )")) {
+            Logging.info("Waiting on javascript at ams.org")
+            Thread.sleep(3000)
+            driver.getPageSource
+          } else {
+            firstAttempt
+          }
+        }
+        new ByteArrayInputStream(pageSource.getBytes("UTF-8"))
       } catch {
         case e @ (_: org.openqa.selenium.NoSuchWindowException | _: org.openqa.selenium.remote.UnreachableBrowserException | _: org.openqa.selenium.remote.ErrorHandler$UnknownServerException) => {
           Logging.warn("Browser window closed, trying to restart Firefox/webdriver")
@@ -243,14 +266,14 @@ object HtmlUnitSlurp extends HtmlUnitSlurp {
   def driverInstance = {
     if (driverOption.isEmpty) {
       Logging.info("Starting HtmlUnit/webdriver")
-      driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_38))
+      driverOption = Some(new HtmlUnitDriver(BrowserVersion.FIREFOX_52))
       java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF)
       Logging.info("   ... finished starting HTMLUnit")
     }
     driverOption.get
   }
 
-  def quit = {
+  override def quit = {
     driverOption.map(_.quit)
     driverOption = None
   }
@@ -270,13 +293,14 @@ object FirefoxSlurp extends FirefoxSlurp {
       //      profile.setPreference("network.proxy.socks", "localhost");
       //      profile.setPreference("network.proxy.socks_port", "1081");
       //      profile.setPreference("network.proxy.type", 1)
+      System.setProperty("webdriver.gecko.driver", "/Users/scott/bin/geckodriver");
       driverOption = Some(new FirefoxDriver( /*profile*/ ))
       Logging.info("   ... finished starting Firefox")
     }
     driverOption.get
   }
 
-  def quit = {
+  override def quit = {
     try {
       driverOption.map(_.quit)
     } catch {

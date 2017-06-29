@@ -9,9 +9,9 @@ import net.tqft.mlp.sql.SQLTables
 object JournalsNotOnTheERAList extends App {
 
   def count(issn: String) = {
-    import slick.driver.MySQLDriver.api._
+    import slick.jdbc.MySQLProfile.api._
 
-    SQL { 
+    SQL {
       (for (
         a <- SQLTables.mathscinet;
         if a.issn === issn;

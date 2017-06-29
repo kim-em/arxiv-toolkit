@@ -15,7 +15,7 @@ object JournalsMSIPublishesInApp extends App {
   Article.disableBibtexSaving
 
   val mathematicians = (for (
-    line <- io.Source.fromFile(new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/mathematicians.txt"))(Codec.UTF8).getLines;
+    line <- scala.io.Source.fromFile(new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/mathematicians.txt"))(Codec.UTF8).getLines;
     if line.nonEmpty && !line.startsWith("#");
     fields = CSVParser(line)
   ) yield fields).toList
@@ -27,7 +27,7 @@ object JournalsMSIPublishesInApp extends App {
     Author(mathscinetAuthorId, name)
   }
 
-  val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(50))
+  val pool = new ForkJoinTaskSupport(new java.util.concurrent.ForkJoinPool(50))
 
   val articles = { val p = authors.par; p.tasksupport = pool; p }
     .flatMap(_.articles)

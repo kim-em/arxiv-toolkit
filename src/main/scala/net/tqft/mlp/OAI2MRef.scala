@@ -23,35 +23,35 @@ object OAI2MRef extends App {
   var count = 0
   val input: File = new File("/Users/scott/projects/arxiv-toolkit/arxiv.txt")
 
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
 
-  
-    val articlesWithoutMatchingDOI = SQL { for (
+  val articlesWithoutMatchingDOI = SQL {
+    for (
       a <- SQLTables.arxiv;
       if a.journalref.isDefined;
       if a.doi.isEmpty || !SQLTables.mathscinet.filter(_.doi === a.doi).exists
     ) yield (a.arxivid, a.title, a.authors, a.journalref)
   }
 
-    for ((id, title, authorsXML, journalRef) <- articlesWithoutMatchingDOI) {
-      try {
-        val authors = (for (names <- (scala.xml.XML.loadString("<authors>" + authorsXML + "</authors>") \\ "author").iterator) yield (names \\ "keyname").text + ", " + (names \\ "forenames").text).mkString("", "; ", ";")
-        val citation = (title + "\n" + authors + "\n" + journalRef).trim
-        println("Looking up: " + citation)
-        val result = MRef.lookup(citation)
-        println("  found: " + result.map(_.identifierString))
+  for ((id, title, authorsXML, journalRef) <- articlesWithoutMatchingDOI) {
+    try {
+      val authors = (for (names <- (scala.xml.XML.loadString("<authors>" + authorsXML + "</authors>") \\ "author").iterator) yield (names \\ "keyname").text + ", " + (names \\ "forenames").text).mkString("", "; ", ";")
+      val citation = (title + "\n" + authors + "\n" + journalRef).trim
+      println("Looking up: " + citation)
+      val result = MRef.lookup(citation)
+      println("  found: " + result.map(_.identifierString))
 
-        if (result.size == 1) {
-          for (r <- result) {
-            arxivbot("Data:" + r.identifierString + "/FreeURL") = "http://arxiv.org/abs/" + id
-          }
-        }
-        count += 1
-      } catch {
-        case e: Exception => {
-          Logging.warn("Exception while looking up article using MRef", e)
+      if (result.size == 1) {
+        for (r <- result) {
+          arxivbot("Data:" + r.identifierString + "/FreeURL") = "http://arxiv.org/abs/" + id
         }
       }
+      count += 1
+    } catch {
+      case e: Exception => {
+        Logging.warn("Exception while looking up article using MRef", e)
+      }
+    }
   }
 
   println(count)
