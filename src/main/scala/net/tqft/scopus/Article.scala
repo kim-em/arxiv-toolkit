@@ -80,7 +80,7 @@ case class Article(id: String, titleHint: Option[String] = None) {
         r.findFirstMatchIn(a1.attr("href")).get.group(1).toLong,
         a1.text,
         a2.flatMap(_.attr("href") match {
-          case "" => None
+          case ""   => None
           case href => Some(href.stripPrefix("mailto:"))
         }))
     }
@@ -172,15 +172,17 @@ object Article {
   def fromDOI(doi: String): Option[Article] = {
     import net.tqft.mlp.sql.SQL
     import net.tqft.mlp.sql.SQLTables
-    import slick.driver.MySQLDriver.api._
-    val lookup = 
-      SQL { (for (
-        a <- SQLTables.doi2scopus;
-        if a.doi === doi
-      ) yield a.scopus_id).result.headOption }
-    
+    import slick.jdbc.MySQLProfile.api._
+    val lookup =
+      SQL {
+        (for (
+          a <- SQLTables.doi2scopus;
+          if a.doi === doi
+        ) yield a.scopus_id).result.headOption
+      }
+
     lookup match {
-      case Some("") => None
+      case Some("")        => None
       case Some(scopus_id) => Some(Article(scopus_id))
       case None => {
         searchForDOI(doi) match {
@@ -189,7 +191,7 @@ object Article {
             Some(Article(scopus_id))
           }
           case None => {
-            SQL {  SQLTables.doi2scopus += (doi, "") }
+            SQL { SQLTables.doi2scopus += (doi, "") }
             None
           }
         }

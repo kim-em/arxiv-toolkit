@@ -43,7 +43,7 @@ trait Article { article =>
   override def equals(other: Any) = {
     other match {
       case other: Article => other.identifier == identifier
-      case _ => false
+      case _              => false
     }
   }
 
@@ -86,10 +86,10 @@ trait Article { article =>
       if (!Articles.identifiersInDatabase.contains(identifier)) {
         Logging.info("Saving to the database:\n" + bibtex.toBIBTEXString)
         Future {
-          import slick.driver.MySQLDriver.api._
+          import slick.jdbc.MySQLProfile.api._
 
           try {
-            SQL { 
+            SQL {
               SQLTables.mathscinet += this
             }
           } catch {
@@ -108,10 +108,10 @@ trait Article { article =>
 
   def saveAux {
     try {
-      import slick.driver.MySQLDriver.api._
-        val data = (identifier, textTitle, wikiTitle, authorsText, citation_text, citation_markdown, citation_html)
-        SQL { SQLTables.mathscinet_aux.citationData += (data) }
-        println(SQLTables.mathscinet_aux.citationData.forceInsertStatementFor(data) + ";")
+      import slick.jdbc.MySQLProfile.api._
+      val data = (identifier, textTitle, wikiTitle, authorsText, citation_text, citation_markdown, citation_html)
+      SQL { SQLTables.mathscinet_aux.citationData += (data) }
+      println(SQLTables.mathscinet_aux.citationData.forceInsertStatementFor(data) + ";")
     } catch {
       case e: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException if e.getMessage().startsWith("Duplicate entry") => {
       }
@@ -188,7 +188,7 @@ trait Article { article =>
       endnote("%A").map(n => Author(0, n))
     } else {
       bibtex.get("AUTHOR") match {
-        case None => List()
+        case None    => List()
         case Some(a) => a.split("( |})and ").toList.map(a => Author(0, a /*Accents.LaTeXToUnicode(a)*/ ))
       }
     }
@@ -235,7 +235,7 @@ trait Article { article =>
       case "book" => {
         bibtex.get("MRCLASS") match {
           case Some("Thesis") => bibtex.get("NOTE").getOrElse("")
-          case _ => bibtex.get("SERIES").map(_ + " ").getOrElse("") + bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+          case _              => bibtex.get("SERIES").map(_ + " ").getOrElse("") + bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
         }
       }
       case "inproceedings" => {
@@ -265,7 +265,7 @@ trait Article { article =>
       case "book" => {
         bibtex.get("MRCLASS") match {
           case Some("Thesis") => bibtex.get("NOTE").map(s => pandoc.latexToText(s)) getOrElse ("")
-          case _ => bibtex.get("SERIES").map(s => "_" + pandoc.latexToText(s) + "_ ").getOrElse("") + bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+          case _              => bibtex.get("SERIES").map(s => "_" + pandoc.latexToText(s) + "_ ").getOrElse("") + bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
         }
       }
       case "inproceedings" => {
@@ -294,7 +294,7 @@ trait Article { article =>
       case "book" => {
         bibtex.get("MRCLASS") match {
           case Some("Thesis") => bibtex.get("NOTE").map(s => pandoc.latexToText(s)) getOrElse ("")
-          case _ => bibtex.get("SERIES").map(s => "<i>" + pandoc.latexToText(s) + "</i> ").getOrElse("") + bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
+          case _              => bibtex.get("SERIES").map(s => "<i>" + pandoc.latexToText(s) + "</i> ").getOrElse("") + bibtex.get("ISBN").map("ISBN: " + _).getOrElse("")
         }
       }
       case "inproceedings" => {
@@ -319,14 +319,14 @@ trait Article { article =>
   def yearOption: Option[Int] = {
     bibtex.get("YEAR").map(s => s.takeWhile(_.isDigit)).flatMap({
       case Int(year) => Some(year)
-      case _ => None
+      case _         => None
     })
   }
   def year = yearOption.get
   def volumeOption: Option[Int] = {
     bibtex.get("VOLUME").map(s => s.trim.takeWhile(_.isDigit)).flatMap({
       case Int(v) => Some(v)
-      case _ => None
+      case _      => None
     })
   }
   def volume: Int = volumeOption.get
@@ -351,7 +351,7 @@ trait Article { article =>
       }
       pageString match {
         case Int(i) => Some(i)
-        case _ => None
+        case _      => None
       }
     }
   }
@@ -365,7 +365,7 @@ trait Article { article =>
       }
       pageString flatMap {
         case Int(i) => Some(i)
-        case _ => None
+        case _      => None
       }
     }
   }
@@ -399,8 +399,8 @@ trait Article { article =>
   }
 
   private def searchElsevierForPDFURL: Option[String] = {
-    if(volumeOption.isEmpty) return None
-    
+    if (volumeOption.isEmpty) return None
+
     Logging.info("Attempting to find URL for Elsevier article.")
 
     val issn = correctedISSN
@@ -424,7 +424,7 @@ trait Article { article =>
       } else {
         "" +: (numberOption match {
           case Some(number) => Stream(number.split(" ").last)
-          case _ => Stream.from(1).map(_.toString)
+          case _            => Stream.from(1).map(_.toString)
         })
       }
     }
@@ -641,7 +641,7 @@ trait Article { article =>
           case url if url.startsWith("http://muse.jhu.edu/journals/american_journal_of_mathematics/") => Some(url)
           // http://www.combinatorics.org/Volume_12/Abstracts/v12i1n3.html
           // http://www.combinatorics.org/ojs/index.php/eljc/article/view/v12i1n3/pdf
-          case url if url.startsWith("http://www.combinatorics.org/") => Some("http://www.combinatorics.org/ojs/index.php/eljc/article/view/" + url.split("/").last.stripSuffix(".html") + "/pdf")
+          case url if url.startsWith("http://www.combinatorics.org/")                                 => Some("http://www.combinatorics.org/ojs/index.php/eljc/article/view/" + url.split("/").last.stripSuffix(".html") + "/pdf")
 
           case url if url.startsWith("http://stacks.iop.org/") =>
             // http://stacks.iop.org/0305-4470/16/2187
@@ -738,9 +738,9 @@ trait Article { article =>
   def sanitizedTitle = textTitle.replaceAllLiterally("/", "") // scary UTF-8 character that just *looks* like a forward slash
     .replaceAllLiterally(":", "") // scary UTF-8 character that just *looks* like a colon
     .replaceAllLiterally("\\", "") // scary UTF-8 character that just *looks* like a back slash
-//  def sanitizedTitle = textTitle.replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
-//    .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
-//    .replaceAllLiterally("\\", "∖") // scary UTF-8 character that just *looks* like a back slash
+  //  def sanitizedTitle = textTitle.replaceAllLiterally("/", "⁄") // scary UTF-8 character that just *looks* like a forward slash
+  //    .replaceAllLiterally(":", "꞉") // scary UTF-8 character that just *looks* like a colon
+  //    .replaceAllLiterally("\\", "∖") // scary UTF-8 character that just *looks* like a back slash
 
   def wikiTitle = {
     def pandocFragment(f: String) = {
@@ -753,7 +753,7 @@ trait Article { article =>
       pandocFragment(p(0)) +
         (p.tail.headOption match {
           case Some(q) => "$" + q
-          case None => ""
+          case None    => ""
         })
     }).mkString("$")
   }
@@ -826,8 +826,8 @@ object Article {
   }
 
   def apply(identifier: Int): Article = {
-    import slick.driver.MySQLDriver.api._
-    val lookup = SQL { 
+    import slick.jdbc.MySQLProfile.api._
+    val lookup = SQL {
       (for (
         a <- SQLTables.mathscinet;
         if a.MRNumber === identifier
@@ -892,7 +892,7 @@ object MRIdentifier {
     import net.tqft.toolkit.Extractors.Int
     s.stripPrefix("MR") match {
       case Int(id) => Some(id)
-      case _ => None
+      case _       => None
     }
   }
 }
@@ -901,14 +901,14 @@ object Articles {
 
   def apply(identifierStrings: Traversable[String]): Map[String, Article] = {
     def apply(identifiers: Traversable[Int]): Map[Int, Article] = {
-      import slick.driver.MySQLDriver.api._
-      (SQL { 
+      import slick.jdbc.MySQLProfile.api._
+      (SQL {
         (for (
           a <- SQLTables.mathscinet;
           if a.MRNumber.inSet(identifiers)
         ) yield a).result
       }).map(a => a.identifier -> a).toMap
-      
+
     }
     apply(identifierStrings.collect({ case MRIdentifier(id) => id })).map(p => p._2.identifierString -> p._2)
   }
@@ -939,14 +939,14 @@ object Articles {
   }
 
   def withDOIPrefix(prefix: String): Iterator[Article] = {
-    val pool = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(50))
+    val pool = new ForkJoinTaskSupport(new java.util.concurrent.ForkJoinPool(50))
     for (group <- AnonymousS3("DOI2mathscinet").keysWithPrefix(prefix).iterator.grouped(1000); doi <- { val p = group.par; p.tasksupport = pool; p }; article <- Article.fromDOI(doi)) yield article
   }
 
   lazy val identifiersInDatabase = {
     Logging.info("Finding out what's already in the database ...")
-    import slick.driver.MySQLDriver.api._
-    val result = 
+    import slick.jdbc.MySQLProfile.api._
+    val result =
       new scala.collection.mutable.BitSet(4000000) ++= SQL { SQLTables.mathscinet.map(_.MRNumber).result }
     Logging.info(s" ... ${result.size} articles")
     result
@@ -954,8 +954,8 @@ object Articles {
 
   lazy val ISSNsInDatabase = {
     Logging.info("Finding out which ISSNs appear in the database ...")
-    import slick.driver.MySQLDriver.api._
-    val result = (SQL { 
+    import slick.jdbc.MySQLProfile.api._
+    val result = (SQL {
       SQLTables.mathscinet.groupBy(x => x.issn).map(_._1)
     }).flatten.map(_.toUpperCase)
     Logging.info(s" ... ${result.size} ISSNs")

@@ -1,13 +1,13 @@
 package net.tqft.webofscience
 
 import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import net.tqft.toolkit.Throttle
 
 @RunWith(classOf[JUnitRunner])
-class ArticleTest extends FlatSpec with ShouldMatchers {
+class ArticleTest extends FlatSpec with Matchers {
   //  "fromMathSciNet" should "use a database, falling back to fromDOI when needed" in {
   //     Article.fromMathSciNet(net.tqft.mathscinet.Article("MR2979509")) should equal(Some(Article("000309470900002")))
   //  }

@@ -11,7 +11,7 @@ object ISSNs {
   val `Journal of Algebra` = "0021-8693"
   val `Journal of Pure and Applied Algebra` = "0022-4049"
   val `K-Theory` = "0920-3036"
-    val `Journal of K-Theory` = "1865-2433"
+  val `Journal of K-Theory` = "1865-2433"
   val `Advances in Mathematics` = "0001-8708"
   val `Discrete Mathematics` = "0012-365X"
   val `Annals of Mathematics` = "0003-486X"
@@ -25,9 +25,9 @@ object ISSNs {
 
 case class Journal(issn: String) {
   def articles: Seq[Article] = {
-    import slick.driver.MySQLDriver.api._
+    import slick.jdbc.MySQLProfile.api._
 
-    SQL { 
+    SQL {
       (for (
         a <- SQLTables.mathscinet;
         if a.issn === issn;
@@ -36,9 +36,9 @@ case class Journal(issn: String) {
     }
   }
   def upToYear(year: Int): Iterator[Article] = {
-    import slick.driver.MySQLDriver.api._
+    import slick.jdbc.MySQLProfile.api._
 
-    (SQL { 
+    (SQL {
       (for (
         a <- SQLTables.mathscinet;
         if a.issn === issn;
@@ -51,10 +51,11 @@ case class Journal(issn: String) {
 
   def openAccess: Iterator[Article] = {
     if (ISSNs.Elsevier.contains(issn)) {
-      for (a <- upToYear(2009);
-      v <- a.volumeOption; 
-      if v >= Journals.earliestOpenAccessVolume(a.correctedISSN);
-      if a.numberOption.isEmpty || (!a.number.contains("index") && !a.number.contains("Index"))
+      for (
+        a <- upToYear(2009);
+        v <- a.volumeOption;
+        if v >= Journals.earliestOpenAccessVolume(a.correctedISSN);
+        if a.numberOption.isEmpty || (!a.number.contains("index") && !a.number.contains("Index"))
       ) yield a
     } else {
       ???
@@ -77,26 +78,26 @@ object Journals {
     "0095-8956" -> 10,
     "1567-8326" -> 47,
     "0895-7177" -> 10,
-    "0166-8641" -> 11, 
-    "0019-9958" -> 12 /* this appears to be an oversight? c.f. my email on 2014-02-03 */).withDefault(_ => 1)
+    "0166-8641" -> 11,
+    "0019-9958" -> 12 /* this appears to be an oversight? c.f. my email on 2014-02-03 */ ).withDefault(_ => 1)
 
-   lazy val journalNames = {
-      import slick.driver.MySQLDriver.api._
-  
-      val result = (SQL { 
-        (for (
-          a <- SQLTables.mathscinet;
-          if a.journal.isDefined;
-          if a.issn.isDefined
-        ) yield a).groupBy(x => (x.issn, x.journal)).map({
-          case (p, a) => (p._1.get, p._2.get, a.length)
-        }).result
-      })
-      
-      result.groupBy(_._1).map(t => (t._1.toUpperCase, pandoc.latexToText(t._2.sortBy(-_._3).head._2)))
-      
-    }
-  
+  lazy val journalNames = {
+    import slick.jdbc.MySQLProfile.api._
+
+    val result = (SQL {
+      (for (
+        a <- SQLTables.mathscinet;
+        if a.journal.isDefined;
+        if a.issn.isDefined
+      ) yield a).groupBy(x => (x.issn, x.journal)).map({
+        case (p, a) => (p._1.get, p._2.get, a.length)
+      }).result
+    })
+
+    result.groupBy(_._1).map(t => (t._1.toUpperCase, pandoc.latexToText(t._2.sortBy(-_._3).head._2)))
+
+  }
+
   //  for (l <- journalNames) println("\"" + l._1 + "\" -> \"" + l._2 + "\",")
 
   lazy val ISSNs = names.map(_.swap).toMap

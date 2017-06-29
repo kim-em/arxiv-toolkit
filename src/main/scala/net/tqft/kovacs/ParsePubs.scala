@@ -5,8 +5,7 @@ import scala.io.Source
 import net.tqft.mathscinet.Article
 import net.tqft.util.pandoc
 import java.io.File
-import scalaz._
-import Scalaz._
+import scalaz.syntax.std.list._
 import argonaut._
 import Argonaut._
 import java.io.FileOutputStream

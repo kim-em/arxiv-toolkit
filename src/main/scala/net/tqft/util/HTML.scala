@@ -10,7 +10,7 @@ trait Html {
   java.util.logging.Logger.getLogger("be.hue").setLevel(java.util.logging.Level.OFF)
 
   def client = {
-    val result = new WebClient(BrowserVersion.FIREFOX_38)
+    val result = new WebClient(BrowserVersion.FIREFOX_52)
     result.getOptions.setThrowExceptionOnFailingStatusCode(false);
     result.getOptions.setThrowExceptionOnScriptError(false)
     result
