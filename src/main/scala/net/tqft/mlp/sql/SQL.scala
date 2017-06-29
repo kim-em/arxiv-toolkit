@@ -1,6 +1,6 @@
 package net.tqft.mlp.sql
 
-import slick.driver.MySQLDriver.api._
+import slick.jdbc.MySQLProfile.api._
 import net.tqft.mathscinet.Article
 import net.tqft.util.BIBTEX
 import net.tqft.scholar.Scholar
@@ -120,14 +120,13 @@ class ArxivAux(tag: Tag) extends Table[(String, String, String)](tag, "arxiv_aux
   def * = (arxivid, textTitle, textAuthors)
 }
 
-
 class ArxivAuthorNames(tag: Tag) extends Table[net.tqft.arxiv2.Author](tag, "arxiv_author_names") {
   def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
   def keyname = column[String]("keyname")
   def forenames = column[String]("forenames")
   def suffix = column[Option[String]]("suffix")
   def affiliation = column[Option[String]]("affiliation")
-  def * = (id, keyname, forenames, suffix, affiliation)  <> ((net.tqft.arxiv2.Author.apply _).tupled, { a: net.tqft.arxiv2.Author => Some(a.sqlRow) })
+  def * = (id, keyname, forenames, suffix, affiliation) <> ((net.tqft.arxiv2.Author.apply _).tupled, { a: net.tqft.arxiv2.Author => Some(a.sqlRow) })
   def insertView = (keyname, forenames, suffix, affiliation)
 }
 
@@ -193,7 +192,7 @@ class ScholarQueries(tag: Tag) extends Table[Scholar.ScholarResults](tag, "schol
   def arxivid = column[Option[String]]("arxivid")
   def pdfurl = column[Option[String]]("pdfurl")
   def * = (query, title, cluster, webOfScienceAccessionNumber, arxivid, pdfurl) <> (buildScholarResults, { a: Scholar.ScholarResults => Some(a.sqlRow) })
-  
+
   def buildScholarResults(data: (String, String, String, Option[String], Option[String], Option[String])) = {
     Scholar.ScholarResults(data._1, data._2, data._3, data._4, data._5.map("http://arxiv.org/abs/" + _).toSeq, data._6.iterator)
   }
@@ -232,9 +231,9 @@ object SQLTables {
   val portico = TableQuery[Portico]
   val arxiv = TableQuery[Arxiv]
   val arxiv_aux = TableQuery[ArxivAux]
-  object  arxivAuthorNames extends TableQuery(new ArxivAuthorNames(_)) {
+  object arxivAuthorNames extends TableQuery(new ArxivAuthorNames(_)) {
     def insertView = map(name => name.insertView)
-    
+
   }
   object arxivAuthorshipsByName extends TableQuery(new ArxivAuthorshipsByName(_)) {
     def insertView = map(authorship => authorship.insertView)
@@ -242,10 +241,10 @@ object SQLTables {
   val arxiv_mathscinet_matches = TableQuery[ArxivMathscinetMatches]
   val scopus_authorships = TableQuery[ScopusAuthorships]
   val scholar_queries = TableQuery[ScholarQueries]
-  
+
   val doi2webofscience = TableQuery[DOI2WebOfScience]
   val doi2scopus = TableQuery[DOI2Scopus]
-  
+
   object webofscience_aux extends TableQuery(new WebOfScienceAux(_)) {
     def citations_recordsView = map(aux => aux.citations_recordsView)
   }
@@ -256,19 +255,23 @@ object SQLTables {
     def citationData = map(aux => aux.citationData)
   }
 
-//  def mathscinet(ISSNs: TraversableOnce[String], years: TraversableOnce[Int]): Iterator[Article] = {
-//    import slick.driver.MySQLDriver.api._
-//    SQL { 
-//      for (j <- ISSNs.toIterator; y <- years.toIterator; a <- SQLTables.mathscinet.filter(_.issn === j).filter(_.year === y.toString).iterator) yield a
-//    }
-//
-//  }
+  //  def mathscinet(ISSNs: TraversableOnce[String], years: TraversableOnce[Int]): Iterator[Article] = {
+  //    import slick.driver.MySQLDriver.api._
+  //    SQL { 
+  //      for (j <- ISSNs.toIterator; y <- years.toIterator; a <- SQLTables.mathscinet.filter(_.issn === j).filter(_.year === y.toString).iterator) yield a
+  //    }
+  //
+  //  }
 }
 
-
 object SQL {
+  private val enableJdbcStreaming: (java.sql.Statement) ⇒ Unit = { statement ⇒
+    if (statement.isWrapperFor(classOf[com.mysql.jdbc.StatementImpl])) {
+      statement.unwrap(classOf[com.mysql.jdbc.StatementImpl]).enableStreamingResults()
+    }
+  }
   def apply[R](x: slick.lifted.Rep[Int]) = Await.result(db.run(x.result), Duration.Inf)
   def apply[R](x: slick.lifted.Query[Any, R, Seq]): Seq[R] = Await.result(db.run(x.result), Duration.Inf)
-  def stream[R](x: slick.lifted.Query[Any, R, Seq]): slick.backend.DatabasePublisher[R] = db.stream(x.result)
-  def apply[R, S <: NoStream, E <: Effect](x: slick.profile.SqlAction[R, S, E]): R = Await.result(db.run(x), Duration.Inf)
+  def stream[R](x: slick.lifted.Query[Any, R, Seq]): slick.basic.DatabasePublisher[R] = db.stream(x.result.transactionally.withStatementParameters(fetchSize = 1000, statementInit = enableJdbcStreaming))
+  def apply[R, S <: NoStream, E <: Effect](x: slick.sql.SqlAction[R, S, E]): R = Await.result(db.run(x), Duration.Inf)
 }

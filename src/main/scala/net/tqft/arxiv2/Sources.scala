@@ -49,7 +49,15 @@ trait Sources {
         } catch {
           case e: IOException => {
             require(e.getMessage == "Error detected parsing the header", "Unexpected IOException: " + e.getMessage)
-            Map(identifier + ".tex" -> IOUtils.toByteArray(new GZIPInputStream(new ByteArrayInputStream(bytes))))
+            val is = try {
+              new GZIPInputStream(new ByteArrayInputStream(bytes))
+            } catch {
+              case e: IOException => {
+                require(e.getMessage == "Not in GZIP format", "Unexpected IOException: " + e.getMessage)
+                new ByteArrayInputStream(bytes)
+              }
+            }
+            Map(identifier + ".tex" -> IOUtils.toByteArray(is))
           }
         }
       }
@@ -58,15 +66,14 @@ trait Sources {
 
   def apply(identifier: String): Map[String, Array[Byte]] = {
     rawSourceFile(identifier) match {
-      case None => Map.empty
+      case None        => Map.empty
       case Some(bytes) => processBytes(identifier, bytes)
     }
   }
-  // TODO we'd like to process examples like: https://gist.github.com/semorrison/2ee73cd5c088312735d5c9ef3ac1e763  
   def bibitems(identifier: String): Seq[(String, String)] = {
     val lines = apply(identifier).collect({ case (name, bytes) if name.toLowerCase.endsWith(".tex") || name.toLowerCase.endsWith(".bbl") => Source.fromBytes(bytes).getLines }).iterator.flatten.toStream
     var state = false
-    val bibitemLines = lines.filter({ line =>
+    val bibitemLines = lines.filter(line => !line.trim.startsWith("%")).filter({ line =>
       // TODO allow whitespace after 'begin' and 'end'
       if (line.contains("\\begin{thebibliography}")) {
         state = true
@@ -94,11 +101,19 @@ trait Sources {
       val entryBuffer = ListBuffer[String]()
       def post {
         if (key != null) {
-          buffer += ((key, entryBuffer.filter(_.trim.nonEmpty).mkString("\n")))
+          val latex = entryBuffer
+            .filter(_.trim.nonEmpty)
+            .map(line =>
+              line
+                .replaceAllLiterally("\\newblock", "")
+                .replaceAllLiterally("{\\em ArXiv Mathematics e-prints}", "")
+                .replaceAllLiterally("{\\em ArXiv e-prints}", "")).mkString("\n")
+          val text = pandoc.latexToText(latex)
+          buffer += ((key, text))
         }
         entryBuffer.clear
       }
-      for (line <- bibitemLines) {
+      for (line <- bibitemLines.map(_.trim)) {
         if (line.startsWith("\\bibitem")) {
           post
 
@@ -107,12 +122,12 @@ trait Sources {
           val (key_, remainder) = {
             if (tail.startsWith("{")) {
               (
-                line.stripPrefix("{").takeWhile(_ != '}'),
-                line.stripPrefix("{").dropWhile(_ != '}').stripPrefix("}"))
+                tail.stripPrefix("{").takeWhile(_ != '}'),
+                tail.stripPrefix("{").dropWhile(_ != '}').stripPrefix("}"))
             } else if (tail.startsWith("[")) {
               (
-                line.stripPrefix("[").takeWhile(_ != ']').stripPrefix("{").stripSuffix("}"),
-                line.stripPrefix("[").dropWhile(_ != ']').stripPrefix("[").dropWhile(_ != '}').stripPrefix("}"))
+                tail.stripPrefix("[").takeWhile(_ != ']').stripPrefix("{").stripSuffix("}"),
+                tail.stripPrefix("[").dropWhile(_ != ']').stripPrefix("[").dropWhile(_ != '}').stripPrefix("}"))
             } else {
               println("I don't know how to parse this bibitem line:")
               println(line)
@@ -139,7 +154,7 @@ trait Sources {
 
     for (chunk <- lines.splitBefore(_ == "% $ biblatex auxiliary file $").toStream.apply(1).splitBefore(line => line.trim.startsWith("\\entry") || line.trim.startsWith("\\endsortlist")).toStream.init.tail) yield {
       val key = chunk.head.trim.stripPrefix("\\entry{").takeWhile(_ != '}')
-      val fields = Seq("title", "journaltitle", "year", "number", "volume", "note")
+      val fields = Seq("title", "journaltitle", "year", "number", "volume", "pages", "note")
       val prefixes = Seq("family=", "given=") ++ fields.map(f => "\\field{" + f + "}")
       val text = (for (
         p <- prefixes;
@@ -147,7 +162,7 @@ trait Sources {
         if line.startsWith(p);
         data = line.stripPrefix(p + "{").stripSuffix(",").stripSuffix("}")
       ) yield {
-        data.replaceAllLiterally("\\bibnamedelima", "").replaceAllLiterally("\\bibnamedelimi", "")
+        data.replaceAllLiterally("\\bibnamedelima", "").replaceAllLiterally("\\bibnamedelimi", "").replaceAllLiterally("\\bibrangedash ", "-")
       })
       (key, text.mkString(" "))
     }
@@ -180,7 +195,7 @@ trait SourcesFromLocalCopy extends Sources {
 
 trait SourcesFromArxiv extends Sources {
   def basePath: String
-  abstract override def rawSourceFile(identifier: String) = {
+  abstract override def rawSourceFile(identifier: String): Option[Array[Byte]] = {
     super.rawSourceFile(identifier) match {
       case Some(bytes) => Some(bytes)
       case None => {

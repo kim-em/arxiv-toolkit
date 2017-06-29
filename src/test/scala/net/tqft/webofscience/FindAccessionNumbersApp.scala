@@ -8,7 +8,7 @@ import net.tqft.toolkit.Extractors.Long
 
 object FindAccessionNumbersApp extends App {
   val mathematicians = (for (
-    line <- io.Source.fromFile(new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/mathematicians.txt"))(Codec.UTF8).getLines;
+    line <- scala.io.Source.fromFile(new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/mathematicians.txt"))(Codec.UTF8).getLines;
     if line.nonEmpty && !line.startsWith("#");
     fields = CSVParser(line)
   ) yield fields).toList

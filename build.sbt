@@ -4,7 +4,7 @@ organization := "net.tqft"
 
 version := "0.1.1-SNAPSHOT"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.2"
 
 scalacOptions += "-target:jvm-1.7"
 
@@ -40,15 +40,17 @@ libraryDependencies ++= Seq(
 	"org.jsoup" % "jsoup" % "1.8.2",
 	"eu.medsea.mimeutil" % "mime-util" % "2.1.3",
 	"mysql" % "mysql-connector-java" % "5.1.24",
-	"com.typesafe.slick" %% "slick" % "3.0.0",
+	"com.typesafe.slick" %% "slick" % "3.1.1",
 	"uk.ac.shef.wit" % "simmetrics" % "1.6.2",
 	"org.apache.pdfbox" % "pdfbox" % "1.8.9",
-	"com.github.tototoshi" %% "scala-csv" % "1.3.3"
+	"com.github.tototoshi" %% "scala-csv" % "1.3.4",
+	"org.scalaz" %% "scalaz-core" % "7.2.13",
+	"io.argonaut" %% "argonaut" % "6.2"
 )
 
 // lift-json
 libraryDependencies ++= {
-  val liftVersion = "2.6" // Put the current/latest lift version here
+  val liftVersion = "3.0.1" // Put the current/latest lift version here
   Seq(
     "net.liftweb" %% "lift-util" % liftVersion,
     "net.liftweb" %% "lift-json" % liftVersion,
@@ -59,7 +61,7 @@ libraryDependencies ++= {
 // Test dependencies
 libraryDependencies ++= Seq(
 	"junit" % "junit" % "4.12" % "test",
-	"org.scalatest" %% "scalatest" % "2.2.4" % "compile,test"
+	"org.scalatest" %% "scalatest" % "3.0.1" % "compile,test"
 )
 
 // Sometimes it's useful to see debugging out from the typer (e.g. to resolve slow compiles)
