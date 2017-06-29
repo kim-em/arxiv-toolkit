@@ -5,6 +5,10 @@ import net.tqft.util.pandoc
 import net.tqft.zentralblatt.CitationMatching
 import net.tqft.util.Slurp
 import net.tqft.citation.Citation
+import java.io.PrintWriter
+import java.io.FileOutputStream
+import java.io.File
+import scala.io.Source
 
 object SourcesApp extends App {
   //  for ((key, text, o) <- Sources.referencesResolved("math/9912028")) {
@@ -24,25 +28,40 @@ object SourcesApp extends App {
   val done = scala.collection.mutable.ListBuffer[String]()
   def randomTarget = targets.apply(scala.util.Random.nextInt(targets.size))
 
-  //  targets += "1606.03466"
-  targets += "0809.3031"
+  val graph = new File(System.getProperty("user.home") + "/projects/arxiv-toolkit/graph")
+  if (graph.exists) {
+    for (line <- Source.fromFile(graph).getLines; h :: t = line.split(' ').toList) {
+      done += h
+      targets ++= t
+    }
+  }
+
+  targets ++= (Seq("1606.03466", "0809.3031").filterNot(c => done.contains(c)))
+  
+  val pw = new PrintWriter(new FileOutputStream(graph, true))
 
   while (targets.nonEmpty) {
     println(s"Completed ${done.size} articles.")
     val target = randomTarget
     targets = targets.filterNot(_ == target)
     done += target
-    for (s <- Sources.bibitems(target)) {
+    val cites = (for (s <- Sources.bibitems(target)) yield {
       println(s)
-      for (a <- Citation(s._2).arxiv) {
+      val cites = Citation(s._2).arxiv
+      for (a <- cites.headOption) {
         println("-- " + a.identifier + ": " + a.citation)
         if (!done.contains(a.identifier)) {
           targets += a.identifier
         }
       }
       println
-    }
+      cites.map(_.identifier)
+    }).flatten
+    pw.write((target +: cites).mkString(" ") + "\n")
+    pw.flush
   }
+
+  pw.close
 
   Slurp.quit
 }
