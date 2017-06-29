@@ -1,8 +1,8 @@
-#!/usr/bin/env perl
+#!/opt/local/bin/perl
 use strict;
 
-my $perl_path = `/usr/bin/env perl`
-print "Using perl found at $perl_path" 
+my $perl_path = `/usr/bin/which perl`;
+print STDERR "Using perl found at $perl_path"; 
 
 use DBI;		# ** need to make sure the module DBD::mysql is also installed
 use LWP::UserAgent;
