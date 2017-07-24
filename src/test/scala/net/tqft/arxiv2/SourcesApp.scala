@@ -33,11 +33,12 @@ object SourcesApp extends App {
     for (line <- Source.fromFile(graph).getLines; h :: t = line.split(' ').toList) {
       done += h
       targets ++= t
+      targets = targets.filterNot(_ == h)
     }
   }
 
   targets ++= (Seq("1606.03466", "0809.3031").filterNot(c => done.contains(c)))
-  
+
   val pw = new PrintWriter(new FileOutputStream(graph, true))
 
   while (targets.nonEmpty) {
@@ -45,20 +46,28 @@ object SourcesApp extends App {
     val target = randomTarget
     targets = targets.filterNot(_ == target)
     done += target
-    val cites = (for (s <- Sources.bibitems(target)) yield {
-      println(s)
-      val cites = Citation(s._2).arxiv
-      for (a <- cites.headOption) {
-        println("-- " + a.identifier + ": " + a.citation)
-        if (!done.contains(a.identifier)) {
-          targets += a.identifier
+    try {
+      val cites = (for (s <- Sources.bibitems(target)) yield {
+        println(s)
+        val cites = Citation(s._2).arxiv
+        for (a <- cites.headOption) {
+          println("-- " + a.identifier + ": " + a.citation)
+          if (!done.contains(a.identifier)) {
+            targets += a.identifier
+          }
         }
+        println
+        cites.map(_.identifier)
+      }).flatten
+      pw.write((target +: cites).mkString(" ") + "\n")
+      pw.flush
+    } catch {
+      case e: Exception => {
+        println("Something went wrong while reading the bibliography of " + target)
+        println(e.getMessage)
+        e.printStackTrace()
       }
-      println
-      cites.map(_.identifier)
-    }).flatten
-    pw.write((target +: cites).mkString(" ") + "\n")
-    pw.flush
+    }
   }
 
   pw.close
