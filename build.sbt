@@ -4,7 +4,7 @@ organization := "net.tqft"
 
 version := "0.1.1-SNAPSHOT"
 
-scalaVersion := "2.12.2"
+scalaVersion := "2.11.12"
 
 scalacOptions += "-target:jvm-1.7"
 
@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
 	"net.tqft" %% "toolkit-base" % "0.1.18-SNAPSHOT",
 	"net.tqft" %% "toolkit-collections" % "0.1.18-SNAPSHOT",
 	"net.tqft" %% "toolkit-amazon" % "0.1.18-SNAPSHOT",
-	"net.tqft" %% "toolkit-wiki" % "0.1.18-SNAPSHOT",
+	"net.tqft" %% "toolkit-wiki" % "0.1.19-SNAPSHOT",
 	"net.tqft" %% "citation-search" % "0.2-SNAPSHOT",
 	"com.ibm.icu" % "icu4j" % "55.1",
 	"rome" % "rome" % "1.0",
